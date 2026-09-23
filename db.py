@@ -198,6 +198,33 @@ REVIEW_PLANS = [
 ]
 REVIEW_PLAN_LABELS = {p[0]: p[1] for p in REVIEW_PLANS}
 
+# -----------------------------------------------------------------------
+# Corpus juridique (fondation de l'assistant de recherche IA — phase 0)
+# -----------------------------------------------------------------------
+
+CORPUS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS legal_corpus_documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    source_type TEXT NOT NULL DEFAULT 'autre',
+    citation_reference TEXT,
+    full_text TEXT NOT NULL,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+"""
+
+CORPUS_SOURCE_TYPES = [
+    ("constitution", "Constitution"),
+    ("code", "Code (civil, commerce, travail, fiscal…)"),
+    ("decret", "Décret / arrêté"),
+    ("jurisprudence", "Jurisprudence"),
+    ("doctrine", "Doctrine / article"),
+    ("autre", "Autre"),
+]
+CORPUS_SOURCE_LABELS = dict(CORPUS_SOURCE_TYPES)
+
 STATUS_FLOW = [
     ("demande_recue", "Demande reçue"),
     ("verification_conflit", "Vérification des conflits d'intérêts"),
@@ -251,6 +278,7 @@ def get_db():
 def init_db():
     conn = get_db()
     conn.executescript(SCHEMA)
+    conn.executescript(CORPUS_SCHEMA)
     conn.commit()
     conn.close()
 

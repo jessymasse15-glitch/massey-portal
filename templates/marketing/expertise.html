@@ -2,14 +2,14 @@
 {% block title %}Expertise — Massey Contracts & Tax{% endblock %}
 {% block meta_description %}Quatre piliers d'intervention : ingénierie contractuelle, fiscalité des affaires, transactions internationales, legal technology & AI.{% endblock %}
 {% block content %}
-<section class="page-hero">
+<section class="page-hero reveal">
   <div class="eyebrow">Expertise</div>
   <h1>Quatre piliers d'intervention</h1>
   <p class="lede">Chaque dossier est traité comme un système à sécuriser — pas comme un document isolé.</p>
 </section>
 
 <section class="block" style="border-top:none;padding-top:0;">
-  <div class="grid-2">
+  <div class="grid-2 reveal-stagger">
     <div class="pillar-card">
       <span class="n">01</span>
       <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/><path d="M8 13h8M8 17h8"/></svg></div>
@@ -35,9 +35,15 @@
       <p>Automatisation, analyse documentaire, comparaison contractuelle, organisation de l'information et outils d'intelligence artificielle au service du travail juridique.</p>
     </div>
   </div>
-  <div class="ctas" style="display:flex;gap:14px;margin-top:36px;">
-    <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
-    <a href="{{ url_for('about') }}" class="btn btn-ghost">En savoir plus sur notre approche</a>
+  <div class="cta-banner reveal">
+    <div>
+      <h2>Un dossier, quatre expertises mobilisables</h2>
+      <p>Selon la nature de votre opération, un ou plusieurs piliers s'activent au sein d'un même mandat.</p>
+    </div>
+    <div class="ctas">
+      <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
+      <a href="{{ url_for('about') }}" class="btn btn-ghost">En savoir plus sur notre approche</a>
+    </div>
   </div>
 </section>
 {% endblock %}

@@ -1324,6 +1324,112 @@ def admin_revue_submission_download(sub_id):
 
 
 # ---------------------------------------------------------------------------
+# Admin — Corpus juridique (fondation de l'assistant de recherche IA)
+# ---------------------------------------------------------------------------
+
+@app.route("/admin/corpus")
+@roles_required("expert", "admin")
+def admin_corpus_list():
+    q = request.args.get("q", "").strip()
+    source_type = request.args.get("source_type", "")
+    conn = dbm.get_db()
+    query = "SELECT * FROM legal_corpus_documents WHERE 1=1"
+    params = []
+    if q:
+        query += " AND (title LIKE ? OR full_text LIKE ? OR citation_reference LIKE ?)"
+        like = f"%{q}%"
+        params += [like, like, like]
+    if source_type:
+        query += " AND source_type=?"
+        params.append(source_type)
+    query += " ORDER BY created_at DESC"
+    docs = conn.execute(query, params).fetchall()
+    conn.close()
+    return render_template(
+        "admin/corpus_list.html", docs=docs, source_types=dbm.CORPUS_SOURCE_TYPES,
+        q=q, source_type=source_type,
+    )
+
+
+@app.route("/admin/corpus/nouveau", methods=["GET", "POST"])
+@roles_required("expert", "admin")
+def admin_corpus_new():
+    if request.method == "POST":
+        return _save_corpus_document(None)
+    return render_template("admin/corpus_form.html", doc=None, source_types=dbm.CORPUS_SOURCE_TYPES)
+
+
+@app.route("/admin/corpus/<int:doc_id>/modifier", methods=["GET", "POST"])
+@roles_required("expert", "admin")
+def admin_corpus_edit(doc_id):
+    conn = dbm.get_db()
+    doc = conn.execute("SELECT * FROM legal_corpus_documents WHERE id=?", (doc_id,)).fetchone()
+    conn.close()
+    if doc is None:
+        abort(404)
+    if request.method == "POST":
+        return _save_corpus_document(doc_id)
+    return render_template("admin/corpus_form.html", doc=doc, source_types=dbm.CORPUS_SOURCE_TYPES)
+
+
+@app.route("/admin/corpus/<int:doc_id>")
+@roles_required("expert", "admin")
+def admin_corpus_view(doc_id):
+    conn = dbm.get_db()
+    doc = conn.execute("SELECT * FROM legal_corpus_documents WHERE id=?", (doc_id,)).fetchone()
+    conn.close()
+    if doc is None:
+        abort(404)
+    return render_template("admin/corpus_view.html", doc=doc)
+
+
+def _save_corpus_document(doc_id):
+    u = current_user()
+    title = request.form.get("title", "").strip()
+    source_type = request.form.get("source_type", "autre")
+    if source_type not in dbm.CORPUS_SOURCE_LABELS:
+        source_type = "autre"
+    citation_reference = request.form.get("citation_reference", "").strip()
+    full_text = request.form.get("full_text", "").strip()
+
+    if not (title and full_text):
+        flash("Titre et texte intégral sont obligatoires.", "error")
+        return redirect(request.referrer or url_for("admin_corpus_list"))
+
+    conn = dbm.get_db()
+    if doc_id is None:
+        conn.execute(
+            "INSERT INTO legal_corpus_documents (title, source_type, citation_reference, full_text, created_by, created_at, updated_at) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (title, source_type, citation_reference, full_text, u["id"], dbm.now(), dbm.now()),
+        )
+        conn.commit()
+        dbm.log_activity(u["id"], "corpus_document_created", title)
+        flash("Texte ajouté au corpus.", "success")
+    else:
+        conn.execute(
+            "UPDATE legal_corpus_documents SET title=?, source_type=?, citation_reference=?, full_text=?, updated_at=? WHERE id=?",
+            (title, source_type, citation_reference, full_text, dbm.now(), doc_id),
+        )
+        conn.commit()
+        dbm.log_activity(u["id"], "corpus_document_updated", title)
+        flash("Texte mis à jour.", "success")
+    conn.close()
+    return redirect(url_for("admin_corpus_list"))
+
+
+@app.route("/admin/corpus/<int:doc_id>/supprimer", methods=["POST"])
+@roles_required("admin")
+def admin_corpus_delete(doc_id):
+    conn = dbm.get_db()
+    conn.execute("DELETE FROM legal_corpus_documents WHERE id=?", (doc_id,))
+    conn.commit()
+    conn.close()
+    flash("Texte supprimé du corpus.", "success")
+    return redirect(url_for("admin_corpus_list"))
+
+
+# ---------------------------------------------------------------------------
 # CLI helper: create first admin
 # ---------------------------------------------------------------------------
 

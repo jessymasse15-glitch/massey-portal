@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Corpus juridique — Administration{% endblock %}
+{% block content %}
+<h1>Corpus juridique</h1>
+<p class="helptext" style="max-width:70ch;margin-bottom:20px;">
+  Fondation de l'assistant de recherche IA : chaque texte ajouté ici (constitution, codes, décrets, jurisprudence, doctrine)
+  deviendra une source consultable et citable par l'assistant. Plus le corpus est riche, plus les réponses seront précises.
+</p>
+<p style="margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap;">
+  <a href="{{ url_for('admin_corpus_new') }}" class="btn btn-primary btn-sm">+ Ajouter un texte</a>
+  <a href="{{ url_for('admin_revue_articles') }}" class="btn btn-ghost btn-sm">Revue (admin)</a>
+  <a href="{{ url_for('admin_users') }}" class="btn btn-ghost btn-sm">Utilisateurs</a>
+</p>
+
+<form method="get" style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+  <input type="text" name="q" value="{{ q }}" placeholder="Rechercher un titre, une référence, un mot du texte…" style="flex:1;min-width:220px;">
+  <select name="source_type" style="max-width:260px;">
+    <option value="">Toutes les sources</option>
+    {% for key, label in source_types %}
+    <option value="{{ key }}" {% if source_type==key %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-sm">Filtrer</button>
+</form>
+
+<table>
+  <tr><th>Titre</th><th>Type</th><th>Référence</th><th>Ajouté le</th><th></th></tr>
+  {% for d in docs %}
+  <tr>
+    <td><a href="{{ url_for('admin_corpus_view', doc_id=d['id']) }}">{{ d['title'] }}</a></td>
+    <td><span class="tag">{{ source_types|selectattr('0','equalto',d['source_type'])|map(attribute='1')|first or d['source_type'] }}</span></td>
+    <td>{{ d['citation_reference'] or '—' }}</td>
+    <td>{{ d['created_at'][:10] }}</td>
+    <td style="display:flex;gap:6px;">
+      <a href="{{ url_for('admin_corpus_edit', doc_id=d['id']) }}" class="btn btn-sm">Modifier</a>
+      <form method="POST" action="{{ url_for('admin_corpus_delete', doc_id=d['id']) }}" onsubmit="return confirm('Supprimer ce texte du corpus ?');">
+        <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="helptext">Le corpus est vide pour l'instant — commence par ajouter la Constitution ou un code.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

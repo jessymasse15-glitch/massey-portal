@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ doc['title'] }} — Corpus juridique{% endblock %}
+{% block content %}
+<p style="margin-bottom:16px;"><a href="{{ url_for('admin_corpus_list') }}" class="btn btn-ghost btn-sm">← Corpus juridique</a></p>
+<div class="eyebrow">{{ doc['source_type'] }}</div>
+<h1>{{ doc['title'] }}</h1>
+{% if doc['citation_reference'] %}<p class="lede">{{ doc['citation_reference'] }}</p>{% endif %}
+<p class="helptext">Ajouté le {{ doc['created_at'][:10] }} — modifié le {{ doc['updated_at'][:10] }}</p>
+<div class="card" style="white-space:pre-wrap;font-size:0.92rem;line-height:1.7;max-width:80ch;margin-top:20px;">{{ doc['full_text'] }}</div>
+<p style="margin-top:20px;"><a href="{{ url_for('admin_corpus_edit', doc_id=doc['id']) }}" class="btn btn-primary btn-sm">Modifier</a></p>
+{% endblock %}

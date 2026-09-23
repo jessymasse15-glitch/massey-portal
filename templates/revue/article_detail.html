@@ -2,7 +2,7 @@
 {% block title %}{{ article['title'] }} — Massey Law Review{% endblock %}
 {% block meta_description %}{{ article['abstract'] or article['title'] }}{% endblock %}
 {% block content %}
-<section class="page-hero">
+<section class="page-hero reveal">
   <div class="eyebrow">{{ article['issue_label'] or 'Massey Law Review' }}</div>
   <h1>{{ article['title'] }}</h1>
   <p class="lede">{{ article['author_name'] }} — publié le {{ (article['published_at'] or article['created_at'])[:10] }}</p>
