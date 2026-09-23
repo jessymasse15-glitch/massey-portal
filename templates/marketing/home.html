@@ -2,10 +2,22 @@
 {% block title %}Massey Contracts & Tax — Ingénierie contractuelle, fiscale et transfrontalière{% endblock %}
 {% block content %}
 <section class="hero">
-  <div class="eyebrow">Ingénierie juridique &amp; fiscale — marché haïtien</div>
+  <div style="display:flex;align-items:center;gap:12px;font-family:var(--serif);font-style:italic;font-size:1.05rem;color:var(--ink-soft);margin-bottom:18px;">
+    <span style="width:22px;height:1px;background:var(--gold);flex:none;"></span>
+    Structurer les transactions. Maîtriser les risques. Accélérer les affaires.
+  </div>
   <h1>Massey Contracts &amp; Tax</h1>
-  <p class="lede">Contrats commerciaux, fiscalité des affaires et transactions transfrontalières — pensés comme des systèmes, pas comme des formulaires.</p>
-  <p class="promise">Massey Contracts &amp; Tax transforme les risques contractuels et fiscaux en décisions d'affaires plus claires, mieux négociées et mieux sécurisées.</p>
+
+  <div class="prose" style="margin:22px 0 28px;">
+    <p style="font-size:1rem;">Massey Contracts &amp; Tax est une LegalTech d'ingénierie contractuelle, fiscale et transactionnelle qui met l'expertise du droit haïtien au service des entreprises et des opérations commerciales locales et internationales.</p>
+    <p style="font-size:1rem;">À la convergence du droit, de l'intelligence artificielle et de la technologie, nous concevons des solutions qui permettent de structurer les transactions, sécuriser les engagements et accélérer l'exécution.</p>
+    <p style="font-size:1rem;margin-bottom:8px;">Une expertise juridique augmentée par la technologie. Une disponibilité 24/7. Une exécution pensée pour les environnements où chaque décision et chaque délai comptent.</p>
+  </div>
+  <a href="{{ url_for('about') }}" style="color:var(--gold);text-decoration:none;font-size:0.9rem;display:inline-flex;align-items:center;gap:6px;margin-bottom:30px;">
+    En savoir plus sur notre approche
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+  </a>
+
   <div class="ctas">
     <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
     {% if current_user %}<a href="{{ url_for('portal_dashboard') }}" class="btn btn-ghost">Mon espace client</a>{% else %}<a href="{{ url_for('register') }}" class="btn btn-ghost">Créer un compte</a>{% endif %}
@@ -19,88 +31,29 @@
   </div>
 </section>
 
-<section class="block" id="piliers">
+<section class="block">
   <div class="block-head">
     <div>
-      <div class="eyebrow">Expertise</div>
-      <h2>Quatre piliers d'intervention</h2>
+      <div class="eyebrow">Naviguer</div>
+      <h2>Le cabinet, en bref</h2>
     </div>
-    <p>Chaque dossier est traité comme un système à sécuriser — pas comme un document isolé.</p>
-  </div>
-  <div class="grid-2">
-    <div class="pillar-card">
-      <span class="n">01</span>
-      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/><path d="M8 13h8M8 17h8"/></svg></div>
-      <h3>Ingénierie contractuelle</h3>
-      <p>Rédaction, révision, négociation, audit de portefeuille, standardisation documentaire, gestion des obligations, prévention des litiges.</p>
-    </div>
-    <div class="pillar-card">
-      <span class="n">02</span>
-      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/></svg></div>
-      <h3>Fiscalité des affaires</h3>
-      <p>Diagnostic fiscal précontractuel, revue fiscale de contrat, structuration fiscale licite, documentation, coordination professionnelle.</p>
-    </div>
-    <div class="pillar-card">
-      <span class="n">03</span>
-      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 4 6 4 9s-1.5 6.4-4 9c-2.5-2.6-4-6-4-9s1.5-6.4 4-9z"/></svg></div>
-      <h3>Transactions internationales</h3>
-      <p>Contrats bilingues, droit applicable, arbitrage, import-export, partenariats, investissements transfrontaliers.</p>
-    </div>
-    <div class="pillar-card">
-      <span class="n">04</span>
-      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
-      <h3>Espace client sécurisé</h3>
-      <p>Suivi de dossier en temps réel, dépôt de documents, messagerie sécurisée, échéancier — <a href="{{ url_for('intake') }}" style="color:var(--gold);">ouvrez un dossier</a> pour y accéder.</p>
-    </div>
-  </div>
-</section>
-
-<section class="block" id="tarifs">
-  <div class="block-head">
-    <div>
-      <div class="eyebrow">Tarifs</div>
-      <h2>Packs par clientèle</h2>
-    </div>
-    <p>Chaque pack est calibré sur la complexité réelle du dossier. Montant final confirmé par lettre de mission.</p>
   </div>
   <div class="grid-3">
-    <div class="pack">
-      <h3>Massey Start</h3>
-      <div class="price">Sur devis</div>
-      <p>Consultation de cadrage, contrat simple, une ronde de corrections.</p>
-      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Démarrer</a>
-    </div>
-    <div class="pack">
-      <h3>Massey Review</h3>
-      <div class="price">Sur devis</div>
-      <p>Analyse d'un contrat existant, tableau des risques, version annotée.</p>
-      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Démarrer</a>
-    </div>
-    <div class="pack featured">
-      <span class="badge">Le plus demandé</span>
-      <h3>Massey Business</h3>
-      <div class="price">Sur devis</div>
-      <p>Contrat sur mesure, analyse fiscale de base, négociation limitée.</p>
-      <a href="{{ url_for('intake') }}" class="btn btn-primary btn-sm">Démarrer</a>
-    </div>
-    <div class="pack">
-      <h3>Massey CrossBorder</h3>
-      <div class="price">Sur devis</div>
-      <p>Contrat bilingue, enjeux transfrontaliers, coordination d'experts.</p>
-      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Démarrer</a>
-    </div>
-    <div class="pack">
-      <h3>Massey Counsel</h3>
-      <div class="price">Abonnement mensuel</div>
-      <p>Consultations, révisions, suivi des échéances — accompagnement continu.</p>
-      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Démarrer</a>
-    </div>
-    <div class="pack">
-      <h3>Massey Due Diligence</h3>
-      <div class="price">Sur devis</div>
-      <p>Audit documentaire préalable à un investissement ou une acquisition.</p>
-      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Démarrer</a>
-    </div>
+    <a href="{{ url_for('expertise') }}" class="pillar-card" style="text-decoration:none;display:block;">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg></div>
+      <h3>Expertise</h3>
+      <p>Nos quatre piliers d'intervention, du contrat à la fiscalité transfrontalière.</p>
+    </a>
+    <a href="{{ url_for('tarifs') }}" class="pillar-card" style="text-decoration:none;display:block;">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+      <h3>Tarifs</h3>
+      <p>Des packs calibrés selon la complexité réelle de votre dossier.</p>
+    </a>
+    <a href="{{ url_for('espace_client_marketing') }}" class="pillar-card" style="text-decoration:none;display:block;">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+      <h3>Espace client</h3>
+      <p>Suivi de dossier, documents, messagerie et paiement en ligne.</p>
+    </a>
   </div>
 </section>
 
@@ -111,7 +64,7 @@
       <h2>Une technologie encadrée, jamais autonome</h2>
     </div>
   </div>
-  <div class="callout">
+  <div class="callout" style="max-width:74ch;">
     L'intelligence artificielle réduit les tâches répétitives mais reste un assistant contrôlé : aucun avis juridique ou fiscal définitif n'est transmis sans validation humaine, aucun choix automatique de droit applicable, aucune analyse fiscale définitive fondée sur un simple formulaire.
   </div>
   <div class="trust-row" style="margin-top:24px;">

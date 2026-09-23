@@ -20,17 +20,19 @@
   <div class="wrap nav-row">
     <a href="{{ url_for('home') }}" class="brand" style="text-decoration:none;color:inherit;">
       <span class="mark">M</span>
-      <span>Massey Contracts &amp; Tax<small>Ingénierie contractuelle &amp; fiscale</small></span>
+      <span>Massey Contracts &amp; Tax<small>Ingénierie juridique &amp; Fiscale</small></span>
     </a>
     <nav class="links">
-      <a href="{{ url_for('home') }}#piliers">Expertise</a>
-      <a href="{{ url_for('home') }}#tarifs">Tarifs</a>
+      <a href="{{ url_for('about') }}">À propos</a>
+      <a href="{{ url_for('expertise') }}">Expertise</a>
+      <a href="{{ url_for('tarifs') }}">Tarifs</a>
       <a href="{{ url_for('home') }}#gouvernance">Gouvernance</a>
       {% if current_user %}
         <a href="{{ url_for('portal_dashboard') }}">Espace client</a>
         {% if current_user['role'] == 'admin' %}<a href="{{ url_for('admin_users') }}">Utilisateurs</a>{% endif %}
         <a href="{{ url_for('logout') }}">Déconnexion</a>
       {% else %}
+        <a href="{{ url_for('espace_client_marketing') }}">Espace client</a>
         <a href="{{ url_for('login') }}">Connexion</a>
       {% endif %}
     </nav>
@@ -60,12 +62,14 @@
       </div>
       <div>
         <h4>Cabinet</h4>
-        <a href="{{ url_for('home') }}#piliers">Expertise</a>
-        <a href="{{ url_for('home') }}#tarifs">Tarifs</a>
+        <a href="{{ url_for('about') }}">À propos</a>
+        <a href="{{ url_for('expertise') }}">Expertise</a>
+        <a href="{{ url_for('tarifs') }}">Tarifs</a>
         <a href="{{ url_for('home') }}#gouvernance">Gouvernance IA</a>
       </div>
       <div>
         <h4>Accès</h4>
+        <a href="{{ url_for('espace_client_marketing') }}">Espace client</a>
         <a href="{{ url_for('intake') }}">Ouvrir un dossier</a>
         <a href="{{ url_for('login') }}">Connexion</a>
         <a href="{{ url_for('register') }}">Créer un compte</a>

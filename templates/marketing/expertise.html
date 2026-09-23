@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Expertise — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Quatre piliers d'intervention : ingénierie contractuelle, fiscalité des affaires, transactions internationales, legal technology & AI.{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="eyebrow">Expertise</div>
+  <h1>Quatre piliers d'intervention</h1>
+  <p class="lede">Chaque dossier est traité comme un système à sécuriser — pas comme un document isolé.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="grid-2">
+    <div class="pillar-card">
+      <span class="n">01</span>
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/><path d="M8 13h8M8 17h8"/></svg></div>
+      <h3>Ingénierie contractuelle</h3>
+      <p>Rédaction, révision, négociation, audit de portefeuille, standardisation documentaire, gestion des obligations, prévention des litiges.</p>
+    </div>
+    <div class="pillar-card">
+      <span class="n">02</span>
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/></svg></div>
+      <h3>Fiscalité des affaires</h3>
+      <p>Diagnostic fiscal précontractuel, revue fiscale de contrat, structuration fiscale licite, documentation, coordination professionnelle.</p>
+    </div>
+    <div class="pillar-card">
+      <span class="n">03</span>
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 4 6 4 9s-1.5 6.4-4 9c-2.5-2.6-4-6-4-9s1.5-6.4 4-9z"/></svg></div>
+      <h3>Transactions internationales</h3>
+      <p>Contrats bilingues, droit applicable, arbitrage, import-export, partenariats, investissements transfrontaliers.</p>
+    </div>
+    <div class="pillar-card">
+      <span class="n">04</span>
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="14" rx="1"/><path d="M7 9h4M7 12h7M3 18h18"/><circle cx="17" cy="9.5" r="1"/></svg></div>
+      <h3>Legal Technology &amp; AI</h3>
+      <p>Automatisation, analyse documentaire, comparaison contractuelle, organisation de l'information et outils d'intelligence artificielle au service du travail juridique.</p>
+    </div>
+  </div>
+  <div class="ctas" style="display:flex;gap:14px;margin-top:36px;">
+    <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
+    <a href="{{ url_for('about') }}" class="btn btn-ghost">En savoir plus sur notre approche</a>
+  </div>
+</section>
+{% endblock %}

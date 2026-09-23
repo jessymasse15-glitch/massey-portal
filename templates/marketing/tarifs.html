@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Tarifs — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Packs par clientèle : Massey Start, Review, Business, CrossBorder, Counsel, Due Diligence.{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="eyebrow">Tarifs</div>
+  <h1>Packs par clientèle</h1>
+  <p class="lede">Chaque pack est calibré sur la complexité réelle du dossier. Montant final confirmé par lettre de mission.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="grid-3">
+    <div class="pack">
+      <h3>Massey Start</h3>
+      <div class="price">Sur devis</div>
+      <p>Consultation de cadrage, contrat simple, une ronde de corrections.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Démarrer</a>
+    </div>
+    <div class="pack">
+      <h3>Massey Review</h3>
+      <div class="price">Sur devis</div>
+      <p>Analyse d'un contrat existant, tableau des risques, version annotée.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Démarrer</a>
+    </div>
+    <div class="pack featured">
+      <span class="badge">Le plus demandé</span>
+      <h3>Massey Business</h3>
+      <div class="price">Sur devis</div>
+      <p>Contrat sur mesure, analyse fiscale de base, négociation limitée.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-primary btn-sm">Démarrer</a>
+    </div>
+    <div class="pack">
+      <h3>Massey CrossBorder</h3>
+      <div class="price">Sur devis</div>
+      <p>Contrat bilingue, enjeux transfrontaliers, coordination d'experts.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Démarrer</a>
+    </div>
+    <div class="pack">
+      <h3>Massey Counsel</h3>
+      <div class="price">Abonnement mensuel</div>
+      <p>Consultations, révisions, suivi des échéances — accompagnement continu.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Démarrer</a>
+    </div>
+    <div class="pack">
+      <h3>Massey Due Diligence</h3>
+      <div class="price">Sur devis</div>
+      <p>Audit documentaire préalable à un investissement ou une acquisition.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Démarrer</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -5,7 +5,7 @@ from datetime import datetime
 
 from flask import (
     Flask, render_template, request, redirect, url_for, session, flash,
-    send_from_directory, send_file, abort, g
+    send_from_directory, send_file, abort, g, Response
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -107,6 +107,53 @@ def can_view_dossier(user, dossier):
 @app.route("/")
 def home():
     return render_template("marketing/home.html")
+
+
+@app.route("/a-propos")
+def about():
+    return render_template("marketing/about.html")
+
+
+@app.route("/expertise")
+def expertise():
+    return render_template("marketing/expertise.html")
+
+
+@app.route("/tarifs")
+def tarifs():
+    return render_template("marketing/tarifs.html")
+
+
+@app.route("/gouvernance")
+def gouvernance():
+    return redirect(url_for("home") + "#gouvernance")
+
+
+@app.route("/espace-client")
+def espace_client_marketing():
+    return render_template("marketing/espace_client.html")
+
+
+@app.route("/robots.txt")
+def robots_txt():
+    lines = [
+        "User-agent: *",
+        "Allow: /",
+        "Disallow: /portail",
+        "Disallow: /admin",
+        "Disallow: /compte",
+        f"Sitemap: {request.url_root.rstrip('/')}/sitemap.xml",
+    ]
+    return Response("\n".join(lines), mimetype="text/plain")
+
+
+@app.route("/sitemap.xml")
+def sitemap_xml():
+    pages = ["/", "/a-propos", "/expertise", "/tarifs", "/espace-client", "/rendez-vous", "/connexion", "/inscription"]
+    root = request.url_root.rstrip("/")
+    urls = "".join(f"<url><loc>{root}{p}</loc></url>" for p in pages)
+    xml = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'
+    return Response(xml, mimetype="application/xml")
 
 
 @app.route("/rendez-vous", methods=["GET", "POST"])
