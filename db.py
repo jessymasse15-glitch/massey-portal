@@ -9,7 +9,11 @@ import sqlite3
 import os
 from datetime import datetime, timezone
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "instance", "massey.db")
+# En production (Render), DATA_DIR pointe vers le disque persistant unique
+# (un seul disque autorisé par service). En local, ça retombe sur instance/.
+DATA_DIR = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(__file__), "instance"))
+os.makedirs(DATA_DIR, exist_ok=True)
+DB_PATH = os.path.join(DATA_DIR, "massey.db")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
