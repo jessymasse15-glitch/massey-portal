@@ -280,7 +280,84 @@ def init_db():
     conn.executescript(SCHEMA)
     conn.executescript(CORPUS_SCHEMA)
     conn.commit()
+    _seed_review_demo_content(conn)
     conn.close()
+
+
+def _seed_review_demo_content(conn):
+    """Contenu de démonstration pour Massey Law Review (deux articles, deux billets de
+    forum) — inséré une seule fois, uniquement si les tables sont vides, pour que la
+    revue ne parte jamais complètement à vide. Sans effet si du vrai contenu existe déjà."""
+    editorial_email = "revue@masseylawreview.local"
+    row = conn.execute("SELECT id FROM users WHERE email=?", (editorial_email,)).fetchone()
+    if row:
+        editorial_user_id = row["id"]
+    else:
+        from werkzeug.security import generate_password_hash
+        cur = conn.execute(
+            "INSERT INTO users (email, password_hash, full_name, role, created_at) VALUES (?,?,?,?,?)",
+            (editorial_email, generate_password_hash(os.urandom(32).hex()), "Équipe éditoriale", "expert", now()),
+        )
+        editorial_user_id = cur.lastrowid
+        conn.commit()
+
+    article_count = conn.execute("SELECT COUNT(*) AS c FROM review_articles").fetchone()["c"]
+    if article_count == 0:
+        conn.execute(
+            "INSERT INTO review_articles (slug, title, author_name, issue_label, abstract, body_html, published, created_by, created_at, published_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (
+                "clause-penale-contrats-commerciaux-droit-haitien",
+                "La clause pénale dans les contrats commerciaux : portée et limites en droit haïtien",
+                "Me. Jessy J. Massé",
+                "Vol. 1, n° 1",
+                "Cet article examine les conditions de validité de la clause pénale en droit haïtien, son articulation avec le pouvoir modérateur du juge, et les précautions rédactionnelles recommandées dans les contrats commerciaux.",
+                "<p>La clause pénale demeure l'un des mécanismes contractuels les plus utilisés pour sécuriser l'exécution d'une obligation, tout en restant l'un des plus mal maîtrisés dans la pratique rédactionnelle courante.</p>"
+                "<h2>Fonction et validité</h2><p>La clause pénale fixe par avance le montant des dommages-intérêts dus en cas d'inexécution, évitant ainsi le recours à une évaluation judiciaire a posteriori. Sa validité suppose une rédaction claire de l'obligation principale et du fait générateur de la pénalité.</p>"
+                "<h2>Le pouvoir modérateur du juge</h2><p>Le juge conserve la faculté de réduire une pénalité manifestement excessive, ou de l'augmenter si elle est dérisoire. Une rédaction équilibrée, adossée à une évaluation réaliste du préjudice prévisible, réduit le risque de révision judiciaire.</p>"
+                "<h2>Recommandations pratiques</h2><p>Il est recommandé de documenter la méthode de calcul de la pénalité, de la proportionner à la gravité prévisible du manquement, et de la distinguer clairement des clauses de résiliation et d'indemnisation.</p>",
+                1, editorial_user_id, now(), now(),
+            ),
+        )
+        conn.execute(
+            "INSERT INTO review_articles (slug, title, author_name, issue_label, abstract, body_html, published, created_by, created_at, published_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (
+                "structuration-fiscale-contrats-distribution-transfrontaliers",
+                "Structuration fiscale des contrats de distribution transfrontaliers",
+                "Équipe éditoriale — Massey Law Review",
+                "Vol. 1, n° 1",
+                "Une analyse des enjeux fiscaux propres aux accords de distribution impliquant des partenaires haïtiens et étrangers, et des pistes de structuration licite pour limiter les zones d'incertitude.",
+                "<p>Les contrats de distribution transfrontaliers soulèvent des questions fiscales spécifiques, souvent sous-estimées au moment de la négociation commerciale.</p>"
+                "<h2>Qualification des flux</h2><p>La qualification exacte des paiements échangés (redevances, commissions, prix de revente) conditionne leur traitement fiscal et les obligations déclaratives applicables à chaque partie.</p>"
+                "<h2>Risques de requalification</h2><p>Une rédaction imprécise des obligations réciproques expose les parties à un risque de requalification par l'administration fiscale, avec des conséquences sur les retenues à la source applicables.</p>"
+                "<h2>Pistes de structuration</h2><p>Une documentation contractuelle rigoureuse, assortie d'une analyse fiscale préalable, permet de sécuriser la relation commerciale tout en réduisant l'exposition aux risques de double imposition.</p>",
+                1, editorial_user_id, now(), now(),
+            ),
+        )
+        conn.commit()
+
+    forum_count = conn.execute("SELECT COUNT(*) AS c FROM review_forum_posts").fetchone()["c"]
+    if forum_count == 0:
+        conn.execute(
+            "INSERT INTO review_forum_posts (user_id, title, body, created_at) VALUES (?,?,?,?)",
+            (
+                editorial_user_id,
+                "Quelle portée donner à une clause de médiation préalable dans un contrat CrossBorder ?",
+                "Dans nos dossiers transfrontaliers récents, nous observons une multiplication des clauses de médiation préalable obligatoire avant toute action judiciaire ou arbitrale. Comment articulez-vous ces clauses avec les délais de prescription applicables, notamment lorsque les parties relèvent de juridictions différentes ? Le sujet mériterait un examen approfondi dans un prochain numéro.",
+                now(),
+            ),
+        )
+        conn.execute(
+            "INSERT INTO review_forum_posts (user_id, title, body, created_at) VALUES (?,?,?,?)",
+            (
+                editorial_user_id,
+                "Retour d'expérience : négociation d'une clause de non-concurrence avec un partenaire dominicain",
+                "Sur un dossier récent impliquant un partenaire commercial basé en République dominicaine, la question de l'étendue territoriale et temporelle raisonnable d'une clause de non-concurrence a fait l'objet d'échanges approfondis. Quelle est votre pratique sur la durée maximale généralement admise dans ce type d'accord bilatéral ?",
+                now(),
+            ),
+        )
+        conn.commit()
 
 
 def log_activity(user_id, action, detail=""):

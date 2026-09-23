@@ -5,25 +5,60 @@
 <section class="page-hero reveal">
   <div class="eyebrow">Massey Law Review</div>
   <h1>Une revue juridique au service de la pratique des affaires</h1>
-  <p class="lede">Massey Law Review publie des analyses, études de cas et notes pratiques sur le droit des contrats, la fiscalité des affaires et les transactions transfrontalières, avec une attention particulière au marché haïtien et à ses zones d'échange.</p>
 </section>
 
 {% include "revue/_subnav.html" %}
 
 <section class="block" style="border-top:none;padding-top:0;">
-  <div class="callout" style="max-width:74ch;">
-    Massey Law Review éclaire les enjeux juridiques, fiscaux et transactionnels auxquels font face les entreprises, investisseurs et praticiens du droit en Haïti et dans ses relations d'affaires internationales — avec le souci constant de relier la doctrine à la pratique.
-  </div>
+  <div class="two-col">
+    <aside>
+      <p class="lede">Massey Law Review éclaire les enjeux juridiques, fiscaux et transactionnels auxquels font face les entreprises, investisseurs et praticiens du droit en Haïti et dans ses relations d'affaires internationales — avec le souci constant de relier la doctrine à la pratique.</p>
+      <ul class="toc">
+        <li><a href="#mission-editoriale"><span>01</span> Mission éditoriale</a></li>
+        <li><a href="#comite-editorial"><span>02</span> Comité éditorial</a></li>
+        <li><a href="#independance"><span>03</span> Indépendance et rigueur</a></li>
+        <li><a href="#nous-joindre"><span>04</span> Nous joindre</a></li>
+      </ul>
+      <div class="newsletter-box" style="margin-top:28px;flex-direction:column;align-items:stretch;">
+        <div>
+          <h4 style="margin:0 0 4px;font-family:var(--serif);font-weight:500;">Recevoir les nouvelles publications</h4>
+          <p style="margin:0;color:var(--ink-faint);font-size:0.86rem;">Un courriel à chaque nouvelle parution — aucun spam.</p>
+        </div>
+        <form method="POST" action="{{ url_for('revue_newsletter_signup') }}" style="display:flex;gap:10px;margin-top:14px;">
+          <input type="email" name="email" placeholder="Votre courriel" required>
+          <button type="submit" class="btn btn-primary">S'inscrire</button>
+        </form>
+      </div>
+    </aside>
 
-  <div class="newsletter-box" style="margin-top:32px;">
-    <div style="flex:1 1 260px;">
-      <h4 style="margin:0 0 4px;font-family:var(--serif);font-weight:500;">Recevoir les nouvelles publications</h4>
-      <p style="margin:0;color:var(--ink-faint);font-size:0.86rem;">Un courriel à chaque nouvelle parution — aucun spam.</p>
+    <div class="prose">
+      <p>À la convergence du droit haïtien, de la fiscalité, du commerce international et de la technologie juridique, Massey Law Review propose un espace de réflexion et d'échange destiné aux praticiens, chercheurs et décideurs.</p>
+
+      <p>Notre conviction est simple : la rigueur doctrinale ne doit pas rester étrangère à la pratique des affaires. Chaque texte publié cherche à éclairer une question concrète — une clause, un montage, une difficulté d'exécution — à la lumière du droit positif et de la pratique transactionnelle.</p>
+
+      <section id="mission-editoriale">
+        <h2>Mission éditoriale</h2>
+        <p>Massey Law Review publie des analyses, études de cas et notes pratiques sur le droit des contrats, la fiscalité des affaires et les transactions transfrontalières, avec une attention particulière au marché haïtien et à ses zones d'échange.</p>
+        <p>La revue s'adresse aux juristes, fiscalistes, entrepreneurs et investisseurs qui souhaitent comprendre non seulement la règle de droit, mais la manière dont elle s'applique concrètement à la conduite des affaires.</p>
+      </section>
+
+      <section id="comite-editorial">
+        <h2>Comité éditorial</h2>
+        <p>La ligne éditoriale est portée par l'équipe de Massey Contracts &amp; Tax, appuyée par des contributions externes de praticiens et de chercheurs invités à soumettre des textes selon les modalités décrites sur la page Soumissions.</p>
+        <p>Chaque texte fait l'objet d'une relecture éditoriale attentive avant publication, portant tant sur la rigueur de l'analyse que sur la clarté de l'exposé.</p>
+      </section>
+
+      <section id="independance">
+        <h2>Indépendance et rigueur</h2>
+        <p>La revue conserve une indépendance éditoriale complète à l'égard des dossiers traités par ailleurs par le cabinet. Les opinions exprimées dans les articles publiés engagent leurs auteurs et ne constituent pas un avis juridique applicable à une situation particulière.</p>
+        <p>Les lecteurs qui souhaitent une analyse appliquée à leur propre dossier sont invités à ouvrir un dossier auprès de Massey Contracts &amp; Tax plutôt qu'à se fonder sur les textes publiés ici.</p>
+      </section>
+
+      <section id="nous-joindre">
+        <h2>Nous joindre</h2>
+        <p>Pour toute question éditoriale, proposition de texte ou demande relative au forum, utilisez le formulaire de la page Soumissions ou écrivez à l'équipe éditoriale de la revue.</p>
+      </section>
     </div>
-    <form method="POST" action="{{ url_for('revue_newsletter_signup') }}" style="display:flex;gap:10px;flex:1 1 320px;">
-      <input type="email" name="email" placeholder="Votre courriel" required>
-      <button type="submit" class="btn btn-primary">S'inscrire</button>
-    </form>
   </div>
 </section>
 

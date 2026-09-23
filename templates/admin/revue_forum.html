@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Forum — Administration Massey Law Review{% endblock %}
+{% block content %}
+<h1>Massey Law Review — Forum</h1>
+<p style="margin-bottom:20px;">
+  <a href="{{ url_for('admin_revue_articles') }}" class="btn btn-ghost btn-sm">Articles</a>
+  <a href="{{ url_for('admin_revue_submissions') }}" class="btn btn-ghost btn-sm">Soumissions reçues</a>
+  <a href="{{ url_for('admin_users') }}" class="btn btn-ghost btn-sm">Utilisateurs</a>
+</p>
+
+<div class="card" style="margin-bottom:28px;">
+  <h3 style="margin-top:0;">Publier un billet sur le forum</h3>
+  <form method="POST" action="{{ url_for('admin_revue_forum_new') }}">
+    <div class="form-group">
+      <label for="title">Titre du billet</label>
+      <input type="text" id="title" name="title" required>
+    </div>
+    <div class="form-group">
+      <label for="body">Message</label>
+      <textarea id="body" name="body" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Publier</button>
+  </form>
+</div>
+
+<table>
+  <tr><th>Auteur</th><th>Titre</th><th>Publié le</th><th>Statut</th><th></th></tr>
+  {% for p in posts %}
+  <tr>
+    <td>{{ p['full_name'] }}</td>
+    <td>{{ p['title'] }}</td>
+    <td>{{ p['created_at'][:16] | replace('T',' ') }}</td>
+    <td><span class="status-pill {{ 'pending' if p['hidden'] else 'done' }}">{{ 'masqué' if p['hidden'] else 'visible' }}</span></td>
+    <td style="display:flex;gap:6px;">
+      {% if p['hidden'] %}
+        <form method="POST" action="{{ url_for('admin_revue_forum_unhide', post_id=p['id']) }}">
+          <button type="submit" class="btn btn-sm">Afficher</button>
+        </form>
+      {% else %}
+        <form method="POST" action="{{ url_for('admin_revue_forum_hide', post_id=p['id']) }}">
+          <button type="submit" class="btn btn-sm">Masquer</button>
+        </form>
+      {% endif %}
+      <form method="POST" action="{{ url_for('admin_revue_forum_delete', post_id=p['id']) }}" onsubmit="return confirm('Supprimer ce billet ?');">
+        <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="helptext">Aucun billet pour l'instant.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

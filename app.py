@@ -305,19 +305,67 @@ def revue_forum_hide(post_id):
     return redirect(url_for("revue_forum"))
 
 
-@app.route("/revue/references")
-def revue_references():
-    return render_template("revue/references.html")
+@app.route("/revue/forum/admin/nouveau", methods=["POST"])
+@roles_required("expert", "admin")
+def admin_revue_forum_new():
+    title = request.form.get("title", "").strip()
+    body = request.form.get("body", "").strip()
+    if not title or not body:
+        flash("Titre et message sont requis.", "error")
+        return redirect(url_for("admin_revue_forum"))
+    conn = dbm.get_db()
+    conn.execute(
+        "INSERT INTO review_forum_posts (user_id, title, body, created_at) VALUES (?,?,?,?)",
+        (current_user()["id"], title, body, dbm.now()),
+    )
+    conn.commit()
+    conn.close()
+    flash("Billet publié sur le forum.", "success")
+    return redirect(url_for("admin_revue_forum"))
 
 
-@app.route("/revue/a-propos")
-def revue_about():
-    return render_template("revue/about.html")
+@app.route("/revue/forum/admin")
+@roles_required("expert", "admin")
+def admin_revue_forum():
+    conn = dbm.get_db()
+    posts = conn.execute(
+        "SELECT p.*, u.full_name FROM review_forum_posts p JOIN users u ON u.id = p.user_id ORDER BY p.created_at DESC"
+    ).fetchall()
+    conn.close()
+    return render_template("admin/revue_forum.html", posts=posts)
 
 
-@app.route("/revue/medias")
-def revue_medias():
-    return render_template("revue/medias.html")
+@app.route("/revue/forum/admin/<int:post_id>/masquer", methods=["POST"])
+@roles_required("expert", "admin")
+def admin_revue_forum_hide(post_id):
+    conn = dbm.get_db()
+    conn.execute("UPDATE review_forum_posts SET hidden=1 WHERE id=?", (post_id,))
+    conn.commit()
+    conn.close()
+    flash("Billet masqué.", "success")
+    return redirect(url_for("admin_revue_forum"))
+
+
+@app.route("/revue/forum/admin/<int:post_id>/afficher", methods=["POST"])
+@roles_required("expert", "admin")
+def admin_revue_forum_unhide(post_id):
+    conn = dbm.get_db()
+    conn.execute("UPDATE review_forum_posts SET hidden=0 WHERE id=?", (post_id,))
+    conn.commit()
+    conn.close()
+    flash("Billet réaffiché.", "success")
+    return redirect(url_for("admin_revue_forum"))
+
+
+@app.route("/revue/forum/admin/<int:post_id>/supprimer", methods=["POST"])
+@roles_required("expert", "admin")
+def admin_revue_forum_delete(post_id):
+    conn = dbm.get_db()
+    conn.execute("DELETE FROM review_forum_posts WHERE id=?", (post_id,))
+    conn.commit()
+    conn.close()
+    flash("Billet supprimé.", "success")
+    return redirect(url_for("admin_revue_forum"))
 
 
 @app.route("/revue/soumissions", methods=["GET", "POST"])
