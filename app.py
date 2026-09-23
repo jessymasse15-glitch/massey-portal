@@ -16,7 +16,14 @@ import payments
 import signing
 
 APP_ROOT = os.path.dirname(__file__)
-UPLOAD_DIR = os.path.join(APP_ROOT, "static", "uploads")
+# En production (Render), DATA_DIR pointe vers le disque persistant unique
+# (un seul disque autorisé par service) ; les fichiers vivent alors sous
+# DATA_DIR/uploads plutôt que static/uploads. En local, ça retombe sur
+# static/uploads comme avant.
+if os.environ.get("DATA_DIR"):
+    UPLOAD_DIR = os.path.join(os.environ["DATA_DIR"], "uploads")
+else:
+    UPLOAD_DIR = os.path.join(APP_ROOT, "static", "uploads")
 ALLOWED_EXTENSIONS = {"pdf", "doc", "docx", "png", "jpg", "jpeg", "xls", "xlsx", "txt"}
 MAX_CONTENT_LENGTH = 15 * 1024 * 1024  # 15 Mo par fichier
 
