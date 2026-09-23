@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Espace client — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;">
+  <h1>{% if current_user['role'] in ('expert','admin') %}Tous les dossiers{% else %}Mes dossiers{% endif %}</h1>
+  <a href="{{ url_for('portal_new_dossier') }}" class="btn btn-primary">Nouveau dossier</a>
+</div>
+
+{% if dossiers %}
+<table>
+  <tr>
+    <th>#</th><th>Titre</th>
+    {% if current_user['role'] in ('expert','admin') %}<th>Client</th>{% endif %}
+    <th>Statut</th><th>Mise à jour</th><th></th>
+  </tr>
+  {% for d in dossiers %}
+  <tr>
+    <td>{{ d.id }}</td>
+    <td>{{ d.title }}</td>
+    {% if current_user['role'] in ('expert','admin') %}<td>{{ d.client_name }}</td>{% endif %}
+    <td><span class="status-pill">{{ status_labels.get(d.status, d.status) }}</span></td>
+    <td>{{ d.updated_at[:10] }}</td>
+    <td><a href="{{ url_for('portal_dossier', dossier_id=d.id) }}">Ouvrir →</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p style="color:var(--ink-soft);">Aucun dossier pour l'instant. <a href="{{ url_for('portal_new_dossier') }}">Créez-en un</a>.</p>
+{% endif %}
+{% endblock %}

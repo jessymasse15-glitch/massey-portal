@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Signer le document — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<h1>Signer « {{ doc.original_name }} »</h1>
+
+<div class="callout">
+  <strong>À lire avant de signer.</strong> Ceci est un mécanisme d'attestation interne à Massey Contracts &amp; Tax
+  (horodatage, empreinte du document, adresse IP), et non un service de signature électronique certifié tiers.
+  Sa valeur juridique dépend du droit applicable à votre opération.
+</div>
+
+<div class="card" style="max-width:560px;">
+  <table>
+    <tr><th>Document</th><td>{{ doc.original_name }}</td></tr>
+    <tr><th>Empreinte SHA-256 actuelle</th><td style="word-break:break-all;font-family:var(--mono);font-size:0.76rem;">{{ current_hash }}</td></tr>
+  </table>
+
+  <form method="post" style="margin-top:20px;">
+    <div class="form-group">
+      <label for="full_legal_name">Votre nom légal complet</label>
+      <input type="text" id="full_legal_name" name="full_legal_name" required>
+    </div>
+    <p style="font-size:0.86rem;color:var(--ink-soft);">{{ consent_text }}</p>
+    <label style="display:block;font-size:0.86rem;margin-bottom:8px;">
+      <input type="checkbox" name="consent_read" required style="width:auto;"> J'ai lu et compris ce document.
+    </label>
+    <label style="display:block;font-size:0.86rem;margin-bottom:16px;">
+      <input type="checkbox" name="consent_binding" required style="width:auto;"> Je consens à ce que ceci constitue ma signature.
+    </label>
+    <button type="submit" class="btn btn-primary">Signer le document</button>
+  </form>
+</div>
+{% endblock %}

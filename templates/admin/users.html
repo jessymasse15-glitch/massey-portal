@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Utilisateurs — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<h1>Utilisateurs</h1>
+<table>
+  <tr><th>Nom</th><th>Courriel</th><th>Rôle</th><th>Inscrit le</th><th></th></tr>
+  {% for u in users %}
+  <tr>
+    <td>{{ u.full_name }}</td>
+    <td>{{ u.email }}</td>
+    <td><span class="status-pill">{{ u.role }}</span></td>
+    <td>{{ u.created_at[:10] }}</td>
+    <td>
+      <form method="post" action="{{ url_for('admin_change_role', user_id=u.id) }}" style="display:flex;gap:6px;">
+        <select name="role">
+          <option value="client" {% if u.role=='client' %}selected{% endif %}>client</option>
+          <option value="expert" {% if u.role=='expert' %}selected{% endif %}>expert</option>
+          <option value="admin" {% if u.role=='admin' %}selected{% endif %}>admin</option>
+        </select>
+        <button type="submit" class="btn btn-sm">Appliquer</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+<p style="margin-top:20px;"><a href="{{ url_for('admin_activity') }}">Voir le journal d'activité →</a></p>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Prendre rendez-vous — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<h1>Quel est votre besoin ?</h1>
+<p style="color:var(--ink-soft);max-width:60ch;">Ce formulaire crée réellement un dossier dans notre plateforme. Si vous n'avez pas encore de compte, un accès à l'espace client vous sera généré automatiquement.</p>
+
+<form method="post" class="card" style="max-width:640px;">
+  <div class="grid-2">
+    <div class="form-group">
+      <label for="full_name">Nom complet</label>
+      <input type="text" id="full_name" name="full_name" required value="{{ form.get('full_name','') }}">
+    </div>
+    <div class="form-group">
+      <label for="email">Courriel</label>
+      <input type="email" id="email" name="email" required value="{{ form.get('email','') }}">
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="service_type">Type de service</label>
+    <select id="service_type" name="service_type">
+      {% for value, label in service_types %}
+        <option value="{{ value }}" {% if form.get('service_type')==value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="grid-2">
+    <div class="form-group">
+      <label for="pack">Pack pressenti</label>
+      <select id="pack" name="pack">
+        {% for p in packs %}<option value="{{ p }}" {% if form.get('pack')==p %}selected{% endif %}>{{ p }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="territory">Pays / territoires concernés</label>
+      <input type="text" id="territory" name="territory" placeholder="Ex. Haïti, Canada" value="{{ form.get('territory','') }}">
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="form-group">
+      <label for="value_estimate">Valeur approximative de l'opération</label>
+      <input type="text" id="value_estimate" name="value_estimate" placeholder="Ex. 25 000 $ USD" value="{{ form.get('value_estimate','') }}">
+    </div>
+    <div class="form-group">
+      <label for="urgency">Urgence</label>
+      <select id="urgency" name="urgency">
+        <option value="normale">Normale</option>
+        <option value="rapide">Rapide (moins de 2 semaines)</option>
+        <option value="urgente">Urgente (moins de 72h)</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="language">Langue de service</label>
+    <select id="language" name="language">
+      <option value="fr">Français</option>
+      <option value="en">English</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="description">Décrivez votre besoin</label>
+    <textarea id="description" name="description" required>{{ form.get('description','') }}</textarea>
+  </div>
+  <button type="submit" class="btn btn-primary">Envoyer ma demande</button>
+</form>
+
+<div class="callout">
+  Cette demande peut nécessiter une revue professionnelle. Massey ne formule aucun avis juridique ou fiscal final à partir de ce seul formulaire.
+</div>
+{% endblock %}

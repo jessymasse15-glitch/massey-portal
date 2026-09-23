@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Nouveau dossier — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<h1>Nouveau dossier</h1>
+<form method="post" class="card" style="max-width:640px;">
+  <div class="form-group">
+    <label for="service_type">Type de service</label>
+    <select id="service_type" name="service_type">
+      {% for value, label in service_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="grid-2">
+    <div class="form-group">
+      <label for="pack">Pack pressenti</label>
+      <select id="pack" name="pack">{% for p in packs %}<option value="{{ p }}">{{ p }}</option>{% endfor %}</select>
+    </div>
+    <div class="form-group">
+      <label for="territory">Pays / territoires concernés</label>
+      <input type="text" id="territory" name="territory">
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="form-group">
+      <label for="value_estimate">Valeur approximative</label>
+      <input type="text" id="value_estimate" name="value_estimate">
+    </div>
+    <div class="form-group">
+      <label for="urgency">Urgence</label>
+      <select id="urgency" name="urgency">
+        <option value="normale">Normale</option>
+        <option value="rapide">Rapide</option>
+        <option value="urgente">Urgente</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="description">Décrivez votre besoin</label>
+    <textarea id="description" name="description" required></textarea>
+  </div>
+  <button type="submit" class="btn btn-primary">Créer le dossier</button>
+</form>
+{% endblock %}

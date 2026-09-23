@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Massey Contracts & Tax — Ingénierie contractuelle, fiscale et transfrontalière{% endblock %}
+{% block content %}
+<section style="padding:40px 0 20px;">
+  <h1 style="font-size:2.2rem;margin-bottom:6px;">Massey Contracts &amp; Tax</h1>
+  <p style="color:var(--ink-soft);font-size:1.1rem;max-width:50ch;">Contrats commerciaux, fiscalité des affaires et transactions transfrontalières.</p>
+  <p style="font-family:var(--serif);font-style:italic;color:var(--oxblood);max-width:56ch;border-left:2px solid var(--oxblood);padding-left:16px;">Massey Contracts &amp; Tax transforme les risques contractuels et fiscaux en décisions d'affaires plus claires, mieux négociées et mieux sécurisées.</p>
+  <div style="display:flex;gap:12px;margin-top:20px;">
+    <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
+    {% if current_user %}<a href="{{ url_for('portal_dashboard') }}" class="btn btn-ghost">Mon espace client</a>{% else %}<a href="{{ url_for('register') }}" class="btn btn-ghost">Créer un compte</a>{% endif %}
+  </div>
+</section>
+
+<section id="services" style="padding:32px 0;border-top:1px solid var(--line);">
+  <h2>Services</h2>
+  <div class="grid-2">
+    <div class="card"><h3 style="margin-top:0;">Ingénierie contractuelle</h3><p>Rédaction, révision, négociation, audit de portefeuille, standardisation documentaire, gestion des obligations, prévention des litiges.</p></div>
+    <div class="card"><h3 style="margin-top:0;">Fiscalité des affaires</h3><p>Diagnostic fiscal précontractuel, revue fiscale de contrat, structuration fiscale licite, documentation, coordination professionnelle.</p></div>
+    <div class="card"><h3 style="margin-top:0;">Transactions internationales</h3><p>Contrats bilingues, droit applicable, arbitrage, import-export, partenariats, investissements transfrontaliers.</p></div>
+    <div class="card"><h3 style="margin-top:0;">Espace client sécurisé</h3><p>Suivi de dossier en temps réel, dépôt de documents, messagerie sécurisée, échéancier — <a href="{{ url_for('intake') }}">ouvrez un dossier</a> pour y accéder.</p></div>
+  </div>
+</section>
+
+<section id="tarifs" style="padding:32px 0;border-top:1px solid var(--line);">
+  <h2>Packs par clientèle</h2>
+  <div class="grid-2">
+    <div class="card"><strong>Massey Start</strong><p>Consultation de cadrage, contrat simple, une ronde de corrections.</p></div>
+    <div class="card"><strong>Massey Review</strong><p>Analyse d'un contrat existant, tableau des risques, version annotée.</p></div>
+    <div class="card"><strong>Massey Business</strong><p>Contrat sur mesure, analyse fiscale de base, négociation limitée.</p></div>
+    <div class="card"><strong>Massey CrossBorder</strong><p>Contrat bilingue, enjeux transfrontaliers, coordination d'experts.</p></div>
+    <div class="card"><strong>Massey Counsel</strong><p>Abonnement mensuel : consultations, révisions, suivi des échéances.</p></div>
+    <div class="card"><strong>Massey Due Diligence</strong><p>Audit documentaire préalable à un investissement ou une acquisition.</p></div>
+  </div>
+</section>
+
+<section style="padding:32px 0;border-top:1px solid var(--line);">
+  <div class="callout">
+    <strong>Gouvernance.</strong> L'intelligence artificielle réduit les tâches répétitives mais reste un assistant contrôlé : aucun avis juridique ou fiscal définitif n'est transmis sans validation humaine, aucun choix automatique de droit applicable, aucune analyse fiscale définitive fondée sur un simple formulaire.
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Certificat de signature — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<h1>Certificat de signature</h1>
+<div class="card" style="max-width:640px;">
+  <p><strong>Document :</strong> {{ doc.original_name }}</p>
+  <p><strong>Empreinte SHA-256 du document signé :</strong><br><code style="word-break:break-all;font-size:0.76rem;">{{ doc.sha256 }}</code></p>
+  <table style="margin-top:16px;">
+    <tr><th>Signataire</th><th>Courriel</th><th>Date</th><th>Adresse IP</th></tr>
+    {% for s in sigs %}
+    <tr>
+      <td>{{ s.full_legal_name }}</td>
+      <td>{{ s.signer_email }}</td>
+      <td>{{ s.created_at }}</td>
+      <td>{{ s.ip_address }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+<div class="callout">
+  Cette page fait office de piste d'audit interne. Elle atteste que la ou les personnes ci-dessus ont
+  consulté ce document précis (identifié par son empreinte SHA-256) et ont explicitement consenti à le signer
+  à la date indiquée. Ce n'est pas un certificat émis par un tiers de confiance externe.
+</div>
+{% endblock %}

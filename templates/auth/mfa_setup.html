@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Activer la vérification en deux étapes — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<h1>Activer l'authentification à deux facteurs</h1>
+{% if mandatory %}
+<div class="callout">Cette étape est obligatoire pour les comptes expert et admin avant d'accéder au reste de la plateforme.</div>
+{% endif %}
+<div class="card" style="max-width:480px;">
+  <p>1. Scannez ce code avec Google Authenticator, Authy, 1Password ou une application équivalente :</p>
+  {% if qr_available %}
+    <img src="{{ url_for('mfa_qr') }}" alt="QR code MFA" style="border:1px solid var(--line-strong);width:220px;height:220px;">
+  {% else %}
+    <div class="callout">QR code indisponible sur ce serveur (paquet <code>qrcode</code> non installé — voir requirements.txt). Utilisez la clé manuelle ci-dessous.</div>
+  {% endif %}
+  <p class="helptext">Ou entrez cette clé manuellement dans votre application : <code>{{ secret }}</code></p>
+  <form method="post" style="margin-top:20px;">
+    <div class="form-group">
+      <label for="code">2. Entrez le code à 6 chiffres affiché par l'application</label>
+      <input type="text" id="code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Activer</button>
+  </form>
+</div>
+<p class="helptext">Le QR code est généré via un service externe (api.qrserver.com) à partir de l'URI otpauth — aucune donnée de compte n'y est envoyée au-delà du contenu du QR lui-même.</p>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Dossier #{{ dossier.id }} — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+  <div>
+    <span class="tag">DOSSIER #{{ dossier.id }}</span>
+    <h1 style="margin:4px 0;">{{ dossier.title }}</h1>
+    <span class="status-pill">{{ status_labels.get(dossier.status, dossier.status) }}</span>
+    {% if is_staff %}<span class="helptext" style="margin-left:8px;">Client : {{ dossier.client_name }} ({{ dossier.client_email }})</span>{% endif %}
+  </div>
+</div>
+
+<div class="grid-2" style="margin-top:24px;">
+  <div>
+    <div class="card">
+      <h3 style="margin-top:0;">Résumé de la transaction</h3>
+      <table>
+        <tr><th>Territoire</th><td>{{ dossier.territory or '—' }}</td></tr>
+        <tr><th>Valeur estimée</th><td>{{ dossier.value_estimate or '—' }}</td></tr>
+        <tr><th>Urgence</th><td>{{ dossier.urgency or '—' }}</td></tr>
+        <tr><th>Pack</th><td>{{ dossier.pack or '—' }}</td></tr>
+        <tr><th>Conflit d'intérêts vérifié</th><td>
+          {% if dossier.conflict_checked %}<span class="status-pill done">Vérifié</span>{% else %}<span class="status-pill pending">À vérifier</span>{% endif %}
+          {% if is_staff %}
+          <form method="post" action="{{ url_for('toggle_conflict_check', dossier_id=dossier.id) }}" style="display:inline;">
+            <button class="btn btn-sm" type="submit">Basculer</button>
+          </form>
+          {% endif %}
+        </td></tr>
+      </table>
+      <p style="margin-top:12px;">{{ dossier.summary }}</p>
+    </div>
+
+    {% if is_staff %}
+    <div class="card">
+      <h3 style="margin-top:0;">Changer le statut (interne)</h3>
+      <form method="post" action="{{ url_for('change_status', dossier_id=dossier.id) }}">
+        <div class="form-group">
+          <label for="status">Nouveau statut</label>
+          <select id="status" name="status">
+            {% for value, label in status_flow %}
+              <option value="{{ value }}" {% if dossier.status==value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="assigned_to">Responsable du dossier</label>
+          <select id="assigned_to" name="assigned_to">
+            <option value="">— Non assigné —</option>
+            {% for s in staff %}<option value="{{ s.id }}" {% if dossier.assigned_to==s.id %}selected{% endif %}>{{ s.full_name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="note">Note (journal de statut)</label>
+          <input type="text" id="note" name="note" placeholder="Optionnel">
+        </div>
+        <button type="submit" class="btn btn-primary">Mettre à jour</button>
+      </form>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <h3 style="margin-top:0;">Documents</h3>
+      {% for doc in documents %}
+        <div class="doc-row">
+          <span>
+            {{ doc.original_name }} <span class="tag">[{{ doc.category }}]</span>
+            {% if doc.is_final %}<span class="status-pill done">finale</span>{% endif %}
+            {% if doc.locked %}<span class="status-pill">signée</span>{% endif %}
+          </span>
+          <span style="display:flex;gap:6px;align-items:center;">
+            <span class="helptext">{{ (doc.size_bytes/1024)|round(1) }} Ko — {{ doc.uploader }}</span>
+            <a href="{{ url_for('download_document', dossier_id=dossier.id, doc_id=doc.id) }}" class="btn btn-sm">Télécharger</a>
+            {% if is_staff and not doc.is_final %}
+            <form method="post" action="{{ url_for('mark_document_final', dossier_id=dossier.id, doc_id=doc.id) }}" style="display:inline;">
+              <button type="submit" class="btn btn-sm">Marquer finale</button>
+            </form>
+            {% endif %}
+            {% if doc.is_final and not doc.locked %}
+            <a href="{{ url_for('sign_document', dossier_id=dossier.id, doc_id=doc.id) }}" class="btn btn-sm btn-primary">Signer</a>
+            {% endif %}
+            {% if doc.locked %}
+            <a href="{{ url_for('signature_certificate', dossier_id=dossier.id, doc_id=doc.id) }}" class="btn btn-sm">Certificat</a>
+            {% endif %}
+          </span>
+        </div>
+      {% else %}
+        <p class="helptext">Aucun document téléversé.</p>
+      {% endfor %}
+      <form method="post" action="{{ url_for('upload_document', dossier_id=dossier.id) }}" enctype="multipart/form-data" style="margin-top:16px;">
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="file">Fichier (pdf, doc, xls, image — 15 Mo max)</label>
+            <input type="file" id="file" name="file" required>
+          </div>
+          <div class="form-group">
+            <label for="category">Catégorie</label>
+            <select id="category" name="category">
+              {% for c in doc_categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Téléverser</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Tâches</h3>
+      {% for t in tasks %}
+        <div class="task-row {% if t.done %}done{% endif %}">
+          <form method="post" action="{{ url_for('add_or_toggle_task', dossier_id=dossier.id) }}">
+            <input type="hidden" name="action" value="toggle">
+            <input type="hidden" name="task_id" value="{{ t.id }}">
+            <button type="submit" class="btn btn-sm" {% if not is_staff and t.owner!='client' %}disabled{% endif %}>{% if t.done %}✓{% else %}○{% endif %}</button>
+          </form>
+          <span class="desc">{{ t.description }}</span>
+          <span class="tag">({{ t.owner }})</span>
+        </div>
+      {% else %}
+        <p class="helptext">Aucune tâche.</p>
+      {% endfor %}
+      {% if is_staff %}
+      <form method="post" action="{{ url_for('add_or_toggle_task', dossier_id=dossier.id) }}" style="margin-top:14px;display:flex;gap:8px;">
+        <input type="hidden" name="action" value="create">
+        <input type="text" name="description" placeholder="Nouvelle tâche" required style="flex:1;">
+        <select name="owner"><option value="massey">Massey</option><option value="client">Client</option></select>
+        <button type="submit" class="btn btn-sm">Ajouter</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h3 style="margin-top:0;">Fil de discussion</h3>
+      <div style="max-height:400px;overflow-y:auto;">
+        {% for m in messages %}
+          <div class="msg {% if m.is_internal %}internal{% endif %}">
+            <div class="meta">{{ m.sender_name }} ({{ m.sender_role }}) — {{ m.created_at[:16] }}{% if m.is_internal %} — interne{% endif %}</div>
+            {{ m.body }}
+          </div>
+        {% else %}
+          <p class="helptext">Aucun message.</p>
+        {% endfor %}
+      </div>
+      <form method="post" action="{{ url_for('post_message', dossier_id=dossier.id) }}" style="margin-top:14px;">
+        <div class="form-group">
+          <textarea name="body" placeholder="Écrire un message..." required></textarea>
+        </div>
+        {% if is_staff %}
+        <label style="font-size:0.82rem;"><input type="checkbox" name="is_internal" style="width:auto;"> Note interne (invisible au client)</label>
+        {% endif %}
+        <button type="submit" class="btn btn-primary" style="margin-top:8px;">Envoyer</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Paiements</h3>
+      {% if not payments_configured %}
+        <div class="callout">Paiement en ligne non configuré (clés Stripe manquantes côté serveur — voir README).</div>
+      {% endif %}
+      {% for p in payment_rows %}
+        <div class="task-row">
+          <span class="tag">{{ p.created_at[:16] }}</span>
+          <span>{{ (p.amount_cents/100)|round(2) }} {{ p.currency|upper }} — {{ payment_purposes_map.get(p.purpose, p.purpose) }}</span>
+          <span class="status-pill {% if p.status=='paid' %}done{% elif p.status=='pending' %}pending{% endif %}">{{ p.status }}</span>
+        </div>
+      {% else %}
+        <p class="helptext">Aucun paiement.</p>
+      {% endfor %}
+      <form method="post" action="{{ url_for('create_payment', dossier_id=dossier.id) }}" style="margin-top:14px;">
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="purpose">Motif</label>
+            <select id="purpose" name="purpose">
+              {% for value, label in payment_purposes %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="amount">Montant (CAD)</label>
+            <input type="number" id="amount" name="amount" step="0.01" min="0.5" required>
+          </div>
+        </div>
+        <input type="hidden" name="currency" value="cad">
+        <button type="submit" class="btn btn-primary" {% if not payments_configured %}disabled{% endif %}>Payer en ligne</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Historique de statut</h3>
+      {% for s in status_log %}
+        <div class="task-row">
+          <span class="tag">{{ s.created_at[:16] }}</span>
+          <span>{{ status_labels.get(s.status, s.status) }} — {{ s.changed_by_name }}{% if s.note %} · {{ s.note }}{% endif %}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

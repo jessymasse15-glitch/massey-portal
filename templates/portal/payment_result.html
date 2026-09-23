@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Paiement — Massey Contracts & Tax{% endblock %}
+{% block content %}
+{% if ok %}
+  <h1>Paiement en cours de confirmation</h1>
+  <p style="color:var(--ink-soft);">Merci. Votre paiement est en cours de traitement par notre fournisseur. Le statut du dossier sera mis à jour automatiquement dès confirmation (généralement en quelques secondes).</p>
+{% else %}
+  <h1>Paiement annulé</h1>
+  <p style="color:var(--ink-soft);">Le paiement a été annulé. Aucun montant n'a été prélevé.</p>
+{% endif %}
+{% if payment %}
+<div class="card" style="max-width:420px;">
+  <table>
+    <tr><th>Montant</th><td>{{ (payment.amount_cents/100)|round(2) }} {{ payment.currency|upper }}</td></tr>
+    <tr><th>Statut</th><td><span class="status-pill">{{ payment.status }}</span></td></tr>
+  </table>
+</div>
+{% endif %}
+<a href="{{ url_for('portal_dossier', dossier_id=dossier.id) }}" class="btn btn-primary">Retour au dossier</a>
+{% endblock %}

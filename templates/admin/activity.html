@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Journal d'activité — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<h1>Journal d'activité</h1>
+<table>
+  <tr><th>Date</th><th>Utilisateur</th><th>Action</th><th>Détail</th></tr>
+  {% for l in logs %}
+  <tr>
+    <td>{{ l.created_at[:19] }}</td>
+    <td>{{ l.full_name or '—' }} {% if l.email %}({{ l.email }}){% endif %}</td>
+    <td>{{ l.action }}</td>
+    <td>{{ l.detail }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

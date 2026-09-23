@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Créer un compte — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<h1>Créer un compte client</h1>
+<form method="post" class="card" style="max-width:420px;">
+  <div class="form-group">
+    <label for="full_name">Nom complet</label>
+    <input type="text" id="full_name" name="full_name" required value="{{ form.get('full_name','') }}">
+  </div>
+  <div class="form-group">
+    <label for="email">Courriel</label>
+    <input type="email" id="email" name="email" required value="{{ form.get('email','') }}">
+  </div>
+  <div class="form-group">
+    <label for="password">Mot de passe (8 caractères minimum)</label>
+    <input type="password" id="password" name="password" required minlength="8">
+  </div>
+  <button type="submit" class="btn btn-primary">Créer mon compte</button>
+</form>
+<p class="helptext">Déjà un compte ? <a href="{{ url_for('login') }}">Connectez-vous</a>.</p>
+{% endblock %}

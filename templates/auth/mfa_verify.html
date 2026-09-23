@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Vérification en deux étapes — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<h1>Vérification en deux étapes</h1>
+<p style="color:var(--ink-soft);">Entrez le code à 6 chiffres généré par votre application d'authentification.</p>
+<form method="post" class="card" style="max-width:340px;">
+  <div class="form-group">
+    <label for="code">Code</label>
+    <input type="text" id="code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" autofocus required>
+  </div>
+  <button type="submit" class="btn btn-primary">Vérifier</button>
+</form>
+{% endblock %}

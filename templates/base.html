@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Massey Contracts & Tax{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header class="site">
+  <div class="wrap nav-row">
+    <a href="{{ url_for('home') }}" class="brand" style="text-decoration:none;color:inherit;">
+      Massey Contracts &amp; Tax
+      <small>Ingénierie contractuelle &amp; fiscale</small>
+    </a>
+    <nav class="links">
+      <a href="{{ url_for('home') }}#services">Services</a>
+      <a href="{{ url_for('home') }}#tarifs">Tarifs</a>
+      {% if current_user %}
+        <a href="{{ url_for('portal_dashboard') }}">Espace client</a>
+        {% if current_user['role'] == 'admin' %}<a href="{{ url_for('admin_users') }}">Utilisateurs</a>{% endif %}
+        <a href="{{ url_for('logout') }}">Déconnexion</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">Connexion</a>
+      {% endif %}
+    </nav>
+    {% if not current_user %}
+      <a href="{{ url_for('intake') }}" class="btn btn-primary">Prendre rendez-vous</a>
+    {% endif %}
+  </div>
+</header>
+<main>
+  <div class="wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+</main>
+<footer style="border-top:1px solid var(--line); padding:24px 0; font-size:0.78rem; color:var(--ink-faint);">
+  <div class="wrap">
+    © {{ 2026 }} Massey Contracts &amp; Tax — Les informations de ce site sont générales et ne constituent pas un avis juridique ou fiscal. Un mandat professionnel naît uniquement d'une lettre de mission acceptée.
+  </div>
+</footer>
+</body>
+</html>
