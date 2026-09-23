@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="{% block meta_description %}Massey Contracts & Tax — ingénierie contractuelle, fiscalité des affaires et sécurisation des transactions transfrontalières pour le marché haïtien.{% endblock %}">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="{{ request.url_root.rstrip('/') }}{{ request.path }}">
+<meta property="og:title" content="{% block og_title %}Massey Contracts & Tax{% endblock %}">
+<meta property="og:description" content="{% block og_description %}Contrats commerciaux, fiscalité des affaires et transactions transfrontalières — droit haïtien.{% endblock %}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ request.url_root.rstrip('/') }}{{ request.path }}">
+<title>{% block title %}Massey Contracts & Tax{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header class="site">
+  <div class="wrap nav-row">
+    <a href="{{ url_for('home') }}" class="brand" style="text-decoration:none;color:inherit;">
+      <span class="mark">M</span>
+      <span>Massey Contracts &amp; Tax<small>Ingénierie contractuelle &amp; fiscale</small></span>
+    </a>
+    <nav class="links">
+      <a href="{{ url_for('home') }}#piliers">Expertise</a>
+      <a href="{{ url_for('home') }}#tarifs">Tarifs</a>
+      <a href="{{ url_for('home') }}#gouvernance">Gouvernance</a>
+      {% if current_user %}
+        <a href="{{ url_for('portal_dashboard') }}">Espace client</a>
+        {% if current_user['role'] == 'admin' %}<a href="{{ url_for('admin_users') }}">Utilisateurs</a>{% endif %}
+        <a href="{{ url_for('logout') }}">Déconnexion</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">Connexion</a>
+      {% endif %}
+    </nav>
+    {% if not current_user %}
+      <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
+    {% endif %}
+  </div>
+</header>
+<main>
+  <div class="wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+</main>
+<footer class="site">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <h4>Massey Contracts &amp; Tax</h4>
+        <p>Ingénierie contractuelle, fiscalité des affaires et sécurisation des transactions transfrontalières pour le marché haïtien.</p>
+      </div>
+      <div>
+        <h4>Cabinet</h4>
+        <a href="{{ url_for('home') }}#piliers">Expertise</a>
+        <a href="{{ url_for('home') }}#tarifs">Tarifs</a>
+        <a href="{{ url_for('home') }}#gouvernance">Gouvernance IA</a>
+      </div>
+      <div>
+        <h4>Accès</h4>
+        <a href="{{ url_for('intake') }}">Ouvrir un dossier</a>
+        <a href="{{ url_for('login') }}">Connexion</a>
+        <a href="{{ url_for('register') }}">Créer un compte</a>
+      </div>
+      <div>
+        <h4>Sécurité</h4>
+        <div class="trust-row" style="flex-direction:column;gap:10px;">
+          <span>Authentification à deux facteurs</span>
+          <span>Documents horodatés et hachés</span>
+          <span>Accès strictement cloisonné par dossier</span>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Massey Contracts &amp; Tax — Les informations de ce site sont générales et ne constituent pas un avis juridique ou fiscal.</span>
+      <span>Un mandat professionnel naît uniquement d'une lettre de mission acceptée.</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
