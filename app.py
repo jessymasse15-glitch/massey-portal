@@ -124,11 +124,6 @@ def tarifs():
     return render_template("marketing/tarifs.html")
 
 
-@app.route("/gouvernance")
-def gouvernance():
-    return redirect(url_for("home") + "#gouvernance")
-
-
 @app.route("/espace-client")
 def espace_client_marketing():
     return render_template("marketing/espace_client.html")
