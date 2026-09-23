@@ -26,7 +26,6 @@
       <a href="{{ url_for('about') }}">À propos</a>
       <a href="{{ url_for('expertise') }}">Expertise</a>
       <a href="{{ url_for('tarifs') }}">Tarifs</a>
-      <a href="{{ url_for('home') }}#gouvernance">Gouvernance</a>
       {% if current_user %}
         <a href="{{ url_for('portal_dashboard') }}">Espace client</a>
         {% if current_user['role'] == 'admin' %}<a href="{{ url_for('admin_users') }}">Utilisateurs</a>{% endif %}
@@ -61,7 +60,7 @@
         <p>LegalTech d'ingénierie juridique, fiscale et transactionnelle.</p>
       </div>
       <div>
-        <h4>Cabinet</h4>
+        <h4>LegalTech</h4>
         <a href="{{ url_for('about') }}">À propos</a>
         <a href="{{ url_for('expertise') }}">Expertise</a>
         <a href="{{ url_for('tarifs') }}">Tarifs</a>
