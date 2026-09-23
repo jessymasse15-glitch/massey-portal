@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Massey Law Review — La revue juridique de Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Massey Law Review : revue juridique en ligne consacrée à l'ingénierie contractuelle, à la fiscalité des affaires et aux transactions transfrontalières sur le marché haïtien.{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="eyebrow">Massey Law Review</div>
+  <h1>Une revue juridique au service de la pratique des affaires</h1>
+  <p class="lede">Massey Law Review publie des analyses, études de cas et notes pratiques sur le droit des contrats, la fiscalité des affaires et les transactions transfrontalières, avec une attention particulière au marché haïtien et à ses zones d'échange.</p>
+</section>
+
+{% include "revue/_subnav.html" %}
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="callout" style="max-width:74ch;">
+    Massey Law Review éclaire les enjeux juridiques, fiscaux et transactionnels auxquels font face les entreprises, investisseurs et praticiens du droit en Haïti et dans ses relations d'affaires internationales — avec le souci constant de relier la doctrine à la pratique.
+  </div>
+
+  <div class="newsletter-box" style="margin-top:32px;">
+    <div style="flex:1 1 260px;">
+      <h4 style="margin:0 0 4px;font-family:var(--serif);font-weight:500;">Recevoir les nouvelles publications</h4>
+      <p style="margin:0;color:var(--ink-faint);font-size:0.86rem;">Un courriel à chaque nouvelle parution — aucun spam.</p>
+    </div>
+    <form method="POST" action="{{ url_for('revue_newsletter_signup') }}" style="display:flex;gap:10px;flex:1 1 320px;">
+      <input type="email" name="email" placeholder="Votre courriel" required>
+      <button type="submit" class="btn btn-primary">S'inscrire</button>
+    </form>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head">
+    <div>
+      <div class="eyebrow">Publications</div>
+      <h2>Articles récents</h2>
+    </div>
+    <a href="{{ url_for('revue_articles') }}" class="btn btn-ghost btn-sm">Tous les articles</a>
+  </div>
+  {% if articles %}
+    {% for a in articles %}
+      <div class="article-row">
+        <div class="meta">{{ a['issue_label'] or 'Massey Law Review' }} — {{ (a['published_at'] or a['created_at'])[:10] }}</div>
+        <h3><a href="{{ url_for('revue_article_detail', slug=a['slug']) }}">{{ a['title'] }}</a></h3>
+        <p>{{ a['author_name'] }}{% if a['abstract'] %} — {{ a['abstract'][:160] }}{% if a['abstract']|length > 160 %}…{% endif %}{% endif %}</p>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="helptext">Aucun article publié pour l'instant — le premier numéro est en préparation.</p>
+  {% endif %}
+</section>
+
+<section class="block">
+  <div class="block-head">
+    <div>
+      <div class="eyebrow">Communauté</div>
+      <h2>Du forum</h2>
+    </div>
+    <a href="{{ url_for('revue_forum') }}" class="btn btn-ghost btn-sm">Voir le forum</a>
+  </div>
+  {% if posts %}
+    {% for p in posts %}
+      <div class="forum-post">
+        <div class="meta">{{ p['full_name'] }} — {{ p['created_at'][:10] }}</div>
+        <h4>{{ p['title'] }}</h4>
+        <p>{{ p['body'][:220] }}{% if p['body']|length > 220 %}…{% endif %}</p>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="helptext">Aucune discussion pour l'instant — soyez le premier à lancer un sujet.</p>
+  {% endif %}
+</section>
+{% endblock %}

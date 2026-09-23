@@ -1,6 +1,8 @@
 import os
+import re
 import secrets
 import functools
+import unicodedata
 from datetime import datetime
 
 from flask import (
@@ -144,11 +146,298 @@ def robots_txt():
 
 @app.route("/sitemap.xml")
 def sitemap_xml():
-    pages = ["/", "/a-propos", "/expertise", "/tarifs", "/espace-client", "/rendez-vous", "/connexion", "/inscription"]
+    pages = [
+        "/", "/a-propos", "/expertise", "/tarifs", "/espace-client", "/rendez-vous", "/connexion", "/inscription",
+        "/revue", "/revue/articles", "/revue/forum", "/revue/references", "/revue/a-propos",
+        "/revue/soumissions", "/revue/abonnement", "/revue/medias",
+    ]
     root = request.url_root.rstrip("/")
     urls = "".join(f"<url><loc>{root}{p}</loc></url>" for p in pages)
     xml = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'
     return Response(xml, mimetype="application/xml")
+
+
+# ---------------------------------------------------------------------------
+# Massey Law Review — revue juridique de la LegalTech
+# ---------------------------------------------------------------------------
+
+def _slugify(text):
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    text = re.sub(r"[^a-zA-Z0-9]+", "-", text).strip("-").lower()
+    return text or secrets.token_hex(4)
+
+
+@app.route("/revue")
+def revue_home():
+    conn = dbm.get_db()
+    articles = conn.execute(
+        "SELECT * FROM review_articles WHERE published=1 ORDER BY published_at DESC LIMIT 3"
+    ).fetchall()
+    posts = conn.execute(
+        "SELECT p.*, u.full_name FROM review_forum_posts p JOIN users u ON u.id=p.user_id "
+        "WHERE p.hidden=0 ORDER BY p.created_at DESC LIMIT 3"
+    ).fetchall()
+    conn.close()
+    return render_template("revue/home.html", articles=articles, posts=posts)
+
+
+@app.route("/revue/infolettre", methods=["POST"])
+def revue_newsletter_signup():
+    email = request.form.get("email", "").strip().lower()
+    if email and "@" in email:
+        conn = dbm.get_db()
+        try:
+            conn.execute(
+                "INSERT INTO review_subscribers (email, created_at) VALUES (?,?)",
+                (email, dbm.now()),
+            )
+            conn.commit()
+            flash("Inscription confirmée — vous recevrez les nouvelles publications par courriel.", "success")
+        except Exception:
+            flash("Cette adresse est déjà inscrite.", "error")
+        conn.close()
+    else:
+        flash("Adresse courriel invalide.", "error")
+    return redirect(request.referrer or url_for("revue_home"))
+
+
+@app.route("/revue/articles")
+def revue_articles():
+    conn = dbm.get_db()
+    articles = conn.execute(
+        "SELECT * FROM review_articles WHERE published=1 ORDER BY published_at DESC"
+    ).fetchall()
+    conn.close()
+    return render_template("revue/articles.html", articles=articles)
+
+
+@app.route("/revue/articles/<slug>")
+def revue_article_detail(slug):
+    conn = dbm.get_db()
+    article = conn.execute(
+        "SELECT * FROM review_articles WHERE slug=? AND published=1", (slug,)
+    ).fetchone()
+    conn.close()
+    if article is None:
+        abort(404)
+    return render_template("revue/article_detail.html", article=article)
+
+
+@app.route("/revue/articles/<slug>/pdf")
+def revue_article_pdf(slug):
+    conn = dbm.get_db()
+    article = conn.execute(
+        "SELECT * FROM review_articles WHERE slug=? AND published=1", (slug,)
+    ).fetchone()
+    conn.close()
+    if article is None or not article["pdf_stored_name"]:
+        abort(404)
+    return send_from_directory(
+        os.path.join(UPLOAD_DIR, "revue", "articles"), article["pdf_stored_name"],
+        as_attachment=True, download_name=article["pdf_original_name"] or f"{slug}.pdf",
+    )
+
+
+@app.route("/revue/rss.xml")
+def revue_rss():
+    conn = dbm.get_db()
+    articles = conn.execute(
+        "SELECT * FROM review_articles WHERE published=1 ORDER BY published_at DESC LIMIT 30"
+    ).fetchall()
+    conn.close()
+    root = request.url_root.rstrip("/")
+    items = "".join(
+        f"<item><title>{a['title']}</title><link>{root}/revue/articles/{a['slug']}</link>"
+        f"<guid>{root}/revue/articles/{a['slug']}</guid>"
+        f"<pubDate>{a['published_at'] or a['created_at']}</pubDate>"
+        f"<description><![CDATA[{a['abstract'] or ''}]]></description></item>"
+        for a in articles
+    )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>'
+        f"<title>Massey Law Review</title><link>{root}/revue</link>"
+        "<description>Revue juridique de Massey Contracts &amp; Tax</description>"
+        f"{items}</channel></rss>"
+    )
+    return Response(xml, mimetype="application/rss+xml")
+
+
+@app.route("/revue/forum")
+def revue_forum():
+    conn = dbm.get_db()
+    posts = conn.execute(
+        "SELECT p.*, u.full_name FROM review_forum_posts p JOIN users u ON u.id=p.user_id "
+        "WHERE p.hidden=0 ORDER BY p.created_at DESC"
+    ).fetchall()
+    conn.close()
+    return render_template("revue/forum.html", posts=posts)
+
+
+@app.route("/revue/forum/nouveau", methods=["POST"])
+@login_required
+def revue_forum_post():
+    u = current_user()
+    title = request.form.get("title", "").strip()
+    body = request.form.get("body", "").strip()
+    if title and body:
+        conn = dbm.get_db()
+        conn.execute(
+            "INSERT INTO review_forum_posts (user_id, title, body, created_at) VALUES (?,?,?,?)",
+            (u["id"], title, body, dbm.now()),
+        )
+        conn.commit()
+        conn.close()
+        dbm.log_activity(u["id"], "revue_forum_post", title)
+        flash("Billet publié sur le forum.", "success")
+    else:
+        flash("Titre et message requis.", "error")
+    return redirect(url_for("revue_forum"))
+
+
+@app.route("/revue/forum/<int:post_id>/masquer", methods=["POST"])
+@roles_required("expert", "admin")
+def revue_forum_hide(post_id):
+    conn = dbm.get_db()
+    conn.execute("UPDATE review_forum_posts SET hidden=1 WHERE id=?", (post_id,))
+    conn.commit()
+    conn.close()
+    flash("Billet masqué.", "success")
+    return redirect(url_for("revue_forum"))
+
+
+@app.route("/revue/references")
+def revue_references():
+    return render_template("revue/references.html")
+
+
+@app.route("/revue/a-propos")
+def revue_about():
+    return render_template("revue/about.html")
+
+
+@app.route("/revue/medias")
+def revue_medias():
+    return render_template("revue/medias.html")
+
+
+@app.route("/revue/soumissions", methods=["GET", "POST"])
+def revue_submissions():
+    if request.method == "POST":
+        author_name = request.form.get("author_name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        title = request.form.get("title", "").strip()
+        abstract = request.form.get("abstract", "").strip()
+        file = request.files.get("file")
+
+        if not (author_name and email and title and file and file.filename):
+            flash("Merci de remplir tous les champs obligatoires et de joindre un fichier.", "error")
+            return redirect(url_for("revue_submissions"))
+        if not allowed_file(file.filename):
+            flash("Type de fichier non autorisé (formats acceptés : pdf, doc, docx).", "error")
+            return redirect(url_for("revue_submissions"))
+
+        original_name = secure_filename(file.filename)
+        ext = original_name.rsplit(".", 1)[1].lower()
+        stored_name = f"{secrets.token_hex(16)}.{ext}"
+        sub_dir = os.path.join(UPLOAD_DIR, "revue", "soumissions")
+        os.makedirs(sub_dir, exist_ok=True)
+        file.save(os.path.join(sub_dir, stored_name))
+
+        u = current_user()
+        conn = dbm.get_db()
+        conn.execute(
+            "INSERT INTO review_submissions (user_id, author_name, email, title, abstract, stored_name, original_name, created_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            (u["id"] if u else None, author_name, email, title, abstract, stored_name, original_name, dbm.now()),
+        )
+        conn.commit()
+        conn.close()
+        flash("Votre soumission a été reçue. Le comité éditorial vous contactera à l'adresse fournie.", "success")
+        return redirect(url_for("revue_submissions"))
+
+    return render_template("revue/submissions.html")
+
+
+@app.route("/revue/abonnement")
+def revue_subscription():
+    u = current_user()
+    active = None
+    if u:
+        conn = dbm.get_db()
+        active = conn.execute(
+            "SELECT * FROM review_subscriptions WHERE user_id=? AND status='paid' ORDER BY paid_at DESC LIMIT 1",
+            (u["id"],),
+        ).fetchone()
+        conn.close()
+    return render_template(
+        "revue/subscription.html", plans=dbm.REVIEW_PLANS, active=active, plan_labels=dbm.REVIEW_PLAN_LABELS
+    )
+
+
+@app.route("/revue/abonnement/nouveau", methods=["POST"])
+@login_required
+def revue_subscription_new():
+    u = current_user()
+    plan = request.form.get("plan", "lecteur")
+    plan_info = dict((p[0], p) for p in dbm.REVIEW_PLANS).get(plan)
+    if not plan_info:
+        flash("Formule invalide.", "error")
+        return redirect(url_for("revue_subscription"))
+    _, plan_label, amount_cents, _ = plan_info
+
+    conn = dbm.get_db()
+    cur = conn.execute(
+        "INSERT INTO review_subscriptions (user_id, plan, status, created_at) VALUES (?,?,?,?)",
+        (u["id"], plan, "pending", dbm.now()),
+    )
+    sub_id = cur.lastrowid
+    conn.commit()
+
+    if not payments.is_configured():
+        conn.close()
+        flash("Le paiement en ligne n'est pas encore configuré (clés Stripe manquantes).", "error")
+        return redirect(url_for("revue_subscription"))
+
+    try:
+        success_url = url_for("revue_subscription_success", sub_id=sub_id, _external=True) + "&session_id={CHECKOUT_SESSION_ID}"
+        cancel_url = url_for("revue_subscription_cancel", sub_id=sub_id, _external=True)
+        checkout = payments.create_checkout_session(
+            amount_cents=amount_cents, currency="cad",
+            description=f"{plan_label} (mensuel)",
+            success_url=success_url, cancel_url=cancel_url,
+            client_email=u["email"],
+            metadata={"review_subscription_id": sub_id},
+        )
+        conn.execute("UPDATE review_subscriptions SET provider_session_id=? WHERE id=?", (checkout["id"], sub_id))
+        conn.commit()
+        conn.close()
+        return redirect(checkout["url"])
+    except (payments.PaymentNotConfigured, payments.PaymentProviderError) as exc:
+        conn.execute("UPDATE review_subscriptions SET status='failed' WHERE id=?", (sub_id,))
+        conn.commit()
+        conn.close()
+        flash(str(exc), "error")
+        return redirect(url_for("revue_subscription"))
+
+
+@app.route("/revue/abonnement/succes")
+@login_required
+def revue_subscription_success():
+    flash("Paiement en cours de confirmation — votre abonnement sera activé sous peu.", "success")
+    return redirect(url_for("revue_subscription"))
+
+
+@app.route("/revue/abonnement/annule")
+@login_required
+def revue_subscription_cancel():
+    sub_id = request.args.get("sub_id")
+    if sub_id:
+        conn = dbm.get_db()
+        conn.execute("UPDATE review_subscriptions SET status='cancelled' WHERE id=?", (sub_id,))
+        conn.commit()
+        conn.close()
+    flash("Abonnement annulé.", "error")
+    return redirect(url_for("revue_subscription"))
 
 
 @app.route("/rendez-vous", methods=["GET", "POST"])
@@ -829,6 +1118,17 @@ def stripe_webhook():
             )
             conn.commit()
             dbm.log_activity(payment["created_by"], "payment_confirmed", f"payment #{payment['id']}")
+        else:
+            sub = conn.execute(
+                "SELECT * FROM review_subscriptions WHERE provider_session_id=?", (session_id,)
+            ).fetchone()
+            if sub and sub["status"] != "paid":
+                conn.execute(
+                    "UPDATE review_subscriptions SET status='paid', paid_at=? WHERE id=?",
+                    (dbm.now(), sub["id"]),
+                )
+                conn.commit()
+                dbm.log_activity(sub["user_id"], "revue_subscription_confirmed", f"subscription #{sub['id']}")
         conn.close()
     return {"received": True}, 200
 
@@ -869,6 +1169,158 @@ def admin_activity():
     ).fetchall()
     conn.close()
     return render_template("admin/activity.html", logs=logs)
+
+
+# ---------------------------------------------------------------------------
+# Admin — Massey Law Review
+# ---------------------------------------------------------------------------
+
+@app.route("/admin/revue/articles")
+@roles_required("expert", "admin")
+def admin_revue_articles():
+    conn = dbm.get_db()
+    articles = conn.execute("SELECT * FROM review_articles ORDER BY created_at DESC").fetchall()
+    conn.close()
+    return render_template("admin/revue_articles.html", articles=articles)
+
+
+@app.route("/admin/revue/articles/nouveau", methods=["GET", "POST"])
+@roles_required("expert", "admin")
+def admin_revue_article_new():
+    if request.method == "POST":
+        return _save_revue_article(None)
+    return render_template("admin/revue_article_form.html", article=None)
+
+
+@app.route("/admin/revue/articles/<int:article_id>/modifier", methods=["GET", "POST"])
+@roles_required("expert", "admin")
+def admin_revue_article_edit(article_id):
+    conn = dbm.get_db()
+    article = conn.execute("SELECT * FROM review_articles WHERE id=?", (article_id,)).fetchone()
+    conn.close()
+    if article is None:
+        abort(404)
+    if request.method == "POST":
+        return _save_revue_article(article_id)
+    return render_template("admin/revue_article_form.html", article=article)
+
+
+def _save_revue_article(article_id):
+    u = current_user()
+    title = request.form.get("title", "").strip()
+    author_name = request.form.get("author_name", "").strip()
+    issue_label = request.form.get("issue_label", "").strip()
+    abstract = request.form.get("abstract", "").strip()
+    body_html = request.form.get("body_html", "").strip()
+    published = 1 if request.form.get("published") == "on" else 0
+    file = request.files.get("pdf")
+
+    if not (title and author_name):
+        flash("Titre et auteur sont obligatoires.", "error")
+        return redirect(request.referrer or url_for("admin_revue_articles"))
+
+    conn = dbm.get_db()
+    pdf_stored_name = None
+    pdf_original_name = None
+    if file and file.filename:
+        if not allowed_file(file.filename) or not file.filename.lower().endswith(".pdf"):
+            flash("Le fichier joint doit être un PDF.", "error")
+            conn.close()
+            return redirect(request.referrer or url_for("admin_revue_articles"))
+        pdf_original_name = secure_filename(file.filename)
+        pdf_stored_name = f"{secrets.token_hex(16)}.pdf"
+        art_dir = os.path.join(UPLOAD_DIR, "revue", "articles")
+        os.makedirs(art_dir, exist_ok=True)
+        file.save(os.path.join(art_dir, pdf_stored_name))
+
+    if article_id is None:
+        slug = _slugify(title)
+        conn2 = conn.execute("SELECT id FROM review_articles WHERE slug=?", (slug,)).fetchone()
+        if conn2:
+            slug = f"{slug}-{secrets.token_hex(3)}"
+        published_at = dbm.now() if published else None
+        conn.execute(
+            "INSERT INTO review_articles (slug, title, author_name, issue_label, abstract, body_html, "
+            "pdf_stored_name, pdf_original_name, published, created_by, created_at, published_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            (slug, title, author_name, issue_label, abstract, body_html, pdf_stored_name, pdf_original_name,
+             published, u["id"], dbm.now(), published_at),
+        )
+        conn.commit()
+        dbm.log_activity(u["id"], "revue_article_created", title)
+        flash("Article créé.", "success")
+    else:
+        existing = conn.execute("SELECT * FROM review_articles WHERE id=?", (article_id,)).fetchone()
+        new_published_at = existing["published_at"]
+        if published and not existing["published"]:
+            new_published_at = dbm.now()
+        if pdf_stored_name is None:
+            pdf_stored_name = existing["pdf_stored_name"]
+            pdf_original_name = existing["pdf_original_name"]
+        conn.execute(
+            "UPDATE review_articles SET title=?, author_name=?, issue_label=?, abstract=?, body_html=?, "
+            "pdf_stored_name=?, pdf_original_name=?, published=?, published_at=? WHERE id=?",
+            (title, author_name, issue_label, abstract, body_html, pdf_stored_name, pdf_original_name,
+             published, new_published_at, article_id),
+        )
+        conn.commit()
+        dbm.log_activity(u["id"], "revue_article_updated", title)
+        flash("Article mis à jour.", "success")
+    conn.close()
+    return redirect(url_for("admin_revue_articles"))
+
+
+@app.route("/admin/revue/articles/<int:article_id>/supprimer", methods=["POST"])
+@roles_required("admin")
+def admin_revue_article_delete(article_id):
+    conn = dbm.get_db()
+    conn.execute("DELETE FROM review_articles WHERE id=?", (article_id,))
+    conn.commit()
+    conn.close()
+    flash("Article supprimé.", "success")
+    return redirect(url_for("admin_revue_articles"))
+
+
+@app.route("/admin/revue/soumissions")
+@roles_required("expert", "admin")
+def admin_revue_submissions():
+    conn = dbm.get_db()
+    subs = conn.execute("SELECT * FROM review_submissions ORDER BY created_at DESC").fetchall()
+    conn.close()
+    return render_template(
+        "admin/revue_submissions.html", subs=subs, statuses=dbm.REVIEW_SUBMISSION_STATUSES
+    )
+
+
+@app.route("/admin/revue/soumissions/<int:sub_id>/statut", methods=["POST"])
+@roles_required("expert", "admin")
+def admin_revue_submission_status(sub_id):
+    new_status = request.form.get("status")
+    note = request.form.get("note_interne", "").strip()
+    if new_status in dbm.REVIEW_SUBMISSION_LABELS:
+        conn = dbm.get_db()
+        conn.execute(
+            "UPDATE review_submissions SET status=?, note_interne=? WHERE id=?",
+            (new_status, note, sub_id),
+        )
+        conn.commit()
+        conn.close()
+        flash("Statut mis à jour.", "success")
+    return redirect(url_for("admin_revue_submissions"))
+
+
+@app.route("/admin/revue/soumissions/<int:sub_id>/telecharger")
+@roles_required("expert", "admin")
+def admin_revue_submission_download(sub_id):
+    conn = dbm.get_db()
+    sub = conn.execute("SELECT * FROM review_submissions WHERE id=?", (sub_id,)).fetchone()
+    conn.close()
+    if sub is None:
+        abort(404)
+    return send_from_directory(
+        os.path.join(UPLOAD_DIR, "revue", "soumissions"), sub["stored_name"],
+        as_attachment=True, download_name=sub["original_name"],
+    )
 
 
 # ---------------------------------------------------------------------------

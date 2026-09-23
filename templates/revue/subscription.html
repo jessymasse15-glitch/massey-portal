@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Abonnement — Massey Law Review{% endblock %}
+{% block meta_description %}Formules d'abonnement à Massey Law Review pour lecteurs individuels et institutions.{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="eyebrow">Massey Law Review</div>
+  <h1>Abonnement</h1>
+  <p class="lede">Un accès complet aux numéros publiés, en ligne et en PDF, avec une formule adaptée aux lecteurs individuels comme aux institutions.</p>
+</section>
+
+{% include "revue/_subnav.html" %}
+
+<section class="block" style="border-top:none;padding-top:0;">
+  {% if active %}
+    <div class="callout" style="max-width:74ch;border-left-color:var(--good);">
+      Vous êtes déjà abonné — formule « {{ plan_labels.get(active['plan'], active['plan']) }} ».
+    </div>
+  {% endif %}
+  <div class="grid-2" style="margin-top:24px;">
+    {% for plan_key, plan_label, amount_cents, plan_desc in plans %}
+      <div class="plan-card {{ 'current' if active and active['plan']==plan_key else '' }}">
+        <h3 style="margin-top:0;">{{ plan_label }}</h3>
+        <div class="price">{{ "%.2f"|format(amount_cents/100) }} $ <span>/ mois CAD</span></div>
+        <p style="color:var(--ink-soft);font-size:0.9rem;">{{ plan_desc }}</p>
+        {% if current_user %}
+          {% if active and active['plan']==plan_key %}
+            <span class="status-pill done">Abonnement actif</span>
+          {% else %}
+            <form method="POST" action="{{ url_for('revue_subscription_new') }}">
+              <input type="hidden" name="plan" value="{{ plan_key }}">
+              <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">S'abonner</button>
+            </form>
+          {% endif %}
+        {% else %}
+          <a href="{{ url_for('login', next=url_for('revue_subscription')) }}" class="btn btn-ghost" style="width:100%;justify-content:center;">Se connecter pour s'abonner</a>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  <p class="helptext" style="margin-top:24px;">Le paiement est traité de façon sécurisée via Stripe. Aucune information de carte n'est stockée sur nos serveurs.</p>
+</section>
+{% endblock %}

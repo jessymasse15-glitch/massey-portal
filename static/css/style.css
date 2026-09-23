@@ -161,6 +161,32 @@ section.block{padding:60px 0;border-top:1px solid var(--line);}
 .trust-row span{display:flex;align-items:center;gap:8px;}
 .trust-row span::before{content:"";width:6px;height:6px;background:var(--good);border-radius:50%;}
 
+/* -------------------------------------------------- massey law review -------------------------------------------------- */
+.revue-subnav{display:flex;gap:26px;flex-wrap:wrap;padding:18px 0;border-bottom:1px solid var(--line);margin-bottom:44px;font-size:0.86rem;}
+.revue-subnav a{text-decoration:none;color:var(--ink-faint);}
+.revue-subnav a.active{color:var(--gold);}
+.revue-subnav a:hover{color:var(--ink);}
+.article-row{padding:26px 0;border-bottom:1px solid var(--line);}
+.article-row:first-child{padding-top:0;}
+.article-row .meta{font-family:var(--mono);font-size:0.72rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;}
+.article-row h3{margin:0 0 8px;font-size:1.15rem;}
+.article-row h3 a{text-decoration:none;color:var(--ink);}
+.article-row h3 a:hover{color:var(--gold);}
+.article-row p{color:var(--ink-soft);font-size:0.9rem;margin:0 0 10px;}
+.article-row .links{display:flex;gap:16px;font-size:0.8rem;}
+.article-row .links a{color:var(--steel-2);text-decoration:none;}
+.article-row .links a:hover{color:var(--gold);}
+.forum-post{padding:22px 0;border-bottom:1px solid var(--line);}
+.forum-post .meta{font-family:var(--mono);font-size:0.72rem;color:var(--ink-faint);margin-bottom:8px;}
+.forum-post h4{margin:0 0 8px;font-size:1rem;}
+.forum-post p{color:var(--ink-soft);font-size:0.9rem;margin:0;white-space:pre-wrap;}
+.newsletter-box{border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;background:var(--surface);display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+.newsletter-box input[type=email]{flex:1;min-width:200px;}
+.plan-card{border:1px solid var(--line);border-radius:var(--radius);padding:28px;background:var(--surface);}
+.plan-card.current{border-color:var(--good);}
+.plan-card .price{font-family:var(--serif);font-size:1.8rem;color:var(--gold);margin:10px 0;}
+.plan-card .price span{font-family:var(--sans);font-size:0.8rem;color:var(--ink-faint);}
+
 /* -------------------------------------------------- footer -------------------------------------------------- */
 footer.site{border-top:1px solid var(--line);padding:56px 0 28px;background:var(--bg-2);margin-top:60px;}
 .footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px;margin-bottom:40px;}

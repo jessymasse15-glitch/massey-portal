@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Forum — Massey Law Review{% endblock %}
+{% block meta_description %}Espace d'échange de Massey Law Review entre praticiens, chercheurs et lecteurs.{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="eyebrow">Massey Law Review</div>
+  <h1>Forum</h1>
+  <p class="lede">Un espace d'échange entre praticiens, chercheurs et lecteurs autour des enjeux juridiques et fiscaux traités par la revue.</p>
+</section>
+
+{% include "revue/_subnav.html" %}
+
+<section class="block" style="border-top:none;padding-top:0;">
+  {% if current_user %}
+    <form method="POST" action="{{ url_for('revue_forum_post') }}" class="card">
+      <div class="form-group">
+        <label for="title">Titre du billet</label>
+        <input type="text" id="title" name="title" required>
+      </div>
+      <div class="form-group">
+        <label for="body">Message</label>
+        <textarea id="body" name="body" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Publier</button>
+    </form>
+  {% else %}
+    <div class="callout" style="max-width:74ch;">
+      <a href="{{ url_for('login', next=url_for('revue_forum')) }}" style="color:var(--gold);">Connectez-vous</a> pour participer au forum.
+    </div>
+  {% endif %}
+
+  <div style="margin-top:36px;">
+    {% if posts %}
+      {% for p in posts %}
+        <div class="forum-post">
+          <div class="meta">
+            {{ p['full_name'] }} — {{ p['created_at'][:16] | replace('T',' ') }}
+            {% if current_user and current_user['role'] in ('expert','admin') %}
+              <form method="POST" action="{{ url_for('revue_forum_hide', post_id=p['id']) }}" style="display:inline;margin-left:12px;">
+                <button type="submit" class="btn btn-sm btn-danger" style="padding:2px 8px;">Masquer</button>
+              </form>
+            {% endif %}
+          </div>
+          <h4>{{ p['title'] }}</h4>
+          <p>{{ p['body'] }}</p>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="helptext">Aucune discussion pour l'instant — soyez le premier à lancer un sujet.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

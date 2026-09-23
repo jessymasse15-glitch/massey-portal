@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ article['title'] }} — Massey Law Review{% endblock %}
+{% block meta_description %}{{ article['abstract'] or article['title'] }}{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="eyebrow">{{ article['issue_label'] or 'Massey Law Review' }}</div>
+  <h1>{{ article['title'] }}</h1>
+  <p class="lede">{{ article['author_name'] }} — publié le {{ (article['published_at'] or article['created_at'])[:10] }}</p>
+</section>
+
+{% include "revue/_subnav.html" %}
+
+<section class="block" style="border-top:none;padding-top:0;">
+  {% if article['pdf_stored_name'] %}
+    <div class="ctas" style="margin-bottom:28px;">
+      <a href="{{ url_for('revue_article_pdf', slug=article['slug']) }}" class="btn btn-ghost">Télécharger le PDF</a>
+    </div>
+  {% endif %}
+  {% if article['abstract'] %}
+    <div class="callout" style="max-width:74ch;">{{ article['abstract'] }}</div>
+  {% endif %}
+  <div class="prose" style="margin-top:28px;">
+    {{ article['body_html']|safe }}
+  </div>
+  <div class="ctas" style="margin-top:36px;">
+    <a href="{{ url_for('revue_articles') }}" class="btn btn-ghost">← Tous les articles</a>
+  </div>
+</section>
+{% endblock %}

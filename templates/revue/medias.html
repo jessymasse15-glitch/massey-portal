@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Médias — Massey Law Review{% endblock %}
+{% block meta_description %}Mentions de presse, kit média et contacts presse pour Massey Law Review.{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="eyebrow">Massey Law Review</div>
+  <h1>Médias</h1>
+  <p class="lede">Mentions de presse, ressources pour les médias et contact pour toute demande d'entrevue ou de citation.</p>
+</section>
+
+{% include "revue/_subnav.html" %}
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="prose">
+    <h2>Mentions de presse</h2>
+    <p>Les mentions et reprises de Massey Law Review dans la presse spécialisée et généraliste seront répertoriées ici au fil des publications.</p>
+
+    <h2>Demandes presse</h2>
+    <p>Pour toute demande d'entrevue, de citation ou d'information complémentaire sur un article publié, contactez le comité éditorial via la page <a href="{{ url_for('revue_submissions') }}" style="color:var(--gold);">Soumissions</a> en précisant l'objet de votre demande.</p>
+
+    <h2>Fil RSS</h2>
+    <p>Les nouvelles publications sont également disponibles par <a href="{{ url_for('revue_rss') }}" style="color:var(--gold);">fil RSS</a>.</p>
+  </div>
+</section>
+{% endblock %}

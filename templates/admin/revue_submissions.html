@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Soumissions — Massey Law Review{% endblock %}
+{% block content %}
+<h1>Massey Law Review — Soumissions reçues</h1>
+<p style="margin-bottom:20px;"><a href="{{ url_for('admin_revue_articles') }}" class="btn btn-ghost btn-sm">← Articles</a></p>
+<table>
+  <tr><th>Titre</th><th>Auteur</th><th>Courriel</th><th>Reçue le</th><th>Statut</th><th></th></tr>
+  {% for s in subs %}
+  <tr>
+    <td>{{ s['title'] }}</td>
+    <td>{{ s['author_name'] }}</td>
+    <td>{{ s['email'] }}</td>
+    <td>{{ s['created_at'][:10] }}</td>
+    <td>
+      <form method="POST" action="{{ url_for('admin_revue_submission_status', sub_id=s['id']) }}" style="display:flex;gap:6px;flex-wrap:wrap;">
+        <select name="status">
+          {% for key, label in statuses %}
+          <option value="{{ key }}" {% if s['status']==key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <input type="text" name="note_interne" placeholder="Note interne" value="{{ s['note_interne'] or '' }}" style="min-width:160px;">
+        <button type="submit" class="btn btn-sm">Mettre à jour</button>
+      </form>
+    </td>
+    <td><a href="{{ url_for('admin_revue_submission_download', sub_id=s['id']) }}" class="btn btn-sm btn-ghost">Télécharger</a></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6" class="helptext">Aucune soumission reçue.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

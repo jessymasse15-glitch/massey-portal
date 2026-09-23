@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Articles — Massey Law Review{% endblock %}
+{% block meta_description %}Tous les articles publiés par Massey Law Review, du plus récent au plus ancien.{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="eyebrow">Massey Law Review</div>
+  <h1>Articles</h1>
+  <p class="lede">Les textes publiés par la revue, du plus récent au plus ancien. Chaque titre ouvre la version web intégrale ; le lien PDF permet le téléchargement.</p>
+</section>
+
+{% include "revue/_subnav.html" %}
+
+<section class="block" style="border-top:none;padding-top:0;">
+  {% if articles %}
+    {% for a in articles %}
+      <div class="article-row">
+        <div class="meta">{{ a['issue_label'] or 'Massey Law Review' }} — {{ (a['published_at'] or a['created_at'])[:10] }}</div>
+        <h3><a href="{{ url_for('revue_article_detail', slug=a['slug']) }}">{{ a['title'] }}</a></h3>
+        <p>{{ a['author_name'] }}{% if a['abstract'] %} — {{ a['abstract'] }}{% endif %}</p>
+        <div class="links">
+          <a href="{{ url_for('revue_article_detail', slug=a['slug']) }}">Lire l'article →</a>
+          {% if a['pdf_stored_name'] %}<a href="{{ url_for('revue_article_pdf', slug=a['slug']) }}">Télécharger le PDF</a>{% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="helptext">Aucun article publié pour l'instant — le premier numéro est en préparation.</p>
+  {% endif %}
+</section>
+{% endblock %}

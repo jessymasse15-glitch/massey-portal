@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Soumissions — Massey Law Review{% endblock %}
+{% block meta_description %}Directives aux auteurs et formulaire de soumission d'articles pour Massey Law Review.{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="eyebrow">Massey Law Review</div>
+  <h1>Soumissions</h1>
+  <p class="lede">Massey Law Review accueille les contributions de juristes, praticiens et chercheurs sur le droit des affaires, la fiscalité et les transactions transfrontalières.</p>
+</section>
+
+{% include "revue/_subnav.html" %}
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="grid-2">
+    <div class="prose">
+      <h2>Directives aux auteurs</h2>
+      <p>Les textes soumis doivent porter sur le droit des contrats, la fiscalité des affaires, le droit du commerce international ou la legal technology, avec un lien explicite avec la pratique.</p>
+      <p>Format attendu : document Word ou PDF, résumé de 150 à 250 mots, notes de bas de page pour les références. Longueur indicative : 3 000 à 8 000 mots pour un article, 800 à 1 500 mots pour une note pratique.</p>
+      <p>Chaque soumission est accusée réception, puis évaluée par le comité éditorial. Les statuts possibles sont : reçue, en évaluation, révisions demandées, acceptée, refusée ou publiée. L'auteur est informé par courriel à chaque changement de statut.</p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Soumettre un article</h3>
+      <form method="POST" action="{{ url_for('revue_submissions') }}" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="author_name">Nom complet</label>
+          <input type="text" id="author_name" name="author_name" required>
+        </div>
+        <div class="form-group">
+          <label for="email">Courriel</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+          <label for="title">Titre de l'article</label>
+          <input type="text" id="title" name="title" required>
+        </div>
+        <div class="form-group">
+          <label for="abstract">Résumé (150-250 mots)</label>
+          <textarea id="abstract" name="abstract"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="file">Fichier (PDF, DOC ou DOCX)</label>
+          <input type="file" id="file" name="file" accept=".pdf,.doc,.docx" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Envoyer la soumission</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

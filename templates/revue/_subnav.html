@@ -1,0 +1,10 @@
+<nav class="revue-subnav">
+  <a href="{{ url_for('revue_home') }}" class="{{ 'active' if request.endpoint=='revue_home' else '' }}">Accueil</a>
+  <a href="{{ url_for('revue_articles') }}" class="{{ 'active' if request.endpoint in ['revue_articles','revue_article_detail'] else '' }}">Articles</a>
+  <a href="{{ url_for('revue_forum') }}" class="{{ 'active' if request.endpoint=='revue_forum' else '' }}">Forum</a>
+  <a href="{{ url_for('revue_references') }}" class="{{ 'active' if request.endpoint=='revue_references' else '' }}">Références</a>
+  <a href="{{ url_for('revue_about') }}" class="{{ 'active' if request.endpoint=='revue_about' else '' }}">À propos</a>
+  <a href="{{ url_for('revue_submissions') }}" class="{{ 'active' if request.endpoint=='revue_submissions' else '' }}">Soumissions</a>
+  <a href="{{ url_for('revue_subscription') }}" class="{{ 'active' if request.endpoint=='revue_subscription' else '' }}">Abonnement</a>
+  <a href="{{ url_for('revue_medias') }}" class="{{ 'active' if request.endpoint=='revue_medias' else '' }}">Médias</a>
+</nav>

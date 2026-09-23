@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifier' if article else 'Nouvel' }} article — Massey Law Review{% endblock %}
+{% block content %}
+<h1>{{ 'Modifier l\'article' if article else 'Nouvel article' }}</h1>
+<form method="POST" enctype="multipart/form-data" class="card" style="max-width:760px;">
+  <div class="form-group">
+    <label for="title">Titre</label>
+    <input type="text" id="title" name="title" value="{{ article['title'] if article else '' }}" required>
+  </div>
+  <div class="form-group">
+    <label for="author_name">Auteur</label>
+    <input type="text" id="author_name" name="author_name" value="{{ article['author_name'] if article else '' }}" required>
+  </div>
+  <div class="form-group">
+    <label for="issue_label">Numéro / édition (ex. Vol. 1, n° 1)</label>
+    <input type="text" id="issue_label" name="issue_label" value="{{ article['issue_label'] if article else '' }}">
+  </div>
+  <div class="form-group">
+    <label for="abstract">Résumé</label>
+    <textarea id="abstract" name="abstract">{{ article['abstract'] if article else '' }}</textarea>
+  </div>
+  <div class="form-group">
+    <label for="body_html">Corps de l'article (HTML)</label>
+    <textarea id="body_html" name="body_html" style="min-height:260px;font-family:var(--mono);font-size:0.82rem;">{{ article['body_html'] if article else '' }}</textarea>
+    <div class="helptext">Balises HTML simples acceptées : &lt;p&gt;, &lt;h2&gt;, &lt;blockquote&gt;, &lt;ul&gt;/&lt;li&gt;, &lt;strong&gt;, &lt;em&gt;.</div>
+  </div>
+  <div class="form-group">
+    <label for="pdf">Fichier PDF {% if article and article['pdf_original_name'] %}(actuel : {{ article['pdf_original_name'] }}){% endif %}</label>
+    <input type="file" id="pdf" name="pdf" accept=".pdf">
+  </div>
+  <div class="form-group">
+    <label style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" name="published" style="width:auto;" {% if article and article['published'] %}checked{% endif %}>
+      Publier immédiatement
+    </label>
+  </div>
+  <button type="submit" class="btn btn-primary">Enregistrer</button>
+  <a href="{{ url_for('admin_revue_articles') }}" class="btn btn-ghost">Annuler</a>
+</form>
+{% endblock %}

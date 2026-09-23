@@ -121,7 +121,82 @@ CREATE TABLE IF NOT EXISTS signatures (
     user_agent TEXT,
     created_at TEXT NOT NULL
 );
+
+-- -----------------------------------------------------------------------
+-- Massey Law Review (revue juridique en ligne, section du portail)
+-- -----------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS review_articles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    author_name TEXT NOT NULL,
+    issue_label TEXT,
+    abstract TEXT,
+    body_html TEXT,
+    pdf_stored_name TEXT,
+    pdf_original_name TEXT,
+    published INTEGER NOT NULL DEFAULT 0,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    published_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS review_forum_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    hidden INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS review_submissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(id),
+    author_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    title TEXT NOT NULL,
+    abstract TEXT,
+    stored_name TEXT NOT NULL,
+    original_name TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'recue',
+    note_interne TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS review_subscribers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS review_subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    plan TEXT NOT NULL DEFAULT 'lecteur',
+    status TEXT NOT NULL DEFAULT 'pending',
+    provider_session_id TEXT,
+    created_at TEXT NOT NULL,
+    paid_at TEXT
+);
 """
+
+REVIEW_SUBMISSION_STATUSES = [
+    ("recue", "Reçue"),
+    ("en_evaluation", "En évaluation par le comité"),
+    ("revisions_demandees", "Révisions demandées"),
+    ("acceptee", "Acceptée"),
+    ("refusee", "Refusée"),
+    ("publiee", "Publiée"),
+]
+REVIEW_SUBMISSION_LABELS = dict(REVIEW_SUBMISSION_STATUSES)
+
+REVIEW_PLANS = [
+    ("lecteur", "Massey Law Review — Lecteur", 999, "Accès complet aux numéros publiés, en ligne et en PDF."),
+    ("institution", "Massey Law Review — Institution", 4999, "Accès multi-utilisateurs pour cabinets, universités et centres de recherche."),
+]
+REVIEW_PLAN_LABELS = {p[0]: p[1] for p in REVIEW_PLANS}
 
 STATUS_FLOW = [
     ("demande_recue", "Demande reçue"),
