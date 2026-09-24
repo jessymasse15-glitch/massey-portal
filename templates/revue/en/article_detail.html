@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}{{ article['title'] }} — Massey Law Review{% endblock %}
-{% block meta_description %}{{ article['abstract'] or article['title'] }}{% endblock %}
-{% block og_title %}{{ article['title'] }}{% endblock %}
-{% block og_description %}{{ article['abstract'] or article['title'] }}{% endblock %}
+{% block title %}{{ article['title_en'] or article['title'] }} — Massey Law Review{% endblock %}
+{% block meta_description %}{{ article['abstract_en'] or article['abstract'] or article['title'] }}{% endblock %}
+{% block og_title %}{{ article['title_en'] or article['title'] }}{% endblock %}
+{% block og_description %}{{ article['abstract_en'] or article['abstract'] or article['title'] }}{% endblock %}
 {% block og_image %}<meta property="og:image" content="{{ request.url_root.rstrip('/') }}{{ url_for('revue_article_og_image', slug=article['slug']) }}">{% endblock %}
 {% block twitter_card %}summary_large_image{% endblock %}
 {% block extra_head %}
@@ -10,27 +10,28 @@
 {
   "@context": "https://schema.org",
   "@type": "ScholarlyArticle",
-  "headline": {{ article['title']|tojson }},
-  "abstract": {{ (article['abstract'] or '')|tojson }},
+  "headline": {{ (article['title_en'] or article['title'])|tojson }},
+  "abstract": {{ (article['abstract_en'] or article['abstract'] or '')|tojson }},
   "author": { "@type": "Person", "name": {{ article['author_name']|tojson }} },
   "datePublished": {{ (article['published_at'] or article['created_at'])|tojson }},
   "publisher": { "@type": "Organization", "name": "Massey Law Review" },
   "isPartOf": { "@type": "PublicationIssue", "issueName": {{ (article['issue_label'] or 'Massey Law Review')|tojson }} },
-  "url": {{ request.url|tojson }}
+  "url": {{ request.url|tojson }},
+  "inLanguage": "en"
 }
 </script>
 {% endblock %}
 {% block content %}
 <section class="page-hero reveal">
   <div class="eyebrow">{{ article['issue_label'] or 'Massey Law Review' }}</div>
-  <h1>{{ article['title'] }}</h1>
+  <h1>{{ article['title_en'] or article['title'] }}</h1>
   <p class="lede">
-    {% if author %}<a href="{{ url_for('revue_author', slug=author['slug']) }}">{{ article['author_name'] }}</a>{% else %}{{ article['author_name'] }}{% endif %}
-    — publié le {{ (article['published_at'] or article['created_at'])[:10] }}
+    {% if author %}<a href="{{ url_for('revue_author_en', slug=author['slug']) }}">{{ article['author_name'] }}</a>{% else %}{{ article['author_name'] }}{% endif %}
+    — published {{ (article['published_at'] or article['created_at'])[:10] }}
   </p>
 </section>
 
-{% include "revue/_subnav.html" %}
+{% include "revue/en/_subnav.html" %}
 
 <section class="block" style="border-top:none;padding-top:0;">
   <div class="two-col">
@@ -44,17 +45,18 @@
       {% endif %}
       {% if article['pdf_stored_name'] %}
         <div class="ctas" style="margin-top:24px;flex-direction:column;">
-          <a href="{{ url_for('revue_article_pdf', slug=article['slug']) }}" class="btn btn-ghost" style="justify-content:center;">Télécharger le PDF</a>
+          <a href="{{ url_for('revue_article_pdf', slug=article['slug']) }}" class="btn btn-ghost" style="justify-content:center;">Download the PDF</a>
         </div>
       {% endif %}
     </aside>
 
     <div class="prose">
-      {% if article['abstract'] %}
-        <div class="callout" style="max-width:74ch;">{{ article['abstract'] }}</div>
+      {% set abs = article['abstract_en'] or article['abstract'] %}
+      {% if abs %}
+        <div class="callout" style="max-width:74ch;">{{ abs }}</div>
       {% endif %}
       <div style="margin-top:28px;">
-        {{ article['body_html']|safe }}
+        {{ body_en|safe }}
       </div>
     </div>
   </div>
@@ -62,10 +64,10 @@
   {% if author %}
     <div class="author-card reveal">
       <div>
-        <div class="eyebrow" style="margin-bottom:6px;">Auteur·rice</div>
-        <h3 style="margin:0 0 6px;"><a href="{{ url_for('revue_author', slug=author['slug']) }}">{{ author['name'] }}</a></h3>
+        <div class="eyebrow" style="margin-bottom:6px;">Author</div>
+        <h3 style="margin:0 0 6px;"><a href="{{ url_for('revue_author_en', slug=author['slug']) }}">{{ author['name'] }}</a></h3>
         {% if author['title'] %}<p class="helptext" style="margin:0 0 10px;">{{ author['title'] }}</p>{% endif %}
-        <p style="color:var(--ink-soft);margin:0;font-size:0.9rem;">{{ author['bio'] }}</p>
+        <p style="color:var(--ink-soft);margin:0;font-size:0.9rem;">{{ author['bio_en'] or author['bio'] }}</p>
       </div>
     </div>
   {% endif %}
@@ -73,21 +75,22 @@
   {% if related %}
     <div class="block-head" style="margin-top:56px;">
       <div>
-        <div class="eyebrow">À lire aussi</div>
-        <h2>Articles liés</h2>
+        <div class="eyebrow">Also worth reading</div>
+        <h2>Related articles</h2>
       </div>
     </div>
     {% for a in related %}
       <div class="article-row">
         <div class="meta">{{ a['issue_label'] or 'Massey Law Review' }} — {{ (a['published_at'] or a['created_at'])[:10] }}</div>
-        <h3><a href="{{ url_for('revue_article_detail', slug=a['slug']) }}">{{ a['title'] }}</a></h3>
-        <p>{{ a['author_name'] }}{% if a['abstract'] %} — {{ a['abstract'][:140] }}{% if a['abstract']|length > 140 %}…{% endif %}{% endif %}</p>
+        <h3><a href="{{ url_for('revue_article_detail_en', slug=a['slug']) }}">{{ a['title_en'] or a['title'] }}</a></h3>
+        {% set rabs = a['abstract_en'] or a['abstract'] %}
+        <p>{{ a['author_name'] }}{% if rabs %} — {{ rabs[:140] }}{% if rabs|length > 140 %}…{% endif %}{% endif %}</p>
       </div>
     {% endfor %}
   {% endif %}
 
   <div class="ctas" style="margin-top:36px;">
-    <a href="{{ url_for('revue_articles') }}" class="btn btn-ghost">← Tous les articles</a>
+    <a href="{{ url_for('revue_articles_en') }}" class="btn btn-ghost">← All articles</a>
   </div>
 </section>
 {% endblock %}

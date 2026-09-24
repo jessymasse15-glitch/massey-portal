@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Massey Law Review — The legal review of Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Massey Law Review: an online legal review covering contract engineering, business taxation, and cross-border transactions in the Haitian market.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey Law Review</div>
+  <h1>A legal review in service of business practice</h1>
+</section>
+
+{% include "revue/en/_subnav.html" %}
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="two-col">
+    <aside>
+      <p class="lede">Massey Law Review sheds light on the legal, tax, and transactional issues facing businesses, investors, and legal practitioners in Haiti and in its international business relations — with a constant focus on connecting doctrine to practice.</p>
+      <ul class="toc">
+        <li><a href="#editorial-mission"><span>01</span> Editorial mission</a></li>
+        <li><a href="#editorial-board"><span>02</span> Editorial board</a></li>
+        <li><a href="#independence"><span>03</span> Independence and rigor</a></li>
+        <li><a href="#contact-us"><span>04</span> Contact us</a></li>
+      </ul>
+      <div class="newsletter-box" style="margin-top:28px;flex-direction:column;align-items:stretch;">
+        <div>
+          <h4 style="margin:0 0 4px;font-family:var(--serif);font-weight:500;">Get new publications by email</h4>
+          <p style="margin:0;color:var(--ink-faint);font-size:0.86rem;">One email per new issue — no spam.</p>
+        </div>
+        <form method="POST" action="{{ url_for('revue_newsletter_signup') }}" style="display:flex;gap:10px;margin-top:14px;">
+          <input type="email" name="email" placeholder="Your email" required>
+          <button type="submit" class="btn btn-primary">Subscribe</button>
+        </form>
+      </div>
+    </aside>
+
+    <div class="prose">
+      <p>At the crossroads of Haitian law, taxation, international trade, and legal technology, Massey Law Review offers a space for reflection and exchange for practitioners, researchers, and decision-makers.</p>
+
+      <p>Our conviction is simple: doctrinal rigor should never be foreign to business practice. Every piece we publish seeks to shed light on a concrete question — a clause, a structure, an implementation difficulty — in light of positive law and transactional practice.</p>
+
+      <section id="editorial-mission">
+        <h2>Editorial mission</h2>
+        <p>Massey Law Review publishes analyses, case studies, and practice notes on contract law, business taxation, and cross-border transactions, with particular attention to the Haitian market and its trade zones.</p>
+        <p>The review is aimed at lawyers, tax specialists, entrepreneurs, and investors who wish to understand not only the rule of law, but how it applies concretely to the conduct of business.</p>
+      </section>
+
+      <section id="editorial-board">
+        <h2>Editorial board</h2>
+        <p>The editorial line is carried by the Massey Contracts &amp; Tax team, supported by external contributions from practitioners and invited researchers who submit pieces according to the guidelines described on the Submissions page.</p>
+        <p>Every piece undergoes careful editorial review before publication, covering both the rigor of the analysis and the clarity of the presentation.</p>
+      </section>
+
+      <section id="independence">
+        <h2>Independence and rigor</h2>
+        <p>The review maintains complete editorial independence from matters otherwise handled by the firm. Opinions expressed in published articles are those of their authors and do not constitute legal advice applicable to any particular situation.</p>
+        <p>Readers seeking analysis applied to their own matter are invited to open a file with Massey Contracts &amp; Tax rather than rely on the texts published here.</p>
+      </section>
+
+      <section id="contact-us">
+        <h2>Contact us</h2>
+        <p>For any editorial question, submission proposal, or forum-related request, use the form on the Submissions page or write to the review's editorial team.</p>
+      </section>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head">
+    <div>
+      <div class="eyebrow">Publications</div>
+      <h2>Recent articles</h2>
+    </div>
+    <a href="{{ url_for('revue_articles_en') }}" class="btn btn-ghost btn-sm">All articles</a>
+  </div>
+  {% if articles %}
+    {% for a in articles %}
+      <div class="article-row">
+        <div class="meta">{{ a['issue_label'] or 'Massey Law Review' }} — {{ (a['published_at'] or a['created_at'])[:10] }}</div>
+        <h3><a href="{{ url_for('revue_article_detail_en', slug=a['slug']) }}">{{ a['title_en'] or a['title'] }}</a></h3>
+        <p>{{ a['author_name'] }}{% set abs = a['abstract_en'] or a['abstract'] %}{% if abs %} — {{ abs[:160] }}{% if abs|length > 160 %}…{% endif %}{% endif %}</p>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="helptext">No articles published yet — the first issue is in preparation.</p>
+  {% endif %}
+</section>
+
+<section class="block">
+  <div class="block-head">
+    <div>
+      <div class="eyebrow">Community</div>
+      <h2>From the forum</h2>
+    </div>
+    <a href="{{ url_for('revue_forum_en') }}" class="btn btn-ghost btn-sm">Visit the forum</a>
+  </div>
+  {% if posts %}
+    {% for p in posts %}
+      <div class="forum-post">
+        <div class="meta">{{ p['full_name'] }} — {{ p['created_at'][:10] }}</div>
+        <h4>{{ p['title_en'] or p['title'] }}</h4>
+        {% set b = p['body_en'] or p['body'] %}
+        <p>{{ b[:220] }}{% if b|length > 220 %}…{% endif %}</p>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="helptext">No discussions yet — be the first to start one.</p>
+  {% endif %}
+</section>
+{% endblock %}

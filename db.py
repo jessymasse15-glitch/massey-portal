@@ -126,14 +126,29 @@ CREATE TABLE IF NOT EXISTS signatures (
 -- Massey Law Review (revue juridique en ligne, section du portail)
 -- -----------------------------------------------------------------------
 
+CREATE TABLE IF NOT EXISTS review_authors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    title TEXT,
+    bio TEXT,
+    bio_en TEXT,
+    created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS review_articles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     slug TEXT UNIQUE NOT NULL,
     title TEXT NOT NULL,
+    title_en TEXT,
     author_name TEXT NOT NULL,
+    author_slug TEXT REFERENCES review_authors(slug),
     issue_label TEXT,
+    tags TEXT,
     abstract TEXT,
+    abstract_en TEXT,
     body_html TEXT,
+    body_html_en TEXT,
     pdf_stored_name TEXT,
     pdf_original_name TEXT,
     published INTEGER NOT NULL DEFAULT 0,
@@ -146,6 +161,17 @@ CREATE TABLE IF NOT EXISTS review_forum_posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL REFERENCES users(id),
     title TEXT NOT NULL,
+    title_en TEXT,
+    body TEXT NOT NULL,
+    body_en TEXT,
+    hidden INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS review_forum_replies (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL REFERENCES review_forum_posts(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
     body TEXT NOT NULL,
     hidden INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL
@@ -286,8 +312,9 @@ def init_db():
 
 def _seed_review_demo_content(conn):
     """Contenu de démonstration pour Massey Law Review (deux articles, deux billets de
-    forum) — inséré une seule fois, uniquement si les tables sont vides, pour que la
-    revue ne parte jamais complètement à vide. Sans effet si du vrai contenu existe déjà."""
+    forum, deux auteurs, une réponse de forum) — inséré une seule fois, uniquement si les
+    tables sont vides, pour que la revue ne parte jamais complètement à vide. Sans effet
+    si du vrai contenu existe déjà."""
     editorial_email = "revue@masseylawreview.local"
     row = conn.execute("SELECT id FROM users WHERE email=?", (editorial_email,)).fetchone()
     if row:
@@ -301,37 +328,85 @@ def _seed_review_demo_content(conn):
         editorial_user_id = cur.lastrowid
         conn.commit()
 
+    author_count = conn.execute("SELECT COUNT(*) AS c FROM review_authors").fetchone()["c"]
+    if author_count == 0:
+        conn.execute(
+            "INSERT INTO review_authors (slug, name, title, bio, bio_en, created_at) VALUES (?,?,?,?,?,?)",
+            (
+                "jessy-j-masse",
+                "Me. Jessy J. Massé",
+                "Fondateur, Massey Contracts & Tax",
+                "Juriste spécialisé en ingénierie contractuelle et fiscale, fondateur de Massey Contracts & Tax. Ses travaux portent sur le droit des contrats commerciaux, la fiscalité des affaires et les transactions transfrontalières en Haïti.",
+                "Lawyer specializing in contract and tax engineering, founder of Massey Contracts & Tax. His work focuses on commercial contract law, business taxation and cross-border transactions in Haiti.",
+                now(),
+            ),
+        )
+        conn.execute(
+            "INSERT INTO review_authors (slug, name, title, bio, bio_en, created_at) VALUES (?,?,?,?,?,?)",
+            (
+                "equipe-editoriale",
+                "Équipe éditoriale — Massey Law Review",
+                "Comité éditorial",
+                "L'équipe éditoriale de Massey Law Review coordonne la relecture, la publication et l'animation du forum de la revue, en appui aux contributions des praticiens et chercheurs invités.",
+                "The Massey Law Review editorial team coordinates review, publication and forum moderation for the journal, supporting contributions from invited practitioners and researchers.",
+                now(),
+            ),
+        )
+        conn.commit()
+
     article_count = conn.execute("SELECT COUNT(*) AS c FROM review_articles").fetchone()["c"]
     if article_count == 0:
         conn.execute(
-            "INSERT INTO review_articles (slug, title, author_name, issue_label, abstract, body_html, published, created_by, created_at, published_at) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO review_articles "
+            "(slug, title, title_en, author_name, author_slug, issue_label, tags, abstract, abstract_en, body_html, body_html_en, published, created_by, created_at, published_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 "clause-penale-contrats-commerciaux-droit-haitien",
                 "La clause pénale dans les contrats commerciaux : portée et limites en droit haïtien",
+                "Penalty Clauses in Commercial Contracts: Scope and Limits under Haitian Law",
                 "Me. Jessy J. Massé",
+                "jessy-j-masse",
                 "Vol. 1, n° 1",
+                "droit des contrats,clause pénale,droit haïtien",
                 "Cet article examine les conditions de validité de la clause pénale en droit haïtien, son articulation avec le pouvoir modérateur du juge, et les précautions rédactionnelles recommandées dans les contrats commerciaux.",
+                "This article examines the conditions of validity of penalty clauses under Haitian law, their interaction with the judge's moderating power, and recommended drafting precautions in commercial contracts.",
                 "<p>La clause pénale demeure l'un des mécanismes contractuels les plus utilisés pour sécuriser l'exécution d'une obligation, tout en restant l'un des plus mal maîtrisés dans la pratique rédactionnelle courante.</p>"
-                "<h2>Fonction et validité</h2><p>La clause pénale fixe par avance le montant des dommages-intérêts dus en cas d'inexécution, évitant ainsi le recours à une évaluation judiciaire a posteriori. Sa validité suppose une rédaction claire de l'obligation principale et du fait générateur de la pénalité.</p>"
-                "<h2>Le pouvoir modérateur du juge</h2><p>Le juge conserve la faculté de réduire une pénalité manifestement excessive, ou de l'augmenter si elle est dérisoire. Une rédaction équilibrée, adossée à une évaluation réaliste du préjudice prévisible, réduit le risque de révision judiciaire.</p>"
-                "<h2>Recommandations pratiques</h2><p>Il est recommandé de documenter la méthode de calcul de la pénalité, de la proportionner à la gravité prévisible du manquement, et de la distinguer clairement des clauses de résiliation et d'indemnisation.</p>",
+                "<h2 id=\"fonction-et-validite\">Fonction et validité</h2><p>La clause pénale fixe par avance le montant des dommages-intérêts dus en cas d'inexécution, évitant ainsi le recours à une évaluation judiciaire a posteriori<sup id=\"fnref-1\"><a href=\"#fn-1\">1</a></sup>. Sa validité suppose une rédaction claire de l'obligation principale et du fait générateur de la pénalité.</p>"
+                "<h2 id=\"pouvoir-moderateur-du-juge\">Le pouvoir modérateur du juge</h2><p>Le juge conserve la faculté de réduire une pénalité manifestement excessive, ou de l'augmenter si elle est dérisoire<sup id=\"fnref-2\"><a href=\"#fn-2\">2</a></sup>. Une rédaction équilibrée, adossée à une évaluation réaliste du préjudice prévisible, réduit le risque de révision judiciaire.</p>"
+                "<h2 id=\"recommandations-pratiques\">Recommandations pratiques</h2><p>Il est recommandé de documenter la méthode de calcul de la pénalité, de la proportionner à la gravité prévisible du manquement, et de la distinguer clairement des clauses de résiliation et d'indemnisation.</p>"
+                "<div class=\"footnotes\"><ol>"
+                "<li id=\"fn-1\">Code civil haïtien, dispositions relatives aux obligations conditionnelles et aux clauses pénales. <a href=\"#fnref-1\">↩</a></li>"
+                "<li id=\"fn-2\">Voir la jurisprudence constante des tribunaux civils sur le pouvoir modérateur, par analogie avec les principes du droit civil français dont s'inspire le droit haïtien. <a href=\"#fnref-2\">↩</a></li>"
+                "</ol></div>",
+                "<p>Penalty clauses remain one of the most widely used contractual mechanisms to secure performance of an obligation, while also being one of the least well handled in current drafting practice.</p>"
+                "<h2 id=\"function-and-validity\">Function and validity</h2><p>A penalty clause sets in advance the amount of damages owed in case of non-performance, avoiding a later judicial assessment. Its validity requires a clear drafting of the principal obligation and the triggering event.</p>"
+                "<h2 id=\"the-judges-moderating-power\">The judge's moderating power</h2><p>The judge retains the power to reduce a manifestly excessive penalty, or increase one that is derisory. Balanced drafting, backed by a realistic assessment of foreseeable harm, reduces the risk of judicial revision.</p>"
+                "<h2 id=\"practical-recommendations\">Practical recommendations</h2><p>It is recommended to document the penalty's calculation method, proportion it to the foreseeable severity of the breach, and clearly distinguish it from termination and indemnification clauses.</p>",
                 1, editorial_user_id, now(), now(),
             ),
         )
         conn.execute(
-            "INSERT INTO review_articles (slug, title, author_name, issue_label, abstract, body_html, published, created_by, created_at, published_at) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO review_articles "
+            "(slug, title, title_en, author_name, author_slug, issue_label, tags, abstract, abstract_en, body_html, body_html_en, published, created_by, created_at, published_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 "structuration-fiscale-contrats-distribution-transfrontaliers",
                 "Structuration fiscale des contrats de distribution transfrontaliers",
+                "Tax Structuring of Cross-Border Distribution Agreements",
                 "Équipe éditoriale — Massey Law Review",
+                "equipe-editoriale",
                 "Vol. 1, n° 1",
+                "fiscalité des affaires,transactions transfrontalières,droit des contrats",
                 "Une analyse des enjeux fiscaux propres aux accords de distribution impliquant des partenaires haïtiens et étrangers, et des pistes de structuration licite pour limiter les zones d'incertitude.",
+                "An analysis of the tax issues specific to distribution agreements involving Haitian and foreign partners, and lawful structuring approaches to reduce areas of uncertainty.",
                 "<p>Les contrats de distribution transfrontaliers soulèvent des questions fiscales spécifiques, souvent sous-estimées au moment de la négociation commerciale.</p>"
-                "<h2>Qualification des flux</h2><p>La qualification exacte des paiements échangés (redevances, commissions, prix de revente) conditionne leur traitement fiscal et les obligations déclaratives applicables à chaque partie.</p>"
-                "<h2>Risques de requalification</h2><p>Une rédaction imprécise des obligations réciproques expose les parties à un risque de requalification par l'administration fiscale, avec des conséquences sur les retenues à la source applicables.</p>"
-                "<h2>Pistes de structuration</h2><p>Une documentation contractuelle rigoureuse, assortie d'une analyse fiscale préalable, permet de sécuriser la relation commerciale tout en réduisant l'exposition aux risques de double imposition.</p>",
+                "<h2 id=\"qualification-des-flux\">Qualification des flux</h2><p>La qualification exacte des paiements échangés (redevances, commissions, prix de revente) conditionne leur traitement fiscal et les obligations déclaratives applicables à chaque partie.</p>"
+                "<h2 id=\"risques-de-requalification\">Risques de requalification</h2><p>Une rédaction imprécise des obligations réciproques expose les parties à un risque de requalification par l'administration fiscale, avec des conséquences sur les retenues à la source applicables.</p>"
+                "<h2 id=\"pistes-de-structuration\">Pistes de structuration</h2><p>Une documentation contractuelle rigoureuse, assortie d'une analyse fiscale préalable, permet de sécuriser la relation commerciale tout en réduisant l'exposition aux risques de double imposition.</p>",
+                "<p>Cross-border distribution agreements raise specific tax questions that are often underestimated at the time of commercial negotiation.</p>"
+                "<h2 id=\"characterizing-payment-flows\">Characterizing payment flows</h2><p>The precise characterization of payments exchanged (royalties, commissions, resale prices) determines their tax treatment and the reporting obligations applicable to each party.</p>"
+                "<h2 id=\"requalification-risks\">Requalification risks</h2><p>Imprecise drafting of reciprocal obligations exposes parties to a risk of requalification by the tax administration, with consequences for applicable withholding taxes.</p>"
+                "<h2 id=\"structuring-approaches\">Structuring approaches</h2><p>Rigorous contractual documentation, combined with an upfront tax analysis, helps secure the business relationship while reducing exposure to double-taxation risk.</p>",
                 1, editorial_user_id, now(), now(),
             ),
         )
@@ -339,21 +414,35 @@ def _seed_review_demo_content(conn):
 
     forum_count = conn.execute("SELECT COUNT(*) AS c FROM review_forum_posts").fetchone()["c"]
     if forum_count == 0:
-        conn.execute(
-            "INSERT INTO review_forum_posts (user_id, title, body, created_at) VALUES (?,?,?,?)",
+        cur1 = conn.execute(
+            "INSERT INTO review_forum_posts (user_id, title, title_en, body, body_en, created_at) VALUES (?,?,?,?,?,?)",
             (
                 editorial_user_id,
                 "Quelle portée donner à une clause de médiation préalable dans un contrat CrossBorder ?",
+                "How much weight should a mandatory mediation clause carry in a cross-border contract?",
                 "Dans nos dossiers transfrontaliers récents, nous observons une multiplication des clauses de médiation préalable obligatoire avant toute action judiciaire ou arbitrale. Comment articulez-vous ces clauses avec les délais de prescription applicables, notamment lorsque les parties relèvent de juridictions différentes ? Le sujet mériterait un examen approfondi dans un prochain numéro.",
+                "In our recent cross-border files, we're seeing more mandatory mediation clauses required before any judicial or arbitral action. How do you reconcile these clauses with applicable limitation periods, especially when the parties are subject to different jurisdictions? This would be worth an in-depth look in an upcoming issue.",
+                now(),
+            ),
+        )
+        post1_id = cur1.lastrowid
+        conn.execute(
+            "INSERT INTO review_forum_posts (user_id, title, title_en, body, body_en, created_at) VALUES (?,?,?,?,?,?)",
+            (
+                editorial_user_id,
+                "Retour d'expérience : négociation d'une clause de non-concurrence avec un partenaire dominicain",
+                "Field notes: negotiating a non-compete clause with a Dominican partner",
+                "Sur un dossier récent impliquant un partenaire commercial basé en République dominicaine, la question de l'étendue territoriale et temporelle raisonnable d'une clause de non-concurrence a fait l'objet d'échanges approfondis. Quelle est votre pratique sur la durée maximale généralement admise dans ce type d'accord bilatéral ?",
+                "On a recent file involving a commercial partner based in the Dominican Republic, the reasonable territorial and time scope of a non-compete clause led to extensive discussion. What's your practice on the maximum duration generally accepted in this type of bilateral agreement?",
                 now(),
             ),
         )
         conn.execute(
-            "INSERT INTO review_forum_posts (user_id, title, body, created_at) VALUES (?,?,?,?)",
+            "INSERT INTO review_forum_replies (post_id, user_id, body, created_at) VALUES (?,?,?,?)",
             (
+                post1_id,
                 editorial_user_id,
-                "Retour d'expérience : négociation d'une clause de non-concurrence avec un partenaire dominicain",
-                "Sur un dossier récent impliquant un partenaire commercial basé en République dominicaine, la question de l'étendue territoriale et temporelle raisonnable d'une clause de non-concurrence a fait l'objet d'échanges approfondis. Quelle est votre pratique sur la durée maximale généralement admise dans ce type d'accord bilatéral ?",
+                "Bonne question — dans la pratique, nous recommandons de prévoir une clause de suspension expresse du délai de prescription pendant la durée de la médiation, plutôt que de s'en remettre au seul droit commun. Un prochain numéro pourrait effectivement approfondir l'articulation entre médiation préalable et délais de prescription en contexte transfrontalier.",
                 now(),
             ),
         )

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Auteur·rices — Administration Massey Law Review{% endblock %}
+{% block content %}
+<h1>Massey Law Review — Auteur·rices</h1>
+<p style="margin-bottom:20px;">
+  <a href="{{ url_for('admin_revue_author_new') }}" class="btn btn-primary btn-sm">+ Nouvel·le auteur·rice</a>
+  <a href="{{ url_for('admin_revue_articles') }}" class="btn btn-ghost btn-sm">Articles</a>
+  <a href="{{ url_for('admin_revue_forum') }}" class="btn btn-ghost btn-sm">Forum</a>
+  <a href="{{ url_for('admin_revue_submissions') }}" class="btn btn-ghost btn-sm">Soumissions reçues</a>
+</p>
+<table>
+  <tr><th>Nom</th><th>Titre</th><th>Page publique</th><th>Articles liés</th><th></th></tr>
+  {% for a in authors %}
+  <tr>
+    <td>{{ a['name'] }}</td>
+    <td>{{ a['title'] or '—' }}</td>
+    <td><a href="{{ url_for('revue_author', slug=a['slug']) }}" target="_blank">/revue/auteurs/{{ a['slug'] }}</a></td>
+    <td>{{ counts.get(a['slug'], 0) }}</td>
+    <td style="display:flex;gap:6px;">
+      <a href="{{ url_for('admin_revue_author_edit', author_id=a['id']) }}" class="btn btn-sm">Modifier</a>
+      <form method="POST" action="{{ url_for('admin_revue_author_delete', author_id=a['id']) }}" onsubmit="return confirm('Supprimer cet·te auteur·rice ?');">
+        <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="helptext">Aucun·e auteur·rice pour l'instant.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% set switchable_en = ['revue_home_en','revue_articles_en','revue_article_detail_en','revue_forum_en','revue_submissions_en','revue_subscription_en','revue_author_en'] %}
+{% if request.endpoint in switchable_en %}
+  {% set fr_url = url_for(request.endpoint[:-3], **(request.view_args or {})) %}
+{% else %}
+  {% set fr_url = url_for('revue_home') %}
+{% endif %}
+<nav class="revue-subnav">
+  <a href="{{ url_for('revue_home_en') }}" class="{{ 'active' if request.endpoint=='revue_home_en' else '' }}">Home</a>
+  <a href="{{ url_for('revue_articles_en') }}" class="{{ 'active' if request.endpoint in ['revue_articles_en','revue_article_detail_en'] else '' }}">Articles</a>
+  <a href="{{ url_for('revue_forum_en') }}" class="{{ 'active' if request.endpoint=='revue_forum_en' else '' }}">Forum</a>
+  <a href="{{ url_for('revue_submissions_en') }}" class="{{ 'active' if request.endpoint=='revue_submissions_en' else '' }}">Submissions</a>
+  <a href="{{ url_for('revue_subscription_en') }}" class="{{ 'active' if request.endpoint=='revue_subscription_en' else '' }}">Subscribe</a>
+  <form action="{{ url_for('revue_search') }}" method="GET" class="revue-search" role="search">
+    <input type="hidden" name="lang" value="en">
+    <input type="search" name="q" id="revue-search-input" placeholder="Search… (/)" aria-label="Search the review">
+  </form>
+  <a href="{{ fr_url }}" class="revue-lang-switch" title="Lire en français">FR</a>
+</nav>

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Erreur serveur — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Une erreur inattendue est survenue.{% endblock %}
+{% block content %}
+<section class="page-hero reveal" style="text-align:center;">
+  <div class="eyebrow">Erreur 500</div>
+  <h1>Une erreur inattendue est survenue</h1>
+  <p class="lede" style="margin-left:auto;margin-right:auto;">
+    Nos équipes ont été notifiées. Merci de réessayer dans quelques instants ; si le problème persiste, contactez-nous.
+  </p>
+  <div class="ctas" style="justify-content:center;">
+    <a href="{{ url_for('home') }}" class="btn btn-primary">Retour à l'accueil</a>
+  </div>
+</section>
+{% endblock %}

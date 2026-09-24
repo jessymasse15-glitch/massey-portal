@@ -1,7 +1,19 @@
+{% set switchable = ['revue_home','revue_articles','revue_article_detail','revue_forum','revue_submissions','revue_subscription','revue_author'] %}
+{% if request.endpoint in switchable %}
+  {% set en_url = url_for(request.endpoint + '_en', **(request.view_args or {})) %}
+{% elif request.endpoint and request.endpoint.endswith('_en') and request.endpoint[:-3] in switchable %}
+  {% set en_url = url_for(request.endpoint, **(request.view_args or {})) %}
+{% else %}
+  {% set en_url = url_for('revue_search', q=request.args.get('q',''), lang='en') if request.endpoint == 'revue_search' else url_for('revue_home_en') %}
+{% endif %}
 <nav class="revue-subnav">
-  <a href="{{ url_for('revue_home') }}" class="{{ 'active' if request.endpoint=='revue_home' else '' }}">Accueil</a>
+  <a href="{{ url_for('revue_home') }}" class="{{ 'active' if request.endpoint in ['revue_home'] else '' }}">Accueil</a>
   <a href="{{ url_for('revue_articles') }}" class="{{ 'active' if request.endpoint in ['revue_articles','revue_article_detail'] else '' }}">Articles</a>
   <a href="{{ url_for('revue_forum') }}" class="{{ 'active' if request.endpoint=='revue_forum' else '' }}">Forum</a>
   <a href="{{ url_for('revue_submissions') }}" class="{{ 'active' if request.endpoint=='revue_submissions' else '' }}">Soumissions</a>
   <a href="{{ url_for('revue_subscription') }}" class="{{ 'active' if request.endpoint=='revue_subscription' else '' }}">Abonnement</a>
+  <form action="{{ url_for('revue_search') }}" method="GET" class="revue-search" role="search">
+    <input type="search" name="q" id="revue-search-input" placeholder="Rechercher… (/)" aria-label="Rechercher dans la revue">
+  </form>
+  <a href="{{ en_url }}" class="revue-lang-switch" title="Read in English">EN</a>
 </nav>

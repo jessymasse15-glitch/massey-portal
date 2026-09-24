@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ author['name'] }} — Massey Law Review{% endblock %}
+{% block meta_description %}{{ author['bio_en'] or author['bio'] }}{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey Law Review — Author</div>
+  <h1>{{ author['name'] }}</h1>
+  {% if author['title'] %}<p class="lede">{{ author['title'] }}</p>{% endif %}
+</section>
+
+{% include "revue/en/_subnav.html" %}
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="two-col">
+    <aside>
+      <div class="callout">
+        <p style="margin:0;color:var(--ink-soft);">{{ author['bio_en'] or author['bio'] }}</p>
+      </div>
+    </aside>
+    <div class="prose">
+      <h2 style="margin-top:0;">Publications</h2>
+      {% if articles %}
+        {% for a in articles %}
+          <div class="article-row">
+            <div class="meta">{{ a['issue_label'] or 'Massey Law Review' }} — {{ (a['published_at'] or a['created_at'])[:10] }}</div>
+            <h3><a href="{{ url_for('revue_article_detail_en', slug=a['slug']) }}">{{ a['title_en'] or a['title'] }}</a></h3>
+            {% set abs = a['abstract_en'] or a['abstract'] %}
+            {% if abs %}<p>{{ abs }}</p>{% endif %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="helptext">No publications yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="ctas" style="margin-top:36px;">
+    <a href="{{ url_for('revue_articles_en') }}" class="btn btn-ghost">← All articles</a>
+  </div>
+</section>
+{% endblock %}

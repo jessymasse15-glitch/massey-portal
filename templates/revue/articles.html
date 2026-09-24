@@ -5,18 +5,53 @@
 <section class="page-hero reveal">
   <div class="eyebrow">Massey Law Review</div>
   <h1>Articles</h1>
-  <p class="lede">Les textes publiés par la revue, du plus récent au plus ancien. Chaque titre ouvre la version web intégrale ; le lien PDF permet le téléchargement.</p>
+  <p class="lede">Les textes publiés par la revue. Chaque titre ouvre la version web intégrale ; le lien PDF permet le téléchargement.</p>
 </section>
 
 {% include "revue/_subnav.html" %}
 
 <section class="block" style="border-top:none;padding-top:0;">
+  <form method="GET" class="article-filters" aria-label="Filtrer et trier les articles">
+    <div class="form-group" style="margin-bottom:0;">
+      <label for="filter-tag">Thème</label>
+      <select id="filter-tag" name="tag" onchange="this.form.submit()">
+        <option value="">Tous les thèmes</option>
+        {% for t in all_tags %}
+          <option value="{{ t }}" {{ 'selected' if t == current_tag else '' }}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label for="filter-auteur">Auteur·rice</label>
+      <select id="filter-auteur" name="auteur" onchange="this.form.submit()">
+        <option value="">Tous les auteur·rices</option>
+        {% for a in all_authors %}
+          <option value="{{ a }}" {{ 'selected' if a == current_auteur else '' }}>{{ a }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label for="filter-tri">Trier par</label>
+      <select id="filter-tri" name="tri" onchange="this.form.submit()">
+        <option value="recent" {{ 'selected' if current_tri == 'recent' else '' }}>Plus récent</option>
+        <option value="ancien" {{ 'selected' if current_tri == 'ancien' else '' }}>Plus ancien</option>
+        <option value="titre" {{ 'selected' if current_tri == 'titre' else '' }}>Titre (A→Z)</option>
+      </select>
+    </div>
+    {% if current_tag or current_auteur %}
+      <a href="{{ url_for('revue_articles') }}" class="btn btn-ghost btn-sm">Réinitialiser</a>
+    {% endif %}
+  </form>
+
   {% if articles %}
     {% for a in articles %}
       <div class="article-row">
         <div class="meta">{{ a['issue_label'] or 'Massey Law Review' }} — {{ (a['published_at'] or a['created_at'])[:10] }}</div>
         <h3><a href="{{ url_for('revue_article_detail', slug=a['slug']) }}">{{ a['title'] }}</a></h3>
-        <p>{{ a['author_name'] }}{% if a['abstract'] %} — {{ a['abstract'] }}{% endif %}</p>
+        <p>
+          {% if a['author_slug'] %}<a href="{{ url_for('revue_author', slug=a['author_slug']) }}">{{ a['author_name'] }}</a>{% else %}{{ a['author_name'] }}{% endif %}
+          {% if a['abstract'] %} — {{ a['abstract'] }}{% endif %}
+        </p>
         <div class="links">
           <a href="{{ url_for('revue_article_detail', slug=a['slug']) }}">Lire l'article →</a>
           {% if a['pdf_stored_name'] %}<a href="{{ url_for('revue_article_pdf', slug=a['slug']) }}">Télécharger le PDF</a>{% endif %}
@@ -24,7 +59,7 @@
       </div>
     {% endfor %}
   {% else %}
-    <p class="helptext">Aucun article publié pour l'instant — le premier numéro est en préparation.</p>
+    <p class="helptext">Aucun article ne correspond à ces filtres.</p>
   {% endif %}
 </section>
 {% endblock %}

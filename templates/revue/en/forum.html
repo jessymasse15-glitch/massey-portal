@@ -1,31 +1,31 @@
 {% extends "base.html" %}
 {% block title %}Forum — Massey Law Review{% endblock %}
-{% block meta_description %}Espace d'échange de Massey Law Review entre praticiens, chercheurs et lecteurs.{% endblock %}
+{% block meta_description %}Massey Law Review's discussion space for practitioners, researchers, and readers.{% endblock %}
 {% block content %}
 <section class="page-hero reveal">
   <div class="eyebrow">Massey Law Review</div>
   <h1>Forum</h1>
-  <p class="lede">Un espace d'échange entre praticiens, chercheurs et lecteurs autour des enjeux juridiques et fiscaux traités par la revue.</p>
+  <p class="lede">A space for exchange between practitioners, researchers, and readers on the legal and tax issues covered by the review.</p>
 </section>
 
-{% include "revue/_subnav.html" %}
+{% include "revue/en/_subnav.html" %}
 
 <section class="block" style="border-top:none;padding-top:0;">
   {% if current_user %}
     <form method="POST" action="{{ url_for('revue_forum_post') }}" class="card">
       <div class="form-group">
-        <label for="title">Titre du billet</label>
+        <label for="title">Post title</label>
         <input type="text" id="title" name="title" required>
       </div>
       <div class="form-group">
         <label for="body">Message</label>
         <textarea id="body" name="body" required></textarea>
       </div>
-      <button type="submit" class="btn btn-primary">Publier</button>
+      <button type="submit" class="btn btn-primary">Post</button>
     </form>
   {% else %}
     <div class="callout" style="max-width:74ch;">
-      <a href="{{ url_for('login', next=url_for('revue_forum')) }}" style="color:var(--gold);">Connectez-vous</a> pour participer au forum.
+      <a href="{{ url_for('login', next=url_for('revue_forum_en')) }}" style="color:var(--gold);">Log in</a> to take part in the forum.
     </div>
   {% endif %}
 
@@ -38,12 +38,12 @@
             {{ p['full_name'] }} — {{ p['created_at'][:16] | replace('T',' ') }}
             {% if current_user and current_user['role'] in ('expert','admin') %}
               <form method="POST" action="{{ url_for('revue_forum_hide', post_id=p['id']) }}" style="display:inline;margin-left:12px;">
-                <button type="submit" class="btn btn-sm btn-danger" style="padding:2px 8px;">Masquer</button>
+                <button type="submit" class="btn btn-sm btn-danger" style="padding:2px 8px;">Hide</button>
               </form>
             {% endif %}
           </div>
-          <h4>{{ p['title'] }}</h4>
-          <p>{{ p['body'] }}</p>
+          <h4>{{ p['title_en'] or p['title'] }}</h4>
+          <p>{{ p['body_en'] or p['body'] }}</p>
 
           {% if item.replies %}
             <div class="forum-replies">
@@ -59,16 +59,16 @@
           {% if current_user %}
             <form method="POST" action="{{ url_for('revue_forum_reply', post_id=p['id']) }}" class="forum-reply-form">
               <div class="form-group" style="margin-bottom:8px;">
-                <label for="reply-{{ p['id'] }}" class="sr-only">Répondre à ce billet</label>
-                <textarea id="reply-{{ p['id'] }}" name="body" placeholder="Écrire une réponse…" required rows="2"></textarea>
+                <label for="reply-{{ p['id'] }}" class="sr-only">Reply to this post</label>
+                <textarea id="reply-{{ p['id'] }}" name="body" placeholder="Write a reply…" required rows="2"></textarea>
               </div>
-              <button type="submit" class="btn btn-ghost btn-sm">Répondre</button>
+              <button type="submit" class="btn btn-ghost btn-sm">Reply</button>
             </form>
           {% endif %}
         </div>
       {% endfor %}
     {% else %}
-      <p class="helptext">Aucune discussion pour l'instant — soyez le premier à lancer un sujet.</p>
+      <p class="helptext">No discussions yet — be the first to start one.</p>
     {% endif %}
   </div>
 </section>

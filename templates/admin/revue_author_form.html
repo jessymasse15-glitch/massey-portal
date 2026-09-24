@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifier' if author else 'Nouvel·le' }} auteur·rice — Massey Law Review{% endblock %}
+{% block content %}
+<h1>{{ 'Modifier l\'auteur·rice' if author else 'Nouvel·le auteur·rice' }}</h1>
+<form method="POST" class="card" style="max-width:760px;">
+  <div class="form-group">
+    <label for="name">Nom complet</label>
+    <input type="text" id="name" name="name" value="{{ author['name'] if author else '' }}" required>
+    {% if author %}<div class="helptext">Page publique : /revue/auteurs/{{ author['slug'] }} (l'adresse ne change pas si vous renommez.)</div>{% endif %}
+  </div>
+  <div class="form-group">
+    <label for="title">Titre / fonction</label>
+    <input type="text" id="title" name="title" value="{{ author['title'] if author else '' }}" placeholder="ex. Fondateur, Massey Contracts & Tax">
+  </div>
+  <div class="form-group">
+    <label for="bio">Biographie (FR)</label>
+    <textarea id="bio" name="bio" style="min-height:140px;">{{ author['bio'] if author else '' }}</textarea>
+  </div>
+  <div class="form-group">
+    <label for="bio_en">Biographie (EN)</label>
+    <textarea id="bio_en" name="bio_en" style="min-height:140px;">{{ author['bio_en'] if author else '' }}</textarea>
+    <div class="helptext">Facultatif — si vide, la biographie française s'affiche sur la version anglaise du site.</div>
+  </div>
+  <button type="submit" class="btn btn-primary">Enregistrer</button>
+  <a href="{{ url_for('admin_revue_authors') }}" class="btn btn-ghost">Annuler</a>
+</form>
+{% endblock %}

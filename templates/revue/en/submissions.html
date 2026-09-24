@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Submissions — Massey Law Review{% endblock %}
+{% block meta_description %}Author guidelines and article submission form for Massey Law Review.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey Law Review</div>
+  <h1>Submissions</h1>
+  <p class="lede">Massey Law Review welcomes contributions from lawyers, practitioners, and researchers on business law, taxation, and cross-border transactions.</p>
+</section>
+
+{% include "revue/en/_subnav.html" %}
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="grid-2">
+    <div class="prose">
+      <h2>Author guidelines</h2>
+      <p>Submitted texts must address contract law, business taxation, international trade law, or legal technology, with an explicit link to practice.</p>
+      <p>Expected format: Word or PDF document, a 150-to-250-word abstract, footnotes for references. Suggested length: 3,000 to 8,000 words for an article, 800 to 1,500 words for a practice note.</p>
+      <p>Every submission is acknowledged, then reviewed by the editorial board. Possible statuses are: received, under review, revisions requested, accepted, rejected, or published. The author is notified by email at every status change.</p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Submit an article</h3>
+      <form method="POST" action="{{ url_for('revue_submissions') }}" enctype="multipart/form-data">
+        <input type="hidden" name="lang" value="en">
+        <div class="form-group">
+          <label for="author_name">Full name</label>
+          <input type="text" id="author_name" name="author_name" required>
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+          <label for="title">Article title</label>
+          <input type="text" id="title" name="title" required>
+        </div>
+        <div class="form-group">
+          <label for="abstract">Abstract (150-250 words)</label>
+          <textarea id="abstract" name="abstract"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="file">File (PDF, DOC, or DOCX)</label>
+          <input type="file" id="file" name="file" accept=".pdf,.doc,.docx" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Submit</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

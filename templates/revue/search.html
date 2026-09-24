@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Recherche — Massey Law Review{% endblock %}
+{% block meta_description %}Recherchez dans les articles et le forum de Massey Law Review.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey Law Review</div>
+  <h1>Recherche</h1>
+  <p class="lede">{% if q %}Résultats pour « {{ q }} »{% else %}Recherchez un article ou une discussion du forum.{% endif %}</p>
+</section>
+
+{% include "revue/_subnav.html" %}
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <form method="GET" action="{{ url_for('revue_search') }}" class="card" style="max-width:560px;" role="search">
+    <div class="form-group" style="margin-bottom:12px;">
+      <label for="search-q">Termes de recherche</label>
+      <input type="search" id="search-q" name="q" value="{{ q }}" placeholder="Ex. arbitrage, fiscalité, contrat…" autofocus>
+    </div>
+    <button type="submit" class="btn btn-primary">Rechercher</button>
+  </form>
+
+  {% if q %}
+    <div class="block-head" style="margin-top:48px;">
+      <div>
+        <div class="eyebrow">Articles</div>
+        <h2>{{ articles|length }} résultat{{ 's' if articles|length != 1 else '' }}</h2>
+      </div>
+    </div>
+    {% if articles %}
+      {% for a in articles %}
+        <div class="article-row">
+          <div class="meta">{{ a['issue_label'] or 'Massey Law Review' }} — {{ (a['published_at'] or a['created_at'])[:10] }}</div>
+          <h3><a href="{{ url_for('revue_article_detail', slug=a['slug']) }}">{{ a['title'] }}</a></h3>
+          <p>{{ a['author_name'] }}{% if a['abstract'] %} — {{ a['abstract'] }}{% endif %}</p>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="helptext">Aucun article ne correspond à cette recherche.</p>
+    {% endif %}
+
+    <div class="block-head" style="margin-top:48px;">
+      <div>
+        <div class="eyebrow">Forum</div>
+        <h2>{{ posts|length }} résultat{{ 's' if posts|length != 1 else '' }}</h2>
+      </div>
+    </div>
+    {% if posts %}
+      {% for p in posts %}
+        <div class="forum-post">
+          <div class="meta">{{ p['full_name'] }} — {{ p['created_at'][:16] | replace('T',' ') }}</div>
+          <h4><a href="{{ url_for('revue_forum') }}#post-{{ p['id'] }}">{{ p['title'] }}</a></h4>
+          <p>{{ p['body'] }}</p>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="helptext">Aucune discussion ne correspond à cette recherche.</p>
+    {% endif %}
+  {% endif %}
+</section>
+{% endblock %}
