@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Contract Intelligence — Massey AI{% endblock %}
+{% block meta_description %}Bibliothèque de clauses, négociation, signature électronique et suivi des contrats — le pilier Contract Intelligence de Massey AI.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Pilier 02</div>
+  <h1>Contract Intelligence</h1>
+  <p class="lede">Du modèle à l'exécution, en toute confiance.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="pillar-feature-card" style="max-width:none;">
+    <h3>Ce que couvre ce pilier</h3>
+    <ul style="display:grid;grid-template-columns:1fr 1fr;gap:9px 24px;">
+      <li>Création de contrats par IA</li>
+      <li>Bibliothèque de clauses</li>
+      <li>Modèles et playbooks</li>
+      <li>Négociation et redlining</li>
+      <li>Comparaison de versions</li>
+      <li>Détection des risques</li>
+      <li>Extraction des obligations</li>
+      <li>Dates d'échéance et renouvellements</li>
+      <li>Approbations internes</li>
+      <li>Signature électronique</li>
+      <li>Archivage et suivi</li>
+    </ul>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Bibliothèque</div>
+      <h2>Clauses et modèles</h2>
+      <p>Un socle de clauses réutilisables, classées par catégorie et niveau de risque.</p>
+    </div>
+  </div>
+
+  <form method="get" style="margin-bottom:24px;">
+    <select name="category" onchange="this.form.submit()" style="max-width:320px;">
+      <option value="">Toutes les catégories</option>
+      {% for key, label in categories %}
+      <option value="{{ key }}" {% if category==key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  {% for c in clauses %}
+    <div class="clause-card reveal">
+      <div class="head">
+        <h4>{{ c['title'] }}</h4>
+        <span class="status-pill {% if c['risk_level']=='standard' %}done{% elif c['risk_level']=='sensible' %}{% endif %}">{{ risk_labels.get(c['risk_level'], c['risk_level']) }}</span>
+      </div>
+      <div class="body-text">{{ c['body_text'] }}</div>
+      {% if c['guidance'] %}<div class="guidance">{{ c['guidance'] }}</div>{% endif %}
+    </div>
+  {% else %}
+    <p class="helptext">Aucune clause dans cette catégorie pour l'instant.</p>
+  {% endfor %}
+</section>
+
+{% if current_user %}
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Suivi</div>
+      <h2>{% if current_user['role'] in ('expert','admin') %}Contrats en cours (tous dossiers){% else %}Mes contrats{% endif %}</h2>
+    </div>
+  </div>
+  {% for doc in my_documents %}
+    <div class="doc-row">
+      <span>
+        {{ doc['original_name'] }}
+        {% if doc['is_final'] %}<span class="status-pill done">finale</span>{% endif %}
+        {% if doc['locked'] %}<span class="status-pill">signée</span>{% endif %}
+      </span>
+      <a href="{{ url_for('portal_dossier', dossier_id=doc['dossier_id']) }}" class="btn btn-sm">Voir le dossier #{{ doc['dossier_id'] }}</a>
+    </div>
+  {% else %}
+    <p class="helptext">Aucun contrat téléversé pour l'instant.</p>
+  {% endfor %}
+</section>
+{% else %}
+<section class="block">
+  <div class="cta-banner reveal">
+    <div>
+      <h2>Suivez vos contrats de bout en bout</h2>
+      <p>Connectez-vous à votre espace client pour voir vos contrats, leurs échéances et leur statut de signature.</p>
+    </div>
+    <div class="ctas">
+      <a href="{{ url_for('login') }}" class="btn btn-primary">Connexion</a>
+      <a href="{{ url_for('register') }}" class="btn btn-ghost">Créer un compte</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

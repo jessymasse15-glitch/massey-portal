@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Massey Contracts & Tax — Ingénierie contractuelle, fiscale et transfrontalière{% endblock %}
+{% block title %}Massey Contracts & Tax — LegalTech d'ingénierie juridique, contractuelle, fiscale et transactionnelle{% endblock %}
+{% block meta_description %}Massey Contracts & Tax est une LegalTech d'ingénierie juridique, contractuelle, fiscale et transactionnelle sous droit haïtien, propulsée par Massey AI.{% endblock %}
 {% block content %}
 <section class="hero">
   <div class="glow-orb gold" style="top:-140px;right:-100px;"></div>
@@ -13,12 +14,11 @@
       <h1>Massey Contracts &amp; Tax</h1>
 
       <div class="prose" style="margin:22px 0 28px;">
-        <p style="font-size:1rem;">Massey Contracts &amp; Tax est une LegalTech d'ingénierie contractuelle, fiscale et transactionnelle qui met l'expertise du droit haïtien au service des entreprises et des opérations commerciales locales et internationales.</p>
-        <p style="font-size:1rem;">À la convergence du droit, de l'intelligence artificielle et de la technologie, nous concevons des solutions qui permettent de structurer les transactions, sécuriser les engagements et accélérer l'exécution.</p>
-        <p style="font-size:1rem;margin-bottom:8px;">Une expertise juridique augmentée par la technologie. Une disponibilité 24/7. Une exécution pensée pour les environnements où chaque décision et chaque délai comptent.</p>
+        <p style="font-size:1rem;">LegalTech d'ingénierie juridique, contractuelle, fiscale et transactionnelle sous droit haïtien — à la convergence du droit, de la technologie et des données.</p>
+        <p style="font-size:1rem;margin-bottom:8px;">Propulsée par <strong>Massey AI</strong> et une base juridique haïtienne structurée, la plateforme accompagne chaque transaction de sa création à son renouvellement, avec une validation humaine systématique.</p>
       </div>
-      <a href="{{ url_for('about') }}" style="color:var(--gold);text-decoration:none;font-size:0.9rem;display:inline-flex;align-items:center;gap:6px;margin-bottom:30px;">
-        En savoir plus sur notre approche
+      <a href="#piliers" style="color:var(--gold);text-decoration:none;font-size:0.9rem;display:inline-flex;align-items:center;gap:6px;margin-bottom:30px;">
+        Découvrir les 5 piliers de la plateforme
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </a>
 
@@ -32,12 +32,12 @@
       <svg viewBox="0 0 420 420" fill="none">
         <defs>
           <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#C9A24B" stop-opacity="0.75"/>
-            <stop offset="100%" stop-color="#5E86C9" stop-opacity="0.55"/>
+            <stop offset="0%" stop-color="#B07C22" stop-opacity="0.75"/>
+            <stop offset="100%" stop-color="#2A5FD9" stop-opacity="0.55"/>
           </linearGradient>
           <radialGradient id="hubGrad" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#DDBB68"/>
-            <stop offset="100%" stop-color="#C9A24B"/>
+            <stop offset="0%" stop-color="#D4A24A"/>
+            <stop offset="100%" stop-color="#B07C22"/>
           </radialGradient>
         </defs>
 
@@ -56,10 +56,10 @@
         </g>
 
         <circle cx="210" cy="210" r="30" fill="url(#hubGrad)"/>
-        <rect x="198" y="197" width="24" height="26" rx="2" fill="#141018" opacity="0.85"/>
-        <path d="M202 205h16M202 211h16M202 217h10" stroke="#DDBB68" stroke-width="1.4" stroke-linecap="round"/>
+        <rect x="198" y="197" width="24" height="26" rx="2" fill="#0B2340" opacity="0.9"/>
+        <path d="M202 205h16M202 211h16M202 217h10" stroke="#D4A24A" stroke-width="1.4" stroke-linecap="round"/>
 
-        <g fill="#0A0E17" stroke="url(#lineGrad)" stroke-width="1.4">
+        <g fill="#F5F8FC" stroke="url(#lineGrad)" stroke-width="1.4">
           <circle cx="90" cy="120" r="12"><animate attributeName="r" values="10;13;10" dur="3.4s" repeatCount="indefinite"/></circle>
           <circle cx="340" cy="100" r="10"><animate attributeName="r" values="9;12;9" dur="4.1s" repeatCount="indefinite"/></circle>
           <circle cx="350" cy="260" r="11"><animate attributeName="r" values="10;13;10" dur="3.7s" repeatCount="indefinite"/></circle>
@@ -71,7 +71,7 @@
   </div>
 
   <div class="statbar reveal">
-    <div class="stat"><b>04</b><span>Piliers d'intervention</span></div>
+    <div class="stat"><b>05</b><span>Piliers d'intelligence</span></div>
     <div class="stat"><b>2FA</b><span>Sur les comptes internes</span></div>
     <div class="stat"><b>SHA-256</b><span>Empreinte de chaque document</span></div>
     <div class="stat"><b>24&#8202;/&#8202;7</b><span>Suivi de dossier en ligne</span></div>
@@ -79,55 +79,144 @@
 </section>
 
 <section class="block">
-  <div class="block-head reveal">
-    <div>
-      <div class="eyebrow">Naviguer</div>
-      <h2>La LegalTech, en bref</h2>
+  <div class="ai-band reveal">
+    <div class="eyebrow">Massey AI</div>
+    <h2>L'IA juridique au service des décisions</h2>
+    <p class="lede">Recherche, rédaction, analyse de risques : une intelligence artificielle encadrée, toujours sous validation humaine.</p>
+    <div class="capability-row">
+      <div class="cap">Recherche intelligente</div>
+      <div class="cap">Rédaction assistée</div>
+      <div class="cap">Analyse &amp; risques</div>
+      <div class="cap">Agents IA (workflows)</div>
+      <div class="cap">Sources vérifiables &amp; citations</div>
     </div>
   </div>
-  <div class="bento reveal-stagger">
-    <a href="{{ url_for('expertise') }}" class="bento-card">
-      <span class="n">01</span>
-      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/></svg></div>
-      <h3>Expertise</h3>
-      <p>Nos quatre piliers d'intervention, du contrat à la fiscalité transfrontalière.</p>
-      <div class="go">Découvrir <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-    </a>
-    <a href="{{ url_for('tarifs') }}" class="bento-card">
-      <span class="n">02</span>
-      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-      <h3>Tarifs</h3>
-      <p>Des packs calibrés selon la complexité réelle de votre dossier.</p>
-      <div class="go">Découvrir <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-    </a>
-    <a href="{{ url_for('espace_client_marketing') }}" class="bento-card">
-      <span class="n">03</span>
-      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
-      <h3>Espace client</h3>
-      <p>Suivi de dossier, documents, messagerie et paiement en ligne.</p>
-      <div class="go">Découvrir <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-    </a>
-    <a href="{{ url_for('revue_home') }}" class="bento-card">
-      <span class="n">04</span>
-      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
-      <h3>Massey Law Review</h3>
-      <p>Analyses, notes pratiques et publications sur le droit des affaires haïtien.</p>
-      <div class="go">Découvrir <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-    </a>
-    <a href="{{ url_for('home') }}#gouvernance" class="bento-card">
-      <span class="n">05</span>
-      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg></div>
-      <h3>Gouvernance IA</h3>
-      <p>Une technologie encadrée, jamais autonome — validation humaine systématique.</p>
-      <div class="go">Découvrir <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-    </a>
-    <a href="{{ url_for('about') }}" class="bento-card">
-      <span class="n">06</span>
-      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg></div>
-      <h3>À propos</h3>
-      <p>Notre philosophie : la technologie au service du jugement professionnel.</p>
-      <div class="go">Découvrir <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-    </a>
+</section>
+
+<section class="block" id="piliers">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Architecture</div>
+      <h2>Les 5 piliers</h2>
+      <p>Une plateforme unique, cinq intelligences complémentaires — de la recherche juridique à la conformité réglementaire.</p>
+    </div>
+  </div>
+  <div class="pillar-feature-grid reveal-stagger">
+    <div class="pillar-feature-card">
+      <span class="num">01 — Legal Intelligence</span>
+      <h3>La connaissance juridique à portée de main</h3>
+      <p class="tagline">Recherche législative, jurisprudence et doctrine, avec sources vérifiables.</p>
+      <ul>
+        <li>Recherche législative et réglementaire</li>
+        <li>Jurisprudence et doctrine</li>
+        <li>Analyse et synthèse de documents</li>
+        <li>Recherche en langage naturel, réponses avec sources</li>
+      </ul>
+      <a href="{{ url_for('pillar_legal_intelligence') }}" class="pillar-link">Explorer Legal Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="pillar-feature-card">
+      <span class="num">02 — Contract Intelligence</span>
+      <h3>Du modèle à l'exécution, en toute confiance</h3>
+      <p class="tagline">Bibliothèque de clauses, négociation, signature et suivi des échéances.</p>
+      <ul>
+        <li>Bibliothèque de clauses et playbooks</li>
+        <li>Négociation, redlining et comparaison de versions</li>
+        <li>Dates d'échéance et renouvellements</li>
+        <li>Signature électronique, archivage et suivi</li>
+      </ul>
+      <a href="{{ url_for('pillar_contract_intelligence') }}" class="pillar-link">Explorer Contract Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="pillar-feature-card">
+      <span class="num">03 — Transaction Intelligence</span>
+      <h3>De l'opportunité à la clôture</h3>
+      <p class="tagline">Structuration, due diligence et pilotage du workflow transactionnel.</p>
+      <ul>
+        <li>Structuration des transactions, due diligence</li>
+        <li>Gestion des parties prenantes</li>
+        <li>Cartographie des risques, checklists et échéanciers</li>
+        <li>Post-closing et intégration</li>
+      </ul>
+      <a href="{{ url_for('pillar_transaction_intelligence') }}" class="pillar-link">Explorer Transaction Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="pillar-feature-card">
+      <span class="num">04 — Tax Intelligence</span>
+      <h3>Une fiscalité maîtrisée, une croissance sécurisée</h3>
+      <p class="tagline">Obligations, échéances et scénarios de structuration fiscale.</p>
+      <ul>
+        <li>Analyse fiscale des transactions</li>
+        <li>Obligations et échéances fiscales</li>
+        <li>Scénarios de structuration, optimisation fiscale</li>
+        <li>Sources légales et réglementaires</li>
+      </ul>
+      <a href="{{ url_for('pillar_tax_intelligence') }}" class="pillar-link">Explorer Tax Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="pillar-feature-card" style="grid-column:1 / -1;">
+      <span class="num">05 — Regulatory &amp; Compliance Intelligence</span>
+      <h3>Anticiper. Se conformer. Protéger.</h3>
+      <p class="tagline">Conformité AML/KYC, autorisations et suivi réglementaire.</p>
+      <ul style="grid-template-columns:1fr 1fr;display:grid;">
+        <li>Réglementations sectorielles</li>
+        <li>Conformité AML / KYC / sanctions</li>
+        <li>Autorisations, licences et alertes</li>
+        <li>Reporting et documentation</li>
+      </ul>
+      <a href="{{ url_for('pillar_regulatory_compliance') }}" class="pillar-link">Explorer Regulatory &amp; Compliance <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Fondation</div>
+      <h2>Base juridique haïtienne</h2>
+      <p>Source structurée et constamment mise à jour.</p>
+    </div>
+  </div>
+  <div class="source-strip reveal">
+    <span class="source-chip">Constitution</span>
+    <span class="source-chip">Lois</span>
+    <span class="source-chip">Décrets</span>
+    <span class="source-chip">Arrêtés</span>
+    <span class="source-chip">Jurisprudence</span>
+    <span class="source-chip">Doctrine</span>
+    <span class="source-chip">Fiscalité</span>
+    <span class="source-chip">Pratique contractuelle</span>
+    <span class="source-chip">Modèles &amp; clauses</span>
+  </div>
+</section>
+
+<section class="block">
+  <div class="dark-band" style="border-radius:16px;padding:44px 36px;">
+    <div class="eyebrow">Moteur d'intégration &amp; de contexte</div>
+    <h2 style="margin-bottom:26px;">Une seule plateforme, tout le cycle de vie</h2>
+    <div class="workflow-strip">
+      <div class="step"><b>Créer</b></div><span class="arrow">→</span>
+      <div class="step"><b>Négocier</b></div><span class="arrow">→</span>
+      <div class="step"><b>Approuver</b></div><span class="arrow">→</span>
+      <div class="step"><b>Signer</b></div><span class="arrow">→</span>
+      <div class="step"><b>Exécuter</b></div><span class="arrow">→</span>
+      <div class="step"><b>Surveiller</b></div><span class="arrow">→</span>
+      <div class="step"><b>Renouveler</b></div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Utilisateurs</div>
+      <h2>Conçue pour tous les acteurs de la transaction</h2>
+    </div>
+  </div>
+  <div class="audience-row reveal">
+    <div class="audience-chip">Entreprises</div>
+    <div class="audience-chip">Investisseurs</div>
+    <div class="audience-chip">Avocats &amp; cabinets</div>
+    <div class="audience-chip">Directions juridiques</div>
+    <div class="audience-chip">PME &amp; entrepreneurs</div>
+    <div class="audience-chip">Institutions financières</div>
+    <div class="audience-chip">État &amp; secteur public</div>
   </div>
 </section>
 
@@ -149,8 +238,8 @@
 
   <div class="cta-banner reveal">
     <div>
-      <h2>Prêt à structurer votre prochaine opération ?</h2>
-      <p>Ouvrez un dossier en quelques minutes et bénéficiez d'un suivi sécurisé de bout en bout, avec validation humaine à chaque étape.</p>
+      <h2>Le droit, la technologie et votre succès.</h2>
+      <p>Massey Contracts &amp; Tax → Massey AI → Intelligence juridique + Workflow transactionnel + Sources vérifiables → Base juridique haïtienne.</p>
     </div>
     <div class="ctas">
       <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}À propos — Massey Law Review{% endblock %}
+{% block meta_description %}Mission éditoriale, comité et politique de publication de Massey Law Review.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey Law Review</div>
+  <h1>Une revue au service de la pratique et de la réflexion juridique</h1>
+</section>
+
+{% include "revue/_subnav.html" %}
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="prose">
+    <p>Massey Law Review est la revue juridique de Massey Contracts &amp; Tax. Elle publie des analyses, notes pratiques et études de cas consacrées au droit des contrats, à la fiscalité des affaires et aux transactions transfrontalières, avec un ancrage particulier sur le marché haïtien et ses zones d'échange.</p>
+
+    <h2>Mission éditoriale</h2>
+    <p>La revue vise à relier la doctrine à la pratique : chaque texte publié doit éclairer une question concrète rencontrée par les entreprises, les investisseurs ou les praticiens du droit, sans jamais sacrifier la rigueur de l'analyse.</p>
+
+    <h2>Comité éditorial</h2>
+    <p>Les textes soumis sont évalués par un comité composé de juristes et de praticiens spécialisés en droit des affaires, en fiscalité et en droit international. Le processus d'évaluation est décrit sur la page <a href="{{ url_for('revue_submissions') }}" style="color:var(--gold);">Soumissions</a>.</p>
+
+    <h2>Indépendance et rigueur</h2>
+    <p>Les analyses publiées engagent leurs auteurs et ne constituent pas un avis juridique ou fiscal pour un dossier particulier. Massey Law Review maintient une séparation claire entre son contenu éditorial et l'activité de conseil de Massey Contracts &amp; Tax.</p>
+
+    <h2>Nous joindre</h2>
+    <p>Pour toute question relative à la revue, une soumission ou un partenariat éditorial, écrivez-nous via le formulaire de <a href="{{ url_for('revue_submissions') }}" style="color:var(--gold);">soumission</a> ou depuis votre espace client si vous êtes déjà inscrit.</p>
+  </div>
+</section>
+{% endblock %}

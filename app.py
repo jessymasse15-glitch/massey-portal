@@ -131,6 +131,137 @@ def espace_client_marketing():
     return render_template("marketing/espace_client.html")
 
 
+# ---------------------------------------------------------------------------
+# Plateforme — les 5 piliers Massey AI
+# ---------------------------------------------------------------------------
+
+@app.route("/legal-intelligence")
+def pillar_legal_intelligence():
+    q = request.args.get("q", "").strip()
+    source_type = request.args.get("source_type", "")
+    results = []
+    if q or source_type:
+        conn = dbm.get_db()
+        query = "SELECT * FROM legal_corpus_documents WHERE 1=1"
+        params = []
+        if q:
+            query += " AND (title LIKE ? OR full_text LIKE ? OR citation_reference LIKE ?)"
+            like = f"%{q}%"
+            params += [like, like, like]
+        if source_type:
+            query += " AND source_type=?"
+            params.append(source_type)
+        query += " ORDER BY created_at DESC LIMIT 30"
+        results = conn.execute(query, params).fetchall()
+        conn.close()
+    return render_template(
+        "marketing/pillar_legal.html", q=q, source_type=source_type, results=results,
+        source_types=dbm.CORPUS_SOURCE_TYPES, searched=bool(q or source_type),
+    )
+
+
+@app.route("/contract-intelligence")
+def pillar_contract_intelligence():
+    conn = dbm.get_db()
+    category = request.args.get("category", "")
+    query = "SELECT * FROM contract_clauses WHERE 1=1"
+    params = []
+    if category:
+        query += " AND category=?"
+        params.append(category)
+    query += " ORDER BY created_at ASC"
+    clauses = conn.execute(query, params).fetchall()
+    my_documents = []
+    u = current_user()
+    if u:
+        my_documents = conn.execute(
+            "SELECT doc.*, d.title AS dossier_title, d.id AS dossier_id FROM documents doc "
+            "JOIN dossiers d ON d.id=doc.dossier_id WHERE doc.category='contrat' AND "
+            + ("1=1" if u["role"] in ("expert", "admin") else "d.client_id=?")
+            + " ORDER BY doc.created_at DESC LIMIT 20",
+            [] if u["role"] in ("expert", "admin") else [u["id"]],
+        ).fetchall()
+    conn.close()
+    return render_template(
+        "marketing/pillar_contract.html", clauses=clauses, category=category,
+        categories=dbm.CLAUSE_CATEGORIES, risk_labels=dbm.CLAUSE_RISK_LABELS,
+        my_documents=my_documents,
+    )
+
+
+@app.route("/transaction-intelligence")
+def pillar_transaction_intelligence():
+    u = current_user()
+    conn = dbm.get_db()
+    by_stage = {key: [] for key, _ in dbm.TRANSACTION_STAGES}
+    if u:
+        if u["role"] in ("expert", "admin"):
+            dossiers = conn.execute(
+                "SELECT d.*, c.full_name AS client_name FROM dossiers d JOIN users c ON c.id=d.client_id ORDER BY d.updated_at DESC"
+            ).fetchall()
+        else:
+            dossiers = conn.execute(
+                "SELECT d.*, c.full_name AS client_name FROM dossiers d JOIN users c ON c.id=d.client_id WHERE d.client_id=? ORDER BY d.updated_at DESC",
+                (u["id"],),
+            ).fetchall()
+        for d in dossiers:
+            stage = dbm.STATUS_TO_STAGE.get(d["status"], "creer")
+            by_stage[stage].append(d)
+    conn.close()
+    return render_template(
+        "marketing/pillar_transaction.html", stages=dbm.TRANSACTION_STAGES, by_stage=by_stage,
+        logged_in=bool(u), is_staff=bool(u and u["role"] in ("expert", "admin")),
+    )
+
+
+@app.route("/tax-intelligence")
+def pillar_tax_intelligence():
+    u = current_user()
+    conn = dbm.get_db()
+    obligations = []
+    if u:
+        if u["role"] in ("expert", "admin"):
+            obligations = conn.execute(
+                "SELECT t.*, d.title AS dossier_title, d.id AS dossier_id FROM tax_obligations t "
+                "JOIN dossiers d ON d.id=t.dossier_id ORDER BY (t.due_date IS NULL), t.due_date ASC LIMIT 40"
+            ).fetchall()
+        else:
+            obligations = conn.execute(
+                "SELECT t.*, d.title AS dossier_title, d.id AS dossier_id FROM tax_obligations t "
+                "JOIN dossiers d ON d.id=t.dossier_id WHERE d.client_id=? ORDER BY (t.due_date IS NULL), t.due_date ASC",
+                (u["id"],),
+            ).fetchall()
+    conn.close()
+    return render_template(
+        "marketing/pillar_tax.html", obligations=obligations, logged_in=bool(u),
+        tax_type_labels=dbm.TAX_TYPE_LABELS, tax_status_labels=dbm.TAX_OBLIGATION_STATUS_LABELS,
+    )
+
+
+@app.route("/regulatory-compliance")
+def pillar_regulatory_compliance():
+    u = current_user()
+    conn = dbm.get_db()
+    items = []
+    if u:
+        if u["role"] in ("expert", "admin"):
+            items = conn.execute(
+                "SELECT c.*, d.title AS dossier_title, d.id AS dossier_id FROM compliance_items c "
+                "JOIN dossiers d ON d.id=c.dossier_id ORDER BY c.created_at DESC LIMIT 40"
+            ).fetchall()
+        else:
+            items = conn.execute(
+                "SELECT c.*, d.title AS dossier_title, d.id AS dossier_id FROM compliance_items c "
+                "JOIN dossiers d ON d.id=c.dossier_id WHERE d.client_id=? ORDER BY c.created_at DESC",
+                (u["id"],),
+            ).fetchall()
+    conn.close()
+    return render_template(
+        "marketing/pillar_compliance.html", items=items, logged_in=bool(u),
+        compliance_category_labels=dbm.COMPLIANCE_CATEGORY_LABELS, compliance_status_labels=dbm.COMPLIANCE_STATUS_LABELS,
+    )
+
+
 @app.route("/robots.txt")
 def robots_txt():
     lines = [
@@ -148,6 +279,7 @@ def robots_txt():
 def sitemap_xml():
     pages = [
         "/", "/a-propos", "/expertise", "/tarifs", "/espace-client", "/rendez-vous", "/connexion", "/inscription",
+        "/legal-intelligence", "/contract-intelligence", "/transaction-intelligence", "/tax-intelligence", "/regulatory-compliance",
         "/revue", "/revue/articles", "/revue/forum", "/revue/references", "/revue/a-propos",
         "/revue/soumissions", "/revue/abonnement", "/revue/medias",
     ]
@@ -238,6 +370,30 @@ def revue_article_pdf(slug):
     )
 
 
+@app.route("/revue/rss.xml")
+def revue_rss():
+    conn = dbm.get_db()
+    articles = conn.execute(
+        "SELECT * FROM review_articles WHERE published=1 ORDER BY published_at DESC LIMIT 30"
+    ).fetchall()
+    conn.close()
+    root = request.url_root.rstrip("/")
+    items = "".join(
+        f"<item><title>{a['title']}</title><link>{root}/revue/articles/{a['slug']}</link>"
+        f"<guid>{root}/revue/articles/{a['slug']}</guid>"
+        f"<pubDate>{a['published_at'] or a['created_at']}</pubDate>"
+        f"<description><![CDATA[{a['abstract'] or ''}]]></description></item>"
+        for a in articles
+    )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>'
+        f"<title>Massey Law Review</title><link>{root}/revue</link>"
+        "<description>Revue juridique de Massey Contracts &amp; Tax</description>"
+        f"{items}</channel></rss>"
+    )
+    return Response(xml, mimetype="application/rss+xml")
+
+
 @app.route("/revue/forum")
 def revue_forum():
     conn = dbm.get_db()
@@ -279,6 +435,21 @@ def revue_forum_hide(post_id):
     conn.close()
     flash("Billet masqué.", "success")
     return redirect(url_for("revue_forum"))
+
+
+@app.route("/revue/references")
+def revue_references():
+    return render_template("revue/references.html")
+
+
+@app.route("/revue/a-propos")
+def revue_about():
+    return render_template("revue/about.html")
+
+
+@app.route("/revue/medias")
+def revue_medias():
+    return render_template("revue/medias.html")
 
 
 @app.route("/revue/forum/admin/nouveau", methods=["POST"])
@@ -790,7 +961,16 @@ def portal_dossier(dossier_id):
         "SELECT s.*, doc.original_name FROM signatures s JOIN documents doc ON doc.id=s.document_id WHERE s.dossier_id=? ORDER BY s.created_at DESC",
         (dossier_id,),
     ).fetchall()
+    tax_obligations = conn.execute(
+        "SELECT * FROM tax_obligations WHERE dossier_id=? ORDER BY (due_date IS NULL), due_date ASC", (dossier_id,)
+    ).fetchall()
+    compliance_items = conn.execute(
+        "SELECT * FROM compliance_items WHERE dossier_id=? ORDER BY created_at ASC", (dossier_id,)
+    ).fetchall()
     conn.close()
+    stage = dbm.STATUS_TO_STAGE.get(dossier["status"], "creer")
+    stage_keys = [s[0] for s in dbm.TRANSACTION_STAGES]
+    stage_index = stage_keys.index(stage) if stage in stage_keys else 0
     return render_template(
         "portal/dossier.html",
         dossier=dossier, documents=documents, messages=messages, tasks=tasks,
@@ -799,7 +979,96 @@ def portal_dossier(dossier_id):
         payment_rows=payment_rows, signature_rows=signature_rows,
         payment_purposes=dbm.PAYMENT_PURPOSES, payment_purposes_map=dict(dbm.PAYMENT_PURPOSES),
         payments_configured=payments.is_configured(),
+        tax_obligations=tax_obligations, compliance_items=compliance_items,
+        transaction_stages=dbm.TRANSACTION_STAGES, current_stage=stage, current_stage_index=stage_index,
+        tax_types=dbm.TAX_TYPES, tax_status_labels=dbm.TAX_OBLIGATION_STATUS_LABELS,
+        tax_statuses=dbm.TAX_OBLIGATION_STATUSES, tax_type_labels=dbm.TAX_TYPE_LABELS,
+        compliance_categories=dbm.COMPLIANCE_CATEGORIES, compliance_status_labels=dbm.COMPLIANCE_STATUS_LABELS,
+        compliance_statuses=dbm.COMPLIANCE_STATUSES, compliance_category_labels=dbm.COMPLIANCE_CATEGORY_LABELS,
     )
+
+
+@app.route("/portail/dossier/<int:dossier_id>/fiscalite/nouvelle", methods=["POST"])
+@roles_required("expert", "admin")
+def add_tax_obligation(dossier_id):
+    u = current_user()
+    conn, dossier = _get_dossier_or_404(dossier_id, u)
+    label = request.form.get("label", "").strip()
+    tax_type = request.form.get("tax_type", "autre")
+    if tax_type not in dbm.TAX_TYPE_LABELS:
+        tax_type = "autre"
+    due_date = request.form.get("due_date", "").strip() or None
+    if label:
+        conn.execute(
+            "INSERT INTO tax_obligations (dossier_id, label, tax_type, due_date, status, created_by, created_at) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (dossier_id, label, tax_type, due_date, "a_faire", u["id"], dbm.now()),
+        )
+        conn.commit()
+        dbm.log_activity(u["id"], "tax_obligation_created", f"dossier #{dossier_id} — {label}")
+        flash("Obligation fiscale ajoutée.", "success")
+    else:
+        flash("La description de l'obligation est requise.", "error")
+    conn.close()
+    return redirect(url_for("portal_dossier", dossier_id=dossier_id))
+
+
+@app.route("/portail/dossier/<int:dossier_id>/fiscalite/<int:obligation_id>/statut", methods=["POST"])
+@roles_required("expert", "admin")
+def update_tax_obligation(dossier_id, obligation_id):
+    u = current_user()
+    conn, dossier = _get_dossier_or_404(dossier_id, u)
+    new_status = request.form.get("status", "a_faire")
+    if new_status not in dbm.TAX_OBLIGATION_STATUS_LABELS:
+        new_status = "a_faire"
+    conn.execute(
+        "UPDATE tax_obligations SET status=? WHERE id=? AND dossier_id=?", (new_status, obligation_id, dossier_id)
+    )
+    conn.commit()
+    conn.close()
+    flash("Statut fiscal mis à jour.", "success")
+    return redirect(url_for("portal_dossier", dossier_id=dossier_id))
+
+
+@app.route("/portail/dossier/<int:dossier_id>/conformite/nouvelle", methods=["POST"])
+@roles_required("expert", "admin")
+def add_compliance_item(dossier_id):
+    u = current_user()
+    conn, dossier = _get_dossier_or_404(dossier_id, u)
+    label = request.form.get("label", "").strip()
+    category = request.form.get("category", "kyc")
+    if category not in dbm.COMPLIANCE_CATEGORY_LABELS:
+        category = "kyc"
+    if label:
+        conn.execute(
+            "INSERT INTO compliance_items (dossier_id, label, category, status, created_by, created_at) "
+            "VALUES (?,?,?,?,?,?)",
+            (dossier_id, label, category, "a_faire", u["id"], dbm.now()),
+        )
+        conn.commit()
+        dbm.log_activity(u["id"], "compliance_item_created", f"dossier #{dossier_id} — {label}")
+        flash("Point de conformité ajouté.", "success")
+    else:
+        flash("La description du point de conformité est requise.", "error")
+    conn.close()
+    return redirect(url_for("portal_dossier", dossier_id=dossier_id))
+
+
+@app.route("/portail/dossier/<int:dossier_id>/conformite/<int:item_id>/statut", methods=["POST"])
+@roles_required("expert", "admin")
+def update_compliance_item(dossier_id, item_id):
+    u = current_user()
+    conn, dossier = _get_dossier_or_404(dossier_id, u)
+    new_status = request.form.get("status", "a_faire")
+    if new_status not in dbm.COMPLIANCE_STATUS_LABELS:
+        new_status = "a_faire"
+    conn.execute(
+        "UPDATE compliance_items SET status=? WHERE id=? AND dossier_id=?", (new_status, item_id, dossier_id)
+    )
+    conn.commit()
+    conn.close()
+    flash("Statut de conformité mis à jour.", "success")
+    return redirect(url_for("portal_dossier", dossier_id=dossier_id))
 
 
 @app.route("/portail/dossier/<int:dossier_id>/document", methods=["POST"])
@@ -1451,6 +1720,92 @@ def admin_corpus_delete(doc_id):
     conn.close()
     flash("Texte supprimé du corpus.", "success")
     return redirect(url_for("admin_corpus_list"))
+
+
+# ---------------------------------------------------------------------------
+# Contract Intelligence — administration de la bibliothèque de clauses
+# ---------------------------------------------------------------------------
+
+@app.route("/admin/clauses")
+@roles_required("expert", "admin")
+def admin_clauses_list():
+    conn = dbm.get_db()
+    clauses = conn.execute("SELECT * FROM contract_clauses ORDER BY created_at DESC").fetchall()
+    conn.close()
+    return render_template(
+        "admin/clauses_list.html", clauses=clauses, categories=dbm.CLAUSE_CATEGORIES,
+        risk_labels=dbm.CLAUSE_RISK_LABELS, category_labels=dbm.CLAUSE_CATEGORY_LABELS,
+    )
+
+
+@app.route("/admin/clauses/nouvelle", methods=["GET", "POST"])
+@roles_required("expert", "admin")
+def admin_clause_new():
+    if request.method == "POST":
+        return _save_clause(None)
+    return render_template("admin/clause_form.html", clause=None, categories=dbm.CLAUSE_CATEGORIES, risk_levels=dbm.CLAUSE_RISK_LEVELS)
+
+
+@app.route("/admin/clauses/<int:clause_id>/modifier", methods=["GET", "POST"])
+@roles_required("expert", "admin")
+def admin_clause_edit(clause_id):
+    conn = dbm.get_db()
+    clause = conn.execute("SELECT * FROM contract_clauses WHERE id=?", (clause_id,)).fetchone()
+    conn.close()
+    if clause is None:
+        abort(404)
+    if request.method == "POST":
+        return _save_clause(clause_id)
+    return render_template("admin/clause_form.html", clause=clause, categories=dbm.CLAUSE_CATEGORIES, risk_levels=dbm.CLAUSE_RISK_LEVELS)
+
+
+def _save_clause(clause_id):
+    u = current_user()
+    title = request.form.get("title", "").strip()
+    category = request.form.get("category", "general")
+    if category not in dbm.CLAUSE_CATEGORY_LABELS:
+        category = "general"
+    risk_level = request.form.get("risk_level", "standard")
+    if risk_level not in dbm.CLAUSE_RISK_LABELS:
+        risk_level = "standard"
+    body_text = request.form.get("body_text", "").strip()
+    guidance = request.form.get("guidance", "").strip()
+
+    if not (title and body_text):
+        flash("Titre et texte de la clause sont obligatoires.", "error")
+        return redirect(request.referrer or url_for("admin_clauses_list"))
+
+    conn = dbm.get_db()
+    if clause_id is None:
+        conn.execute(
+            "INSERT INTO contract_clauses (title, category, risk_level, body_text, guidance, created_by, created_at, updated_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            (title, category, risk_level, body_text, guidance, u["id"], dbm.now(), dbm.now()),
+        )
+        conn.commit()
+        dbm.log_activity(u["id"], "clause_created", title)
+        flash("Clause ajoutée à la bibliothèque.", "success")
+    else:
+        conn.execute(
+            "UPDATE contract_clauses SET title=?, category=?, risk_level=?, body_text=?, guidance=?, updated_at=? WHERE id=?",
+            (title, category, risk_level, body_text, guidance, dbm.now(), clause_id),
+        )
+        conn.commit()
+        dbm.log_activity(u["id"], "clause_updated", title)
+        flash("Clause mise à jour.", "success")
+    conn.close()
+    return redirect(url_for("admin_clauses_list"))
+
+
+@app.route("/admin/clauses/<int:clause_id>/supprimer", methods=["POST"])
+@roles_required("admin")
+def admin_clause_delete(clause_id):
+    conn = dbm.get_db()
+    conn.execute("DELETE FROM contract_clauses WHERE id=?", (clause_id,))
+    conn.commit()
+    conn.close()
+    flash("Clause supprimée.", "success")
+    return redirect(url_for("admin_clauses_list"))
 
 
 # ---------------------------------------------------------------------------

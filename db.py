@@ -225,6 +225,130 @@ CORPUS_SOURCE_TYPES = [
 ]
 CORPUS_SOURCE_LABELS = dict(CORPUS_SOURCE_TYPES)
 
+# -----------------------------------------------------------------------
+# Contract Intelligence — bibliothèque de clauses et modèles
+# -----------------------------------------------------------------------
+
+PLATFORM_SCHEMA = """
+CREATE TABLE IF NOT EXISTS contract_clauses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'general',
+    risk_level TEXT NOT NULL DEFAULT 'standard',
+    body_text TEXT NOT NULL,
+    guidance TEXT,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS tax_obligations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    dossier_id INTEGER NOT NULL REFERENCES dossiers(id),
+    label TEXT NOT NULL,
+    tax_type TEXT NOT NULL DEFAULT 'autre',
+    due_date TEXT,
+    status TEXT NOT NULL DEFAULT 'a_faire',
+    note TEXT,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS compliance_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    dossier_id INTEGER NOT NULL REFERENCES dossiers(id),
+    label TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'kyc',
+    status TEXT NOT NULL DEFAULT 'a_faire',
+    note TEXT,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL
+);
+"""
+
+CLAUSE_CATEGORIES = [
+    ("general", "Clauses générales"),
+    ("paiement", "Paiement et facturation"),
+    ("resiliation", "Résiliation"),
+    ("penale", "Clause pénale / indemnisation"),
+    ("confidentialite", "Confidentialité"),
+    ("non_concurrence", "Non-concurrence"),
+    ("force_majeure", "Force majeure"),
+    ("reglement_differends", "Règlement des différends"),
+    ("fiscalite", "Fiscalité et retenues"),
+    ("conformite", "Conformité et déclarations"),
+]
+CLAUSE_CATEGORY_LABELS = dict(CLAUSE_CATEGORIES)
+
+CLAUSE_RISK_LEVELS = [
+    ("standard", "Standard"),
+    ("a_negocier", "À négocier avec prudence"),
+    ("sensible", "Sensible — validation requise"),
+]
+CLAUSE_RISK_LABELS = dict(CLAUSE_RISK_LEVELS)
+
+# Pipeline transactionnel unifié (Transaction Intelligence) — chaque statut
+# granulaire du suivi de dossier se rattache à l'une des 7 grandes étapes
+# du moteur d'intégration CRÉER → NÉGOCIER → APPROUVER → SIGNER → EXÉCUTER
+# → SURVEILLER → RENOUVELER.
+TRANSACTION_STAGES = [
+    ("creer", "Créer"),
+    ("negocier", "Négocier"),
+    ("approuver", "Approuver"),
+    ("signer", "Signer"),
+    ("executer", "Exécuter"),
+    ("surveiller", "Surveiller"),
+    ("renouveler", "Renouveler"),
+]
+TRANSACTION_STAGE_LABELS = dict(TRANSACTION_STAGES)
+
+STATUS_TO_STAGE = {
+    "demande_recue": "creer",
+    "verification_conflit": "creer",
+    "mandat_en_attente": "creer",
+    "informations_requises": "negocier",
+    "analyse_en_cours": "negocier",
+    "projet_transmis": "negocier",
+    "negociation": "negocier",
+    "signature": "signer",
+    "dossier_clos": "surveiller",
+}
+
+TAX_TYPES = [
+    ("tca", "Taxe sur le chiffre d'affaires (TCA)"),
+    ("impot_revenu", "Impôt sur le revenu"),
+    ("retenue_source", "Retenue à la source"),
+    ("patente", "Patente / licence commerciale"),
+    ("douane", "Droits de douane / import-export"),
+    ("autre", "Autre obligation fiscale"),
+]
+TAX_TYPE_LABELS = dict(TAX_TYPES)
+
+TAX_OBLIGATION_STATUSES = [
+    ("a_faire", "À faire"),
+    ("en_cours", "En cours"),
+    ("fait", "Acquittée"),
+    ("en_retard", "En retard"),
+]
+TAX_OBLIGATION_STATUS_LABELS = dict(TAX_OBLIGATION_STATUSES)
+
+COMPLIANCE_CATEGORIES = [
+    ("kyc", "KYC — Connaissance du client"),
+    ("aml", "AML — Lutte contre le blanchiment"),
+    ("sanctions", "Sanctions et listes de contrôle"),
+    ("autorisation", "Autorisations et licences"),
+    ("reporting", "Reporting réglementaire"),
+]
+COMPLIANCE_CATEGORY_LABELS = dict(COMPLIANCE_CATEGORIES)
+
+COMPLIANCE_STATUSES = [
+    ("a_faire", "À faire"),
+    ("en_cours", "En cours"),
+    ("conforme", "Conforme"),
+    ("non_conforme", "Non conforme"),
+]
+COMPLIANCE_STATUS_LABELS = dict(COMPLIANCE_STATUSES)
+
 STATUS_FLOW = [
     ("demande_recue", "Demande reçue"),
     ("verification_conflit", "Vérification des conflits d'intérêts"),
@@ -279,9 +403,71 @@ def init_db():
     conn = get_db()
     conn.executescript(SCHEMA)
     conn.executescript(CORPUS_SCHEMA)
+    conn.executescript(PLATFORM_SCHEMA)
     conn.commit()
     _seed_review_demo_content(conn)
+    _seed_clause_library(conn)
     conn.close()
+
+
+def _seed_clause_library(conn):
+    """Quelques clauses de départ pour que la bibliothèque Contract Intelligence
+    ne soit jamais vide — sans effet si des clauses existent déjà."""
+    count = conn.execute("SELECT COUNT(*) AS c FROM contract_clauses").fetchone()["c"]
+    if count:
+        return
+    editorial = conn.execute("SELECT id FROM users WHERE email='revue@masseylawreview.local'").fetchone()
+    creator_id = editorial["id"] if editorial else None
+    clauses = [
+        ("Clause pénale standard", "penale", "a_negocier",
+         "En cas de manquement à l'une quelconque des obligations prévues aux présentes, la partie défaillante sera tenue "
+         "de verser à l'autre partie une pénalité forfaitaire de [montant/pourcentage], sans préjudice de tout autre "
+         "recours disponible en droit.",
+         "Proportionner la pénalité au préjudice prévisible ; documenter la méthode de calcul pour limiter le risque de "
+         "révision judiciaire (pouvoir modérateur du juge)."),
+        ("Confidentialité réciproque", "confidentialite", "standard",
+         "Chaque partie s'engage à garder strictement confidentielle toute information commerciale, financière ou "
+         "technique communiquée par l'autre partie dans le cadre du présent contrat, et à ne l'utiliser qu'aux fins "
+         "de l'exécution de ses obligations.",
+         "Prévoir une durée de survie de l'obligation après la fin du contrat (généralement 2 à 5 ans)."),
+        ("Résiliation pour manquement", "resiliation", "standard",
+         "Chaque partie peut résilier le présent contrat de plein droit, après mise en demeure restée sans effet "
+         "pendant [30] jours, en cas de manquement grave de l'autre partie à ses obligations essentielles.",
+         "Définir précisément ce qui constitue un « manquement grave » pour éviter toute ambiguïté d'interprétation."),
+        ("Non-concurrence territoriale et temporelle", "non_concurrence", "a_negocier",
+         "Pendant la durée du contrat et pour une période de [12] mois suivant sa terminaison, la partie s'engage à "
+         "ne pas exercer, directement ou indirectement, une activité concurrente dans le territoire de [territoire].",
+         "L'étendue territoriale et temporelle doit rester raisonnable et proportionnée à l'intérêt légitime protégé, "
+         "sous peine d'invalidation."),
+        ("Force majeure", "force_majeure", "standard",
+         "Aucune partie ne sera tenue responsable de l'inexécution de ses obligations si celle-ci résulte d'un cas de "
+         "force majeure, entendu comme un événement imprévisible, irrésistible et extérieur aux parties.",
+         "Lister des exemples non exhaustifs pertinents au contexte haïtien (catastrophe naturelle, instabilité "
+         "politique majeure, décision gouvernementale) pour faciliter l'application de la clause."),
+        ("Règlement des différends — médiation préalable", "reglement_differends", "a_negocier",
+         "Tout différend relatif au présent contrat fera l'objet d'une tentative de médiation préalable avant toute "
+         "action judiciaire ou arbitrale, les parties disposant d'un délai de [60] jours pour parvenir à un accord.",
+         "Articuler soigneusement le délai de médiation avec les délais de prescription applicables, en particulier "
+         "dans un contexte transfrontalier."),
+        ("Retenue à la source sur paiements transfrontaliers", "fiscalite", "sensible",
+         "Les paiements effectués au titre du présent contrat pourront faire l'objet d'une retenue à la source "
+         "conformément à la législation fiscale applicable ; la partie payeuse remettra à l'autre partie tout "
+         "justificatif de retenue applicable.",
+         "Qualifier précisément la nature des flux (redevances, commissions, prix) pour déterminer le régime fiscal "
+         "applicable et éviter tout risque de requalification."),
+        ("Déclarations et garanties de conformité", "conformite", "sensible",
+         "Chaque partie déclare et garantit qu'elle se conforme à l'ensemble des lois et réglementations applicables, "
+         "y compris en matière de lutte contre le blanchiment de capitaux et de sanctions économiques.",
+         "Prévoir une obligation d'information immédiate en cas de changement de situation affectant ces déclarations."),
+    ]
+    ts = now()
+    for title, category, risk, body, guidance in clauses:
+        conn.execute(
+            "INSERT INTO contract_clauses (title, category, risk_level, body_text, guidance, created_by, created_at, updated_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            (title, category, risk, body, guidance, creator_id, ts, ts),
+        )
+    conn.commit()
 
 
 def _seed_review_demo_content(conn):

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Références — Massey Law Review{% endblock %}
+{% block meta_description %}Ressources bibliographiques et sources de référence utilisées par Massey Law Review.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey Law Review</div>
+  <h1>Références</h1>
+  <p class="lede">Une sélection de sources et de matériaux de référence en droit des affaires, fiscalité et droit international, mise à jour au fil des publications.</p>
+</section>
+
+{% include "revue/_subnav.html" %}
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="prose">
+    <h2>Droit des affaires et droit civil haïtien</h2>
+    <p>Textes de référence, décisions et doctrine encadrant le droit des contrats, le droit commercial et le droit fiscal applicables en Haïti.</p>
+
+    <h2>Droit du commerce international</h2>
+    <p>Conventions, guides pratiques et jurisprudence relatifs aux transactions transfrontalières, à l'arbitrage commercial et aux mécanismes de paiement internationaux.</p>
+
+    <h2>Legal Technology &amp; intelligence artificielle appliquée au droit</h2>
+    <p>Publications et travaux portant sur l'usage de la technologie et de l'intelligence artificielle dans l'analyse contractuelle, la gestion documentaire et la pratique juridique.</p>
+  </div>
+  <div class="callout" style="max-width:74ch;margin-top:32px;">
+    Vous souhaitez proposer une ressource ou signaler une source pertinente ? Écrivez au comité éditorial via la page <a href="{{ url_for('revue_about') }}" style="color:var(--gold);">À propos</a>.
+  </div>
+</section>
+{% endblock %}

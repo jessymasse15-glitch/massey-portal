@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifier' if clause else 'Nouvelle' }} clause — Contract Intelligence{% endblock %}
+{% block content %}
+<h1>{{ 'Modifier la clause' if clause else 'Nouvelle clause' }}</h1>
+<form method="POST" class="card" style="max-width:820px;">
+  <div class="form-group">
+    <label for="title">Titre</label>
+    <input type="text" id="title" name="title" value="{{ clause['title'] if clause else '' }}"
+           placeholder="Ex. Clause pénale standard" required>
+  </div>
+  <div class="grid-2">
+    <div class="form-group">
+      <label for="category">Catégorie</label>
+      <select id="category" name="category">
+        {% for key, label in categories %}
+        <option value="{{ key }}" {% if clause and clause['category']==key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="risk_level">Niveau de risque</label>
+      <select id="risk_level" name="risk_level">
+        {% for key, label in risk_levels %}
+        <option value="{{ key }}" {% if clause and clause['risk_level']==key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="body_text">Texte de la clause</label>
+    <textarea id="body_text" name="body_text" style="min-height:160px;" required>{{ clause['body_text'] if clause else '' }}</textarea>
+  </div>
+  <div class="form-group">
+    <label for="guidance">Note de rédaction (facultatif)</label>
+    <textarea id="guidance" name="guidance" style="min-height:100px;">{{ clause['guidance'] if clause else '' }}</textarea>
+    <div class="helptext">Conseil pratique affiché à côté de la clause pour guider la négociation ou la personnalisation.</div>
+  </div>
+  <button type="submit" class="btn btn-primary">Enregistrer</button>
+  <a href="{{ url_for('admin_clauses_list') }}" class="btn btn-ghost">Annuler</a>
+</form>
+{% endblock %}

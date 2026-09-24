@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Transaction Intelligence — Massey AI{% endblock %}
+{% block meta_description %}Structuration, due diligence et pilotage du workflow transactionnel — le pilier Transaction Intelligence de Massey AI.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Pilier 03</div>
+  <h1>Transaction Intelligence</h1>
+  <p class="lede">De l'opportunité à la clôture.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="pillar-feature-card" style="max-width:none;">
+    <h3>Ce que couvre ce pilier</h3>
+    <ul style="display:grid;grid-template-columns:1fr 1fr;gap:9px 24px;">
+      <li>Structuration des transactions</li>
+      <li>Due diligence juridique, fiscale et commerciale</li>
+      <li>Corporate et gouvernance</li>
+      <li>Gestion des parties prenantes</li>
+      <li>Workflow transactionnel</li>
+      <li>Cartographie des risques</li>
+      <li>Checklists et échéanciers</li>
+      <li>Post-closing et intégration</li>
+    </ul>
+  </div>
+</section>
+
+<section class="block">
+  <div class="dark-band" style="border-radius:16px;padding:36px 32px;">
+    <div class="eyebrow">Moteur d'intégration</div>
+    <h2 style="margin-bottom:24px;">Créer → Négocier → Approuver → Signer → Exécuter → Surveiller → Renouveler</h2>
+    <div class="workflow-strip">
+      {% for value, label in stages %}
+        <div class="step"><b>{{ label }}</b></div>{% if not loop.last %}<span class="arrow">→</span>{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Pipeline</div>
+      <h2>{% if is_staff %}Toutes les transactions, par étape{% elif logged_in %}Mes transactions, par étape{% else %}Le pipeline en action{% endif %}</h2>
+    </div>
+  </div>
+
+  {% if logged_in %}
+  <div class="kanban reveal">
+    {% for value, label in stages %}
+      <div class="kanban-col">
+        <h5>{{ label }}</h5>
+        {% for d in by_stage.get(value, []) %}
+          <div class="kanban-card">
+            <a href="{{ url_for('portal_dossier', dossier_id=d['id']) }}">Dossier #{{ d['id'] }}</a>
+            <div class="meta">{{ d['title'] }}{% if is_staff %} — {{ d['client_name'] }}{% endif %}</div>
+          </div>
+        {% else %}
+          <p class="helptext" style="font-size:0.76rem;">—</p>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="cta-banner reveal">
+    <div>
+      <h2>Pilotez vos transactions de bout en bout</h2>
+      <p>Connectez-vous pour voir vos dossiers positionnés dans le pipeline transactionnel, étape par étape.</p>
+    </div>
+    <div class="ctas">
+      <a href="{{ url_for('login') }}" class="btn btn-primary">Connexion</a>
+      <a href="{{ url_for('register') }}" class="btn btn-ghost">Créer un compte</a>
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

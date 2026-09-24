@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Legal Intelligence — Massey AI{% endblock %}
+{% block meta_description %}Recherche législative, jurisprudence et doctrine haïtienne, avec sources vérifiables — le pilier Legal Intelligence de Massey AI.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Pilier 01</div>
+  <h1>Legal Intelligence</h1>
+  <p class="lede">La connaissance juridique à portée de main.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="pillar-feature-card" style="max-width:none;">
+    <h3>Ce que couvre ce pilier</h3>
+    <ul style="display:grid;grid-template-columns:1fr 1fr;gap:9px 24px;">
+      <li>Recherche législative et réglementaire</li>
+      <li>Jurisprudence et doctrine</li>
+      <li>Analyse et synthèse de documents</li>
+      <li>Veille juridique</li>
+      <li>Comparaison des versions des lois</li>
+      <li>Recherche en langage naturel</li>
+      <li>Réponses avec sources</li>
+      <li>Analyse par juridiction</li>
+    </ul>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Recherche</div>
+      <h2>Interroger le corpus juridique haïtien</h2>
+      <p>Constitution, codes, décrets, jurisprudence et doctrine — résultats avec référence de citation.</p>
+    </div>
+  </div>
+
+  <form method="get" class="search-box reveal">
+    <input type="text" name="q" value="{{ q }}" placeholder="Rechercher un mot, une référence, une notion juridique…">
+    <select name="source_type">
+      <option value="">Toutes les sources</option>
+      {% for key, label in source_types %}
+      <option value="{{ key }}" {% if source_type==key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
+  </form>
+
+  <div style="margin-top:8px;">
+    {% if searched %}
+      {% if results %}
+        {% for r in results %}
+          <div class="result-row">
+            <div class="meta">{{ source_types|selectattr('0','equalto',r['source_type'])|map(attribute='1')|first or r['source_type'] }}{% if r['citation_reference'] %} — {{ r['citation_reference'] }}{% endif %}</div>
+            <h4>{{ r['title'] }}</h4>
+            <div class="snippet">{{ r['full_text'][:420] }}{% if r['full_text']|length > 420 %}…{% endif %}</div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="helptext" style="margin-top:20px;">Aucun résultat pour cette recherche. Le corpus s'enrichit en continu — essayez un autre terme ou une autre source.</p>
+      {% endif %}
+    {% else %}
+      <p class="helptext" style="margin-top:20px;">Lancez une recherche pour interroger le corpus, ou filtrez par type de source.</p>
+    {% endif %}
+  </div>
+
+  <div class="callout reveal" style="max-width:74ch;margin-top:32px;">
+    La génération de réponses en langage naturel par IA (avec citations automatiques) sera activée dans une prochaine phase, dès la connexion d'un moteur d'intelligence artificielle. La recherche par mots-clés ci-dessus interroge dès maintenant le corpus réel.
+  </div>
+</section>
+{% endblock %}

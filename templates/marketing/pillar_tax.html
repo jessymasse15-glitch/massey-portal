@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Tax Intelligence — Massey AI{% endblock %}
+{% block meta_description %}Obligations, échéances et scénarios de structuration fiscale — le pilier Tax Intelligence de Massey AI.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Pilier 04</div>
+  <h1>Tax Intelligence</h1>
+  <p class="lede">Une fiscalité maîtrisée, une croissance sécurisée.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="pillar-feature-card" style="max-width:none;">
+    <h3>Ce que couvre ce pilier</h3>
+    <ul style="display:grid;grid-template-columns:1fr 1fr;gap:9px 24px;">
+      <li>Analyse fiscale des transactions</li>
+      <li>Obligations et échéances fiscales</li>
+      <li>Taxes applicables</li>
+      <li>Scénarios de structuration</li>
+      <li>Optimisation fiscale</li>
+      <li>Risques et contrôles</li>
+      <li>Documents requis</li>
+      <li>Sources légales et réglementaires</li>
+    </ul>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Suivi</div>
+      <h2>{% if logged_in %}Obligations fiscales suivies{% else %}Un suivi fiscal intégré à chaque dossier{% endif %}</h2>
+    </div>
+  </div>
+
+  {% if logged_in %}
+    <table>
+      <tr><th>Dossier</th><th>Obligation</th><th>Type</th><th>Échéance</th><th>Statut</th></tr>
+      {% for o in obligations %}
+      <tr>
+        <td><a href="{{ url_for('portal_dossier', dossier_id=o['dossier_id']) }}">#{{ o['dossier_id'] }} — {{ o['dossier_title'] }}</a></td>
+        <td>{{ o['label'] }}</td>
+        <td>{{ tax_type_labels.get(o['tax_type'], o['tax_type']) }}</td>
+        <td>{{ o['due_date'] or '—' }}</td>
+        <td><span class="status-pill {% if o['status']=='fait' %}done{% elif o['status']=='en_retard' %}{% else %}pending{% endif %}">{{ tax_status_labels.get(o['status'], o['status']) }}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="helptext">Aucune obligation fiscale suivie pour l'instant — elles apparaissent ici dès qu'un dossier en a une.</td></tr>
+      {% endfor %}
+    </table>
+  {% else %}
+  <div class="cta-banner reveal">
+    <div>
+      <h2>Ne manquez plus une échéance fiscale</h2>
+      <p>Chaque dossier ouvert chez Massey Contracts &amp; Tax intègre un suivi réel des obligations fiscales, avec échéances et statut.</p>
+    </div>
+    <div class="ctas">
+      <a href="{{ url_for('login') }}" class="btn btn-primary">Connexion</a>
+      <a href="{{ url_for('register') }}" class="btn btn-ghost">Créer un compte</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="callout reveal" style="max-width:74ch;margin-top:32px;">
+    L'analyse fiscale automatisée et les scénarios d'optimisation par IA seront activés dans une prochaine phase. Le suivi d'obligations ci-dessus est réel et alimenté dossier par dossier par l'équipe Massey.
+  </div>
+</section>
+{% endblock %}

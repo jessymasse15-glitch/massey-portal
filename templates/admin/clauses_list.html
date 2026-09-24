@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Bibliothèque de clauses — Contract Intelligence{% endblock %}
+{% block content %}
+<h1>Bibliothèque de clauses</h1>
+<p class="helptext" style="max-width:70ch;margin-bottom:20px;">
+  Modèles de clauses réutilisables, classés par catégorie et niveau de risque, affichés publiquement sur la page
+  Contract Intelligence et utilisables comme base de rédaction dans les dossiers.
+</p>
+<p style="margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap;">
+  <a href="{{ url_for('admin_clause_new') }}" class="btn btn-primary btn-sm">+ Ajouter une clause</a>
+  <a href="{{ url_for('admin_corpus_list') }}" class="btn btn-ghost btn-sm">Corpus juridique</a>
+  <a href="{{ url_for('admin_users') }}" class="btn btn-ghost btn-sm">Utilisateurs</a>
+</p>
+
+<table>
+  <tr><th>Titre</th><th>Catégorie</th><th>Risque</th><th>Mise à jour</th><th></th></tr>
+  {% for c in clauses %}
+  <tr>
+    <td>{{ c['title'] }}</td>
+    <td><span class="tag">{{ category_labels.get(c['category'], c['category']) }}</span></td>
+    <td><span class="status-pill {% if c['risk_level']=='sensible' %}{% elif c['risk_level']=='standard' %}done{% endif %}">{{ risk_labels.get(c['risk_level'], c['risk_level']) }}</span></td>
+    <td>{{ c['updated_at'][:10] }}</td>
+    <td style="display:flex;gap:6px;">
+      <a href="{{ url_for('admin_clause_edit', clause_id=c['id']) }}" class="btn btn-sm">Modifier</a>
+      <form method="POST" action="{{ url_for('admin_clause_delete', clause_id=c['id']) }}" onsubmit="return confirm('Supprimer cette clause ?');">
+        <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="helptext">Aucune clause pour l'instant.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

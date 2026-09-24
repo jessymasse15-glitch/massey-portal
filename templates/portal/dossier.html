@@ -10,6 +10,14 @@
   </div>
 </div>
 
+<div class="pipeline-strip reveal">
+  {% for value, label in transaction_stages %}
+    <div class="pipeline-step {{ 'active' if loop.index0==current_stage_index else '' }} {{ 'passed' if loop.index0 < current_stage_index else '' }}">
+      <span class="dot"></span><span class="label">{{ label }}</span>
+    </div>
+  {% endfor %}
+</div>
+
 <div class="grid-2" style="margin-top:24px;">
   <div>
     <div class="card">
@@ -102,6 +110,61 @@
         </div>
         <button type="submit" class="btn btn-primary">Téléverser</button>
       </form>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Fiscalité — Tax Intelligence</h3>
+      {% for t in tax_obligations %}
+        <div class="task-row">
+          <span class="desc">{{ t.label }} <span class="tag">{{ tax_type_labels.get(t.tax_type, t.tax_type) }}</span>{% if t.due_date %} <span class="helptext">échéance : {{ t.due_date }}</span>{% endif %}</span>
+          {% if is_staff %}
+          <form method="post" action="{{ url_for('update_tax_obligation', dossier_id=dossier.id, obligation_id=t.id) }}" style="display:inline;">
+            <select name="status" onchange="this.form.submit()" class="btn btn-sm">
+              {% for value, label in tax_statuses %}<option value="{{ value }}" {% if t.status==value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </form>
+          {% else %}
+          <span class="status-pill {% if t.status=='fait' %}done{% elif t.status=='en_retard' %}{% else %}pending{% endif %}">{{ tax_status_labels.get(t.status, t.status) }}</span>
+          {% endif %}
+        </div>
+      {% else %}
+        <p class="helptext">Aucune obligation fiscale suivie pour ce dossier.</p>
+      {% endfor %}
+      {% if is_staff %}
+      <form method="post" action="{{ url_for('add_tax_obligation', dossier_id=dossier.id) }}" style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="text" name="label" placeholder="Obligation (ex. déclaration TCA T3)" required style="flex:1;min-width:180px;">
+        <select name="tax_type">{% for value, label in tax_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+        <input type="date" name="due_date">
+        <button type="submit" class="btn btn-sm">Ajouter</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Conformité — Regulatory & Compliance</h3>
+      {% for c in compliance_items %}
+        <div class="task-row">
+          <span class="desc">{{ c.label }} <span class="tag">{{ compliance_category_labels.get(c.category, c.category) }}</span></span>
+          {% if is_staff %}
+          <form method="post" action="{{ url_for('update_compliance_item', dossier_id=dossier.id, item_id=c.id) }}" style="display:inline;">
+            <select name="status" onchange="this.form.submit()" class="btn btn-sm">
+              {% for value, label in compliance_statuses %}<option value="{{ value }}" {% if c.status==value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </form>
+          {% else %}
+          <span class="status-pill {% if c.status=='conforme' %}done{% elif c.status=='non_conforme' %}{% else %}pending{% endif %}">{{ compliance_status_labels.get(c.status, c.status) }}</span>
+          {% endif %}
+        </div>
+      {% else %}
+        <p class="helptext">Aucun point de conformité suivi pour ce dossier.</p>
+      {% endfor %}
+      {% if is_staff %}
+      <form method="post" action="{{ url_for('add_compliance_item', dossier_id=dossier.id) }}" style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="text" name="label" placeholder="Point de conformité (ex. vérification KYC bénéficiaire)" required style="flex:1;min-width:180px;">
+        <select name="category">{% for value, label in compliance_categories %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+        <button type="submit" class="btn btn-sm">Ajouter</button>
+      </form>
+      {% endif %}
     </div>
 
     <div class="card">

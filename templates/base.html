@@ -19,6 +19,16 @@
       <span>Massey Contracts &amp; Tax<small>Ingénierie juridique &amp; Fiscale</small></span>
     </a>
     <nav class="links">
+      <div class="nav-dropdown">
+        <span>Plateforme ▾</span>
+        <div class="dropdown-panel">
+          <a href="{{ url_for('pillar_legal_intelligence') }}"><b>Legal Intelligence</b><small>Recherche, jurisprudence, doctrine</small></a>
+          <a href="{{ url_for('pillar_contract_intelligence') }}"><b>Contract Intelligence</b><small>Clauses, négociation, signature</small></a>
+          <a href="{{ url_for('pillar_transaction_intelligence') }}"><b>Transaction Intelligence</b><small>Structuration, workflow, closing</small></a>
+          <a href="{{ url_for('pillar_tax_intelligence') }}"><b>Tax Intelligence</b><small>Obligations et échéances fiscales</small></a>
+          <a href="{{ url_for('pillar_regulatory_compliance') }}"><b>Regulatory &amp; Compliance</b><small>AML / KYC / autorisations</small></a>
+        </div>
+      </div>
       <a href="{{ url_for('about') }}">À propos</a>
       <a href="{{ url_for('expertise') }}">Expertise</a>
       <a href="{{ url_for('tarifs') }}">Tarifs</a>
@@ -27,6 +37,7 @@
         <a href="{{ url_for('portal_dashboard') }}">Espace client</a>
         {% if current_user['role'] in ('expert','admin') %}<a href="{{ url_for('admin_revue_articles') }}">Revue (admin)</a>{% endif %}
         {% if current_user['role'] in ('expert','admin') %}<a href="{{ url_for('admin_corpus_list') }}">Corpus juridique</a>{% endif %}
+        {% if current_user['role'] in ('expert','admin') %}<a href="{{ url_for('admin_clauses_list') }}">Clauses</a>{% endif %}
         {% if current_user['role'] == 'admin' %}<a href="{{ url_for('admin_users') }}">Utilisateurs</a>{% endif %}
         <a href="{{ url_for('logout') }}">Déconnexion</a>
       {% else %}
@@ -57,6 +68,14 @@
       <div>
         <h4>Massey Contracts &amp; Tax</h4>
         <p>LegalTech d'ingénierie juridique, fiscale et transactionnelle.</p>
+      </div>
+      <div>
+        <h4>Plateforme</h4>
+        <a href="{{ url_for('pillar_legal_intelligence') }}">Legal Intelligence</a>
+        <a href="{{ url_for('pillar_contract_intelligence') }}">Contract Intelligence</a>
+        <a href="{{ url_for('pillar_transaction_intelligence') }}">Transaction Intelligence</a>
+        <a href="{{ url_for('pillar_tax_intelligence') }}">Tax Intelligence</a>
+        <a href="{{ url_for('pillar_regulatory_compliance') }}">Regulatory &amp; Compliance</a>
       </div>
       <div>
         <h4>LegalTech</h4>
