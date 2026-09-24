@@ -71,18 +71,4 @@
       cio.observe(el);
     });
   }
-
-  // "/" keyboard shortcut: focuses the Massey Law Review search field, unless the
-  // person is already typing in a form field.
-  var searchInput = document.getElementById("revue-search-input");
-  if (searchInput) {
-    document.addEventListener("keydown", function (e) {
-      if (e.key !== "/") return;
-      var tag = (e.target && e.target.tagName) || "";
-      var isTyping = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target && e.target.isContentEditable);
-      if (isTyping) return;
-      e.preventDefault();
-      searchInput.focus();
-    });
-  }
 })();

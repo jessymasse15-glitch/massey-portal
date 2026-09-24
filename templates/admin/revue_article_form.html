@@ -4,54 +4,25 @@
 <h1>{{ 'Modifier l\'article' if article else 'Nouvel article' }}</h1>
 <form method="POST" enctype="multipart/form-data" class="card" style="max-width:760px;">
   <div class="form-group">
-    <label for="title">Titre (FR)</label>
+    <label for="title">Titre</label>
     <input type="text" id="title" name="title" value="{{ article['title'] if article else '' }}" required>
   </div>
   <div class="form-group">
-    <label for="title_en">Titre (EN)</label>
-    <input type="text" id="title_en" name="title_en" value="{{ article['title_en'] if article else '' }}">
-    <div class="helptext">Facultatif — si vide, le titre français est utilisé sur la version anglaise du site.</div>
-  </div>
-  <div class="form-group">
-    <label for="author_name">Auteur (nom affiché)</label>
+    <label for="author_name">Auteur</label>
     <input type="text" id="author_name" name="author_name" value="{{ article['author_name'] if article else '' }}" required>
-  </div>
-  <div class="form-group">
-    <label for="author_slug">Page auteur·rice liée</label>
-    <select id="author_slug" name="author_slug">
-      <option value="">Aucune</option>
-      {% for au in authors %}
-        <option value="{{ au['slug'] }}" {{ 'selected' if article and article['author_slug']==au['slug'] else '' }}>{{ au['name'] }}</option>
-      {% endfor %}
-    </select>
-    <div class="helptext"><a href="{{ url_for('admin_revue_author_new') }}" target="_blank">+ Créer un·e nouvel·le auteur·rice</a> (s'ouvre dans un nouvel onglet — actualisez cette page ensuite pour la voir apparaître dans la liste).</div>
   </div>
   <div class="form-group">
     <label for="issue_label">Numéro / édition (ex. Vol. 1, n° 1)</label>
     <input type="text" id="issue_label" name="issue_label" value="{{ article['issue_label'] if article else '' }}">
   </div>
   <div class="form-group">
-    <label for="tags">Thèmes / mots-clés</label>
-    <input type="text" id="tags" name="tags" value="{{ article['tags'] if article else '' }}" placeholder="ex. fiscalité, arbitrage, contrats">
-    <div class="helptext">Séparés par des virgules — utilisés pour le filtrage et les articles liés.</div>
-  </div>
-  <div class="form-group">
-    <label for="abstract">Résumé (FR)</label>
+    <label for="abstract">Résumé</label>
     <textarea id="abstract" name="abstract">{{ article['abstract'] if article else '' }}</textarea>
   </div>
   <div class="form-group">
-    <label for="abstract_en">Résumé (EN)</label>
-    <textarea id="abstract_en" name="abstract_en">{{ article['abstract_en'] if article else '' }}</textarea>
-  </div>
-  <div class="form-group">
-    <label for="body_html">Corps de l'article — FR (HTML)</label>
+    <label for="body_html">Corps de l'article (HTML)</label>
     <textarea id="body_html" name="body_html" style="min-height:260px;font-family:var(--mono);font-size:0.82rem;">{{ article['body_html'] if article else '' }}</textarea>
-    <div class="helptext">Balises HTML simples acceptées : &lt;p&gt;, &lt;h2 id="..."&gt; (généré la table des matières), &lt;blockquote&gt;, &lt;ul&gt;/&lt;li&gt;, &lt;strong&gt;, &lt;em&gt;. Notes de bas de page : &lt;sup id="fnref-1"&gt;&lt;a href="#fn-1"&gt;1&lt;/a&gt;&lt;/sup&gt; + bloc &lt;div class="footnotes"&gt;.</div>
-  </div>
-  <div class="form-group">
-    <label for="body_html_en">Corps de l'article — EN (HTML)</label>
-    <textarea id="body_html_en" name="body_html_en" style="min-height:260px;font-family:var(--mono);font-size:0.82rem;">{{ article['body_html_en'] if article else '' }}</textarea>
-    <div class="helptext">Facultatif — si vide, la version française s'affiche sur la page anglaise.</div>
+    <div class="helptext">Balises HTML simples acceptées : &lt;p&gt;, &lt;h2&gt;, &lt;blockquote&gt;, &lt;ul&gt;/&lt;li&gt;, &lt;strong&gt;, &lt;em&gt;.</div>
   </div>
   <div class="form-group">
     <label for="pdf">Fichier PDF {% if article and article['pdf_original_name'] %}(actuel : {{ article['pdf_original_name'] }}){% endif %}</label>

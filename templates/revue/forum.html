@@ -30,10 +30,9 @@
   {% endif %}
 
   <div style="margin-top:36px;">
-    {% if threads %}
-      {% for item in threads %}
-        {% set p = item.post %}
-        <div class="forum-post" id="post-{{ p['id'] }}">
+    {% if posts %}
+      {% for p in posts %}
+        <div class="forum-post">
           <div class="meta">
             {{ p['full_name'] }} — {{ p['created_at'][:16] | replace('T',' ') }}
             {% if current_user and current_user['role'] in ('expert','admin') %}
@@ -44,27 +43,6 @@
           </div>
           <h4>{{ p['title'] }}</h4>
           <p>{{ p['body'] }}</p>
-
-          {% if item.replies %}
-            <div class="forum-replies">
-              {% for r in item.replies %}
-                <div class="forum-reply">
-                  <div class="meta">{{ r['full_name'] }} — {{ r['created_at'][:16] | replace('T',' ') }}</div>
-                  <p>{{ r['body'] }}</p>
-                </div>
-              {% endfor %}
-            </div>
-          {% endif %}
-
-          {% if current_user %}
-            <form method="POST" action="{{ url_for('revue_forum_reply', post_id=p['id']) }}" class="forum-reply-form">
-              <div class="form-group" style="margin-bottom:8px;">
-                <label for="reply-{{ p['id'] }}" class="sr-only">Répondre à ce billet</label>
-                <textarea id="reply-{{ p['id'] }}" name="body" placeholder="Écrire une réponse…" required rows="2"></textarea>
-              </div>
-              <button type="submit" class="btn btn-ghost btn-sm">Répondre</button>
-            </form>
-          {% endif %}
         </div>
       {% endfor %}
     {% else %}

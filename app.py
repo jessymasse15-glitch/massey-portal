@@ -167,37 +167,6 @@ def _slugify(text):
     return text or secrets.token_hex(4)
 
 
-def _article_tags(article):
-    raw = article["tags"] if "tags" in article.keys() else None
-    return [t.strip() for t in (raw or "").split(",") if t.strip()]
-
-
-def _extract_toc(body_html):
-    """Repère les <h2 id="..."> du corps d'article pour construire un sommaire cliquable."""
-    if not body_html:
-        return []
-    return [
-        {"id": m.group(1), "label": m.group(2)}
-        for m in re.finditer(r'<h2 id="([^"]+)">([^<]+)</h2>', body_html)
-    ]
-
-
-def _related_articles(conn, article):
-    tags = _article_tags(article)
-    if not tags:
-        return []
-    all_articles = conn.execute(
-        "SELECT * FROM review_articles WHERE published=1 AND id!=? ORDER BY published_at DESC", (article["id"],)
-    ).fetchall()
-    scored = []
-    for a in all_articles:
-        shared = len(set(tags) & set(_article_tags(a)))
-        if shared > 0:
-            scored.append((shared, a))
-    scored.sort(key=lambda pair: pair[0], reverse=True)
-    return [a for _, a in scored[:3]]
-
-
 @app.route("/revue")
 def revue_home():
     conn = dbm.get_db()
@@ -210,75 +179,6 @@ def revue_home():
     ).fetchall()
     conn.close()
     return render_template("revue/home.html", articles=articles, posts=posts)
-
-
-@app.route("/revue/en")
-def revue_home_en():
-    conn = dbm.get_db()
-    articles = conn.execute(
-        "SELECT * FROM review_articles WHERE published=1 ORDER BY published_at DESC LIMIT 3"
-    ).fetchall()
-    posts = conn.execute(
-        "SELECT p.*, u.full_name FROM review_forum_posts p JOIN users u ON u.id=p.user_id "
-        "WHERE p.hidden=0 ORDER BY p.created_at DESC LIMIT 3"
-    ).fetchall()
-    conn.close()
-    return render_template("revue/en/home.html", articles=articles, posts=posts)
-
-
-@app.route("/revue/recherche")
-def revue_search():
-    q = request.args.get("q", "").strip()
-    lang = "en" if request.args.get("lang") == "en" else "fr"
-    articles, posts = [], []
-    if q:
-        conn = dbm.get_db()
-        like = f"%{q}%"
-        articles = conn.execute(
-            "SELECT * FROM review_articles WHERE published=1 AND "
-            "(title LIKE ? OR title_en LIKE ? OR abstract LIKE ? OR abstract_en LIKE ? OR body_html LIKE ? OR body_html_en LIKE ?) "
-            "ORDER BY published_at DESC",
-            (like, like, like, like, like, like),
-        ).fetchall()
-        posts = conn.execute(
-            "SELECT p.*, u.full_name FROM review_forum_posts p JOIN users u ON u.id=p.user_id "
-            "WHERE p.hidden=0 AND (p.title LIKE ? OR p.body LIKE ? OR p.title_en LIKE ? OR p.body_en LIKE ?) "
-            "ORDER BY p.created_at DESC",
-            (like, like, like, like),
-        ).fetchall()
-        conn.close()
-    template = "revue/en/search.html" if lang == "en" else "revue/search.html"
-    return render_template(template, q=q, articles=articles, posts=posts)
-
-
-@app.route("/revue/auteurs/<slug>")
-def revue_author(slug):
-    conn = dbm.get_db()
-    author = conn.execute("SELECT * FROM review_authors WHERE slug=?", (slug,)).fetchone()
-    if author is None:
-        conn.close()
-        abort(404)
-    articles = conn.execute(
-        "SELECT * FROM review_articles WHERE published=1 AND author_slug=? ORDER BY published_at DESC",
-        (slug,),
-    ).fetchall()
-    conn.close()
-    return render_template("revue/author.html", author=author, articles=articles)
-
-
-@app.route("/revue/en/auteurs/<slug>")
-def revue_author_en(slug):
-    conn = dbm.get_db()
-    author = conn.execute("SELECT * FROM review_authors WHERE slug=?", (slug,)).fetchone()
-    if author is None:
-        conn.close()
-        abort(404)
-    articles = conn.execute(
-        "SELECT * FROM review_articles WHERE published=1 AND author_slug=? ORDER BY published_at DESC",
-        (slug,),
-    ).fetchall()
-    conn.close()
-    return render_template("revue/en/author.html", author=author, articles=articles)
 
 
 @app.route("/revue/infolettre", methods=["POST"])
@@ -301,54 +201,14 @@ def revue_newsletter_signup():
     return redirect(request.referrer or url_for("revue_home"))
 
 
-def _filtered_sorted_articles(conn, args):
-    tag = args.get("tag", "").strip()
-    auteur = args.get("auteur", "").strip()
-    tri = args.get("tri", "recent")
-    articles = conn.execute(
-        "SELECT * FROM review_articles WHERE published=1"
-    ).fetchall()
-    if tag:
-        articles = [a for a in articles if tag in _article_tags(a)]
-    if auteur:
-        articles = [a for a in articles if a["author_name"] == auteur]
-    if tri == "ancien":
-        articles = sorted(articles, key=lambda a: a["published_at"] or a["created_at"])
-    elif tri == "titre":
-        articles = sorted(articles, key=lambda a: a["title"].lower())
-    else:
-        articles = sorted(articles, key=lambda a: a["published_at"] or a["created_at"], reverse=True)
-    return articles
-
-
 @app.route("/revue/articles")
 def revue_articles():
     conn = dbm.get_db()
-    all_articles = conn.execute("SELECT * FROM review_articles WHERE published=1").fetchall()
-    articles = _filtered_sorted_articles(conn, request.args)
+    articles = conn.execute(
+        "SELECT * FROM review_articles WHERE published=1 ORDER BY published_at DESC"
+    ).fetchall()
     conn.close()
-    all_tags = sorted({t for a in all_articles for t in _article_tags(a)})
-    all_authors = sorted({a["author_name"] for a in all_articles})
-    return render_template(
-        "revue/articles.html", articles=articles, all_tags=all_tags, all_authors=all_authors,
-        current_tag=request.args.get("tag", ""), current_auteur=request.args.get("auteur", ""),
-        current_tri=request.args.get("tri", "recent"),
-    )
-
-
-@app.route("/revue/en/articles")
-def revue_articles_en():
-    conn = dbm.get_db()
-    all_articles = conn.execute("SELECT * FROM review_articles WHERE published=1").fetchall()
-    articles = _filtered_sorted_articles(conn, request.args)
-    conn.close()
-    all_tags = sorted({t for a in all_articles for t in _article_tags(a)})
-    all_authors = sorted({a["author_name"] for a in all_articles})
-    return render_template(
-        "revue/en/articles.html", articles=articles, all_tags=all_tags, all_authors=all_authors,
-        current_tag=request.args.get("tag", ""), current_auteur=request.args.get("auteur", ""),
-        current_tri=request.args.get("tri", "recent"),
-    )
+    return render_template("revue/articles.html", articles=articles)
 
 
 @app.route("/revue/articles/<slug>")
@@ -357,80 +217,10 @@ def revue_article_detail(slug):
     article = conn.execute(
         "SELECT * FROM review_articles WHERE slug=? AND published=1", (slug,)
     ).fetchone()
-    if article is None:
-        conn.close()
-        abort(404)
-    author = None
-    if article["author_slug"]:
-        author = conn.execute("SELECT * FROM review_authors WHERE slug=?", (article["author_slug"],)).fetchone()
-    related = _related_articles(conn, article)
-    conn.close()
-    toc = _extract_toc(article["body_html"])
-    return render_template(
-        "revue/article_detail.html", article=article, author=author, related=related, toc=toc
-    )
-
-
-@app.route("/revue/en/articles/<slug>")
-def revue_article_detail_en(slug):
-    conn = dbm.get_db()
-    article = conn.execute(
-        "SELECT * FROM review_articles WHERE slug=? AND published=1", (slug,)
-    ).fetchone()
-    if article is None:
-        conn.close()
-        abort(404)
-    author = None
-    if article["author_slug"]:
-        author = conn.execute("SELECT * FROM review_authors WHERE slug=?", (article["author_slug"],)).fetchone()
-    related = _related_articles(conn, article)
-    conn.close()
-    body_en = article["body_html_en"] or article["body_html"]
-    toc = _extract_toc(body_en)
-    return render_template(
-        "revue/en/article_detail.html", article=article, author=author, related=related, toc=toc, body_en=body_en
-    )
-
-
-@app.route("/revue/articles/<slug>/og.png")
-def revue_article_og_image(slug):
-    conn = dbm.get_db()
-    article = conn.execute(
-        "SELECT * FROM review_articles WHERE slug=? AND published=1", (slug,)
-    ).fetchone()
     conn.close()
     if article is None:
         abort(404)
-    og_dir = os.path.join(UPLOAD_DIR, "revue", "og")
-    os.makedirs(og_dir, exist_ok=True)
-    og_path = os.path.join(og_dir, f"{slug}.png")
-    if not os.path.exists(og_path):
-        _generate_og_image(article["title"], article["issue_label"] or "Massey Law Review", og_path)
-    return send_from_directory(og_dir, f"{slug}.png", mimetype="image/png")
-
-
-def _generate_og_image(title, eyebrow, out_path):
-    from PIL import Image, ImageDraw, ImageFont
-    W, H = 1200, 630
-    img = Image.new("RGB", (W, H), (10, 14, 23))
-    draw = ImageDraw.Draw(img)
-    draw.rectangle([0, 0, 14, H], fill=(201, 162, 75))
-    try:
-        font_eyebrow = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
-        font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf", 54)
-    except Exception:
-        font_eyebrow = ImageFont.load_default()
-        font_title = ImageFont.load_default()
-    draw.text((70, 70), eyebrow.upper(), font=font_eyebrow, fill=(201, 162, 75))
-
-    import textwrap
-    wrapped = textwrap.wrap(title, width=28)[:5]
-    y = 160
-    for line in wrapped:
-        draw.text((70, y), line, font=font_title, fill=(242, 244, 248))
-        y += 66
-    draw.text((70, H - 90), "MASSEY LAW REVIEW", font=font_eyebrow, fill=(94, 134, 201))
-    img.save(out_path, "PNG")
+    return render_template("revue/article_detail.html", article=article)
 
 
 @app.route("/revue/articles/<slug>/pdf")
@@ -448,84 +238,15 @@ def revue_article_pdf(slug):
     )
 
 
-@app.route("/revue/rss.xml")
-def revue_rss():
+@app.route("/revue/forum")
+def revue_forum():
     conn = dbm.get_db()
-    articles = conn.execute(
-        "SELECT * FROM review_articles WHERE published=1 ORDER BY published_at DESC LIMIT 30"
-    ).fetchall()
-    conn.close()
-    root = request.url_root.rstrip("/")
-    items = "".join(
-        f"<item><title>{a['title']}</title><link>{root}/revue/articles/{a['slug']}</link>"
-        f"<guid>{root}/revue/articles/{a['slug']}</guid>"
-        f"<pubDate>{a['published_at'] or a['created_at']}</pubDate>"
-        f"<description><![CDATA[{a['abstract'] or ''}]]></description></item>"
-        for a in articles
-    )
-    xml = (
-        '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>'
-        f"<title>Massey Law Review</title><link>{root}/revue</link>"
-        "<description>Revue juridique de Massey Contracts &amp; Tax</description>"
-        f"{items}</channel></rss>"
-    )
-    return Response(xml, mimetype="application/rss+xml")
-
-
-@app.route("/revue/en/rss.xml")
-def revue_rss_en():
-    conn = dbm.get_db()
-    articles = conn.execute(
-        "SELECT * FROM review_articles WHERE published=1 ORDER BY published_at DESC LIMIT 30"
-    ).fetchall()
-    conn.close()
-    root = request.url_root.rstrip("/")
-    items = "".join(
-        f"<item><title>{a['title_en'] or a['title']}</title><link>{root}/revue/en/articles/{a['slug']}</link>"
-        f"<guid>{root}/revue/en/articles/{a['slug']}</guid>"
-        f"<pubDate>{a['published_at'] or a['created_at']}</pubDate>"
-        f"<description><![CDATA[{a['abstract_en'] or a['abstract'] or ''}]]></description></item>"
-        for a in articles
-    )
-    xml = (
-        '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>'
-        f"<title>Massey Law Review</title><link>{root}/revue/en</link>"
-        "<description>Legal review published by Massey Contracts &amp; Tax</description>"
-        f"{items}</channel></rss>"
-    )
-    return Response(xml, mimetype="application/rss+xml")
-
-
-def _forum_posts_with_replies(conn):
     posts = conn.execute(
         "SELECT p.*, u.full_name FROM review_forum_posts p JOIN users u ON u.id=p.user_id "
         "WHERE p.hidden=0 ORDER BY p.created_at DESC"
     ).fetchall()
-    result = []
-    for p in posts:
-        replies = conn.execute(
-            "SELECT r.*, u.full_name FROM review_forum_replies r JOIN users u ON u.id=r.user_id "
-            "WHERE r.post_id=? AND r.hidden=0 ORDER BY r.created_at ASC",
-            (p["id"],),
-        ).fetchall()
-        result.append({"post": p, "replies": replies})
-    return result
-
-
-@app.route("/revue/forum")
-def revue_forum():
-    conn = dbm.get_db()
-    threads = _forum_posts_with_replies(conn)
     conn.close()
-    return render_template("revue/forum.html", threads=threads)
-
-
-@app.route("/revue/en/forum")
-def revue_forum_en():
-    conn = dbm.get_db()
-    threads = _forum_posts_with_replies(conn)
-    conn.close()
-    return render_template("revue/en/forum.html", threads=threads)
+    return render_template("revue/forum.html", posts=posts)
 
 
 @app.route("/revue/forum/nouveau", methods=["POST"])
@@ -547,26 +268,6 @@ def revue_forum_post():
     else:
         flash("Titre et message requis.", "error")
     return redirect(url_for("revue_forum"))
-
-
-@app.route("/revue/forum/<int:post_id>/repondre", methods=["POST"])
-@login_required
-def revue_forum_reply(post_id):
-    u = current_user()
-    body = request.form.get("body", "").strip()
-    if body:
-        conn = dbm.get_db()
-        conn.execute(
-            "INSERT INTO review_forum_replies (post_id, user_id, body, created_at) VALUES (?,?,?,?)",
-            (post_id, u["id"], body, dbm.now()),
-        )
-        conn.commit()
-        conn.close()
-        dbm.log_activity(u["id"], "revue_forum_reply", f"post {post_id}")
-        flash("Réponse publiée.", "success")
-    else:
-        flash("Le message ne peut pas être vide.", "error")
-    return redirect(url_for("revue_forum") + f"#post-{post_id}")
 
 
 @app.route("/revue/forum/<int:post_id>/masquer", methods=["POST"])
@@ -645,23 +346,19 @@ def admin_revue_forum_delete(post_id):
 
 @app.route("/revue/soumissions", methods=["GET", "POST"])
 def revue_submissions():
-    lang = request.values.get("lang", "fr")
     if request.method == "POST":
         author_name = request.form.get("author_name", "").strip()
         email = request.form.get("email", "").strip().lower()
         title = request.form.get("title", "").strip()
         abstract = request.form.get("abstract", "").strip()
         file = request.files.get("file")
-        dest = "revue_submissions_en" if lang == "en" else "revue_submissions"
 
         if not (author_name and email and title and file and file.filename):
-            flash("Merci de remplir tous les champs obligatoires et de joindre un fichier." if lang != "en"
-                  else "Please fill in all required fields and attach a file.", "error")
-            return redirect(url_for(dest))
+            flash("Merci de remplir tous les champs obligatoires et de joindre un fichier.", "error")
+            return redirect(url_for("revue_submissions"))
         if not allowed_file(file.filename):
-            flash("Type de fichier non autorisé (formats acceptés : pdf, doc, docx)." if lang != "en"
-                  else "File type not allowed (accepted formats: pdf, doc, docx).", "error")
-            return redirect(url_for(dest))
+            flash("Type de fichier non autorisé (formats acceptés : pdf, doc, docx).", "error")
+            return redirect(url_for("revue_submissions"))
 
         original_name = secure_filename(file.filename)
         ext = original_name.rsplit(".", 1)[1].lower()
@@ -679,16 +376,10 @@ def revue_submissions():
         )
         conn.commit()
         conn.close()
-        flash("Votre soumission a été reçue. Le comité éditorial vous contactera à l'adresse fournie." if lang != "en"
-              else "Your submission has been received. The editorial committee will contact you at the address provided.", "success")
-        return redirect(url_for(dest))
+        flash("Votre soumission a été reçue. Le comité éditorial vous contactera à l'adresse fournie.", "success")
+        return redirect(url_for("revue_submissions"))
 
     return render_template("revue/submissions.html")
-
-
-@app.route("/revue/en/soumissions", methods=["GET"])
-def revue_submissions_en():
-    return render_template("revue/en/submissions.html")
 
 
 @app.route("/revue/abonnement")
@@ -704,22 +395,6 @@ def revue_subscription():
         conn.close()
     return render_template(
         "revue/subscription.html", plans=dbm.REVIEW_PLANS, active=active, plan_labels=dbm.REVIEW_PLAN_LABELS
-    )
-
-
-@app.route("/revue/en/abonnement")
-def revue_subscription_en():
-    u = current_user()
-    active = None
-    if u:
-        conn = dbm.get_db()
-        active = conn.execute(
-            "SELECT * FROM review_subscriptions WHERE user_id=? AND status='paid' ORDER BY paid_at DESC LIMIT 1",
-            (u["id"],),
-        ).fetchone()
-        conn.close()
-    return render_template(
-        "revue/en/subscription.html", plans=dbm.REVIEW_PLANS, active=active, plan_labels=dbm.REVIEW_PLAN_LABELS
     )
 
 
@@ -1538,10 +1213,7 @@ def admin_revue_articles():
 def admin_revue_article_new():
     if request.method == "POST":
         return _save_revue_article(None)
-    conn = dbm.get_db()
-    authors = conn.execute("SELECT * FROM review_authors ORDER BY name").fetchall()
-    conn.close()
-    return render_template("admin/revue_article_form.html", article=None, authors=authors)
+    return render_template("admin/revue_article_form.html", article=None)
 
 
 @app.route("/admin/revue/articles/<int:article_id>/modifier", methods=["GET", "POST"])
@@ -1549,27 +1221,21 @@ def admin_revue_article_new():
 def admin_revue_article_edit(article_id):
     conn = dbm.get_db()
     article = conn.execute("SELECT * FROM review_articles WHERE id=?", (article_id,)).fetchone()
-    authors = conn.execute("SELECT * FROM review_authors ORDER BY name").fetchall()
     conn.close()
     if article is None:
         abort(404)
     if request.method == "POST":
         return _save_revue_article(article_id)
-    return render_template("admin/revue_article_form.html", article=article, authors=authors)
+    return render_template("admin/revue_article_form.html", article=article)
 
 
 def _save_revue_article(article_id):
     u = current_user()
     title = request.form.get("title", "").strip()
-    title_en = request.form.get("title_en", "").strip()
     author_name = request.form.get("author_name", "").strip()
-    author_slug = request.form.get("author_slug", "").strip() or None
     issue_label = request.form.get("issue_label", "").strip()
-    tags = request.form.get("tags", "").strip()
     abstract = request.form.get("abstract", "").strip()
-    abstract_en = request.form.get("abstract_en", "").strip()
     body_html = request.form.get("body_html", "").strip()
-    body_html_en = request.form.get("body_html_en", "").strip()
     published = 1 if request.form.get("published") == "on" else 0
     file = request.files.get("pdf")
 
@@ -1598,12 +1264,10 @@ def _save_revue_article(article_id):
             slug = f"{slug}-{secrets.token_hex(3)}"
         published_at = dbm.now() if published else None
         conn.execute(
-            "INSERT INTO review_articles (slug, title, title_en, author_name, author_slug, issue_label, tags, "
-            "abstract, abstract_en, body_html, body_html_en, "
+            "INSERT INTO review_articles (slug, title, author_name, issue_label, abstract, body_html, "
             "pdf_stored_name, pdf_original_name, published, created_by, created_at, published_at) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (slug, title, title_en, author_name, author_slug, issue_label, tags, abstract, abstract_en,
-             body_html, body_html_en, pdf_stored_name, pdf_original_name,
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            (slug, title, author_name, issue_label, abstract, body_html, pdf_stored_name, pdf_original_name,
              published, u["id"], dbm.now(), published_at),
         )
         conn.commit()
@@ -1618,11 +1282,9 @@ def _save_revue_article(article_id):
             pdf_stored_name = existing["pdf_stored_name"]
             pdf_original_name = existing["pdf_original_name"]
         conn.execute(
-            "UPDATE review_articles SET title=?, title_en=?, author_name=?, author_slug=?, issue_label=?, tags=?, "
-            "abstract=?, abstract_en=?, body_html=?, body_html_en=?, "
+            "UPDATE review_articles SET title=?, author_name=?, issue_label=?, abstract=?, body_html=?, "
             "pdf_stored_name=?, pdf_original_name=?, published=?, published_at=? WHERE id=?",
-            (title, title_en, author_name, author_slug, issue_label, tags, abstract, abstract_en,
-             body_html, body_html_en, pdf_stored_name, pdf_original_name,
+            (title, author_name, issue_label, abstract, body_html, pdf_stored_name, pdf_original_name,
              published, new_published_at, article_id),
         )
         conn.commit()
@@ -1641,97 +1303,6 @@ def admin_revue_article_delete(article_id):
     conn.close()
     flash("Article supprimé.", "success")
     return redirect(url_for("admin_revue_articles"))
-
-
-@app.route("/admin/revue/auteurs")
-@roles_required("expert", "admin")
-def admin_revue_authors():
-    conn = dbm.get_db()
-    authors = conn.execute("SELECT * FROM review_authors ORDER BY name").fetchall()
-    counts = {
-        r["author_slug"]: r["c"]
-        for r in conn.execute(
-            "SELECT author_slug, COUNT(*) AS c FROM review_articles WHERE author_slug IS NOT NULL GROUP BY author_slug"
-        ).fetchall()
-    }
-    conn.close()
-    return render_template("admin/revue_authors.html", authors=authors, counts=counts)
-
-
-@app.route("/admin/revue/auteurs/nouveau", methods=["GET", "POST"])
-@roles_required("expert", "admin")
-def admin_revue_author_new():
-    if request.method == "POST":
-        return _save_revue_author(None)
-    return render_template("admin/revue_author_form.html", author=None)
-
-
-@app.route("/admin/revue/auteurs/<int:author_id>/modifier", methods=["GET", "POST"])
-@roles_required("expert", "admin")
-def admin_revue_author_edit(author_id):
-    conn = dbm.get_db()
-    author = conn.execute("SELECT * FROM review_authors WHERE id=?", (author_id,)).fetchone()
-    conn.close()
-    if author is None:
-        abort(404)
-    if request.method == "POST":
-        return _save_revue_author(author_id)
-    return render_template("admin/revue_author_form.html", author=author)
-
-
-def _save_revue_author(author_id):
-    u = current_user()
-    name = request.form.get("name", "").strip()
-    title = request.form.get("title", "").strip()
-    bio = request.form.get("bio", "").strip()
-    bio_en = request.form.get("bio_en", "").strip()
-
-    if not name:
-        flash("Le nom est obligatoire.", "error")
-        return redirect(request.referrer or url_for("admin_revue_authors"))
-
-    conn = dbm.get_db()
-    if author_id is None:
-        slug = _slugify(name)
-        existing = conn.execute("SELECT id FROM review_authors WHERE slug=?", (slug,)).fetchone()
-        if existing:
-            slug = f"{slug}-{secrets.token_hex(3)}"
-        conn.execute(
-            "INSERT INTO review_authors (slug, name, title, bio, bio_en, created_at) VALUES (?,?,?,?,?,?)",
-            (slug, name, title, bio, bio_en, dbm.now()),
-        )
-        conn.commit()
-        dbm.log_activity(u["id"], "revue_author_created", name)
-        flash("Auteur·rice créé·e.", "success")
-    else:
-        conn.execute(
-            "UPDATE review_authors SET name=?, title=?, bio=?, bio_en=? WHERE id=?",
-            (name, title, bio, bio_en, author_id),
-        )
-        conn.commit()
-        dbm.log_activity(u["id"], "revue_author_updated", name)
-        flash("Auteur·rice mis·e à jour.", "success")
-    conn.close()
-    return redirect(url_for("admin_revue_authors"))
-
-
-@app.route("/admin/revue/auteurs/<int:author_id>/supprimer", methods=["POST"])
-@roles_required("admin")
-def admin_revue_author_delete(author_id):
-    conn = dbm.get_db()
-    in_use = conn.execute(
-        "SELECT COUNT(*) AS c FROM review_articles WHERE author_slug=(SELECT slug FROM review_authors WHERE id=?)",
-        (author_id,),
-    ).fetchone()["c"]
-    if in_use:
-        conn.close()
-        flash("Impossible de supprimer : cet·te auteur·rice est lié·e à au moins un article.", "error")
-        return redirect(url_for("admin_revue_authors"))
-    conn.execute("DELETE FROM review_authors WHERE id=?", (author_id,))
-    conn.commit()
-    conn.close()
-    flash("Auteur·rice supprimé·e.", "success")
-    return redirect(url_for("admin_revue_authors"))
 
 
 @app.route("/admin/revue/soumissions")
@@ -1880,20 +1451,6 @@ def admin_corpus_delete(doc_id):
     conn.close()
     flash("Texte supprimé du corpus.", "success")
     return redirect(url_for("admin_corpus_list"))
-
-
-# ---------------------------------------------------------------------------
-# Pages d'erreur personnalisées
-# ---------------------------------------------------------------------------
-
-@app.errorhandler(404)
-def not_found(e):
-    return render_template("errors/404.html"), 404
-
-
-@app.errorhandler(500)
-def server_error(e):
-    return render_template("errors/500.html"), 500
 
 
 # ---------------------------------------------------------------------------
