@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Comparaison de documents — Dossier #{{ dossier.id }}{% endblock %}
+{% block content %}
+<span class="tag">DOSSIER #{{ dossier.id }}</span>
+<h1 style="margin:4px 0;">Comparaison de versions — {{ dossier.title }}</h1>
+<p class="lede">Contract Intelligence — comparaison de deux documents du dossier.</p>
+
+<div class="card">
+  <form method="get" action="{{ url_for('compare_documents', dossier_id=dossier.id) }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <select name="a" required>
+      <option value="">Document A</option>
+      {% for doc in documents %}<option value="{{ doc.id }}" {% if doc_a_id==doc.id %}selected{% endif %}>{{ doc.original_name }} ({{ doc.created_at[:10] }})</option>{% endfor %}
+    </select>
+    <select name="b" required>
+      <option value="">Document B</option>
+      {% for doc in documents %}<option value="{{ doc.id }}" {% if doc_b_id==doc.id %}selected{% endif %}>{{ doc.original_name }} ({{ doc.created_at[:10] }})</option>{% endfor %}
+    </select>
+    <button type="submit" class="btn btn-sm btn-primary">Comparer</button>
+    <a href="{{ url_for('portal_dossier', dossier_id=dossier.id) }}" class="btn btn-sm">← Retour au dossier</a>
+  </form>
+</div>
+
+{% if doc_a and doc_b %}
+<div class="card">
+  <h3 style="margin-top:0;">Métadonnées</h3>
+  <table>
+    <tr><th></th><th>{{ doc_a.original_name }}</th><th>{{ doc_b.original_name }}</th></tr>
+    <tr><td>Catégorie</td><td>{{ doc_a.category }}</td><td>{{ doc_b.category }}</td></tr>
+    <tr><td>Taille</td><td>{{ (doc_a.size_bytes/1024)|round(1) }} Ko</td><td>{{ (doc_b.size_bytes/1024)|round(1) }} Ko</td></tr>
+    <tr><td>Déposé le</td><td>{{ doc_a.created_at[:16] }}</td><td>{{ doc_b.created_at[:16] }}</td></tr>
+    <tr><td>Empreinte SHA-256</td><td style="font-family:var(--mono, monospace);font-size:0.78rem;word-break:break-all;">{{ doc_a.sha256 }}</td><td style="font-family:var(--mono, monospace);font-size:0.78rem;word-break:break-all;">{{ doc_b.sha256 }}</td></tr>
+    <tr><td>Identiques ?</td><td colspan="2">
+      {% if doc_a.sha256 == doc_b.sha256 %}<span class="status-pill done">Fichiers identiques (même empreinte)</span>{% else %}<span class="status-pill pending">Fichiers différents</span>{% endif %}
+    </td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">Différences textuelles</h3>
+  {% if text_compared and diff_lines %}
+    <pre style="background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;overflow-x:auto;font-size:0.82rem;line-height:1.5;">{% for line in diff_lines %}{% if line.startswith('+') and not line.startswith('+++') %}<span style="color:var(--good);">{{ line }}</span>
+{% elif line.startswith('-') and not line.startswith('---') %}<span style="color:var(--danger);">{{ line }}</span>
+{% else %}{{ line }}
+{% endif %}{% endfor %}</pre>
+  {% elif text_compared %}
+    <p class="helptext">Aucune différence textuelle détectée entre ces deux documents.</p>
+  {% else %}
+    <p class="callout">La comparaison ligne à ligne n'est disponible que pour les fichiers texte (.txt, .md, .csv). Pour les formats bureautiques (PDF, Word), utilisez le tableau de métadonnées ci-dessus et consignez vos observations de redlining manuellement ci-dessous — l'extraction et la comparaison automatique du contenu de ces formats est une capacité prévue lorsque Massey AI sera connecté à un moteur d'analyse documentaire.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">Consigner une observation</h3>
+  <form method="post" action="{{ url_for('save_document_comparison', dossier_id=dossier.id) }}">
+    <input type="hidden" name="document_a_id" value="{{ doc_a.id }}">
+    <input type="hidden" name="document_b_id" value="{{ doc_b.id }}">
+    <div class="form-group">
+      <label for="note">Observations de comparaison / redlining</label>
+      <textarea id="note" name="note" placeholder="Ex. : clause de non-concurrence étendue de 12 à 24 mois ; ajout d'une clause de retenue à la source à l'article 8..." required></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Enregistrer l'observation</button>
+  </form>
+</div>
+{% elif doc_a_id or doc_b_id %}
+<div class="callout">Sélection invalide — choisissez deux documents distincts du dossier.</div>
+{% endif %}
+{% endblock %}

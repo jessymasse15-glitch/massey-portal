@@ -113,6 +113,7 @@ th{color:var(--ink-faint);font-weight:500;font-size:0.74rem;text-transform:upper
 .status-pill{display:inline-block;padding:4px 10px;font-size:0.72rem;font-family:var(--mono);border:1px solid var(--line-strong);border-radius:var(--radius-sm);color:var(--ink-soft);}
 .status-pill.done{border-color:var(--good);color:var(--good);}
 .status-pill.pending{border-color:var(--warn);color:var(--warn);}
+.status-pill.urgent{border-color:var(--danger);color:var(--danger);}
 
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
 .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
@@ -175,6 +176,8 @@ th{color:var(--ink-faint);font-weight:500;font-size:0.74rem;text-transform:upper
 }
 .page-hero h1{font-size:clamp(1.9rem,3.4vw,2.6rem);margin:0 0 12px;}
 .page-hero .lede{color:var(--ink-soft);font-size:1.02rem;max-width:64ch;}
+.icon-badge{width:52px;height:52px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--steel);margin-bottom:18px;}
+.icon-badge svg{width:26px;height:26px;}
 .prose{max-width:74ch;}
 .prose p{color:var(--ink-soft);margin:0 0 20px;font-size:0.96rem;line-height:1.75;}
 .prose h2{font-size:1.25rem;color:var(--ink);margin:40px 0 14px;}

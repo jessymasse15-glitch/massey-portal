@@ -3,6 +3,7 @@
 {% block meta_description %}Bibliothèque de clauses, négociation, signature électronique et suivi des contrats — le pilier Contract Intelligence de Massey AI.{% endblock %}
 {% block content %}
 <section class="page-hero reveal">
+  <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3h9l5 5v13H6z"/><path d="M15 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></div>
   <div class="eyebrow">Massey AI — Pilier 02</div>
   <h1>Contract Intelligence</h1>
   <p class="lede">Du modèle à l'exécution, en toute confiance.</p>
@@ -79,6 +80,9 @@
   {% else %}
     <p class="helptext">Aucun contrat téléversé pour l'instant.</p>
   {% endfor %}
+  <div class="callout reveal" style="max-width:74ch;margin-top:24px;">
+    Depuis chaque dossier, comparez deux versions d'un même contrat (diff ligne à ligne pour les fichiers texte, comparaison de métadonnées et empreinte pour les autres formats) et consignez vos observations de redlining. La génération de contrats par IA et la détection automatique de risques suivront une fois Massey AI connecté à un moteur d'analyse.
+  </div>
 </section>
 {% else %}
 <section class="block">

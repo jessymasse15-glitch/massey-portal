@@ -168,6 +168,74 @@
     </div>
 
     <div class="card">
+      <h3 style="margin-top:0;">Due diligence — Transaction Intelligence</h3>
+      {% if diligence_items %}
+        {% for cat_value, cat_label in diligence_categories %}
+          {% set cat_rows = diligence_items|selectattr('category','equalto',cat_value)|list %}
+          {% if cat_rows %}
+            <p class="helptext" style="margin:14px 0 4px;font-weight:600;">{{ cat_label }}</p>
+            {% for it in cat_rows %}
+              <div class="task-row">
+                <span class="desc">{{ it.label }}{% if it.note %} <span class="helptext">— {{ it.note }}</span>{% endif %}</span>
+                {% if is_staff %}
+                <form method="post" action="{{ url_for('update_due_diligence_item', dossier_id=dossier.id, item_id=it.id) }}" style="display:flex;gap:6px;align-items:center;">
+                  <select name="status" onchange="this.form.submit()" class="btn btn-sm">
+                    {% for value, label in diligence_statuses %}<option value="{{ value }}" {% if it.status==value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                  </select>
+                </form>
+                {% else %}
+                <span class="status-pill {% if it.status=='valide' %}done{% elif it.status=='probleme' %}{% else %}pending{% endif %}">{{ diligence_status_labels.get(it.status, it.status) }}</span>
+                {% endif %}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <p class="helptext">Aucune checklist de due diligence pour ce dossier.</p>
+        {% if is_staff %}
+        <form method="post" action="{{ url_for('generate_due_diligence_checklist', dossier_id=dossier.id) }}" style="margin-top:10px;">
+          <button type="submit" class="btn btn-sm btn-primary">Générer la checklist standard</button>
+        </form>
+        {% endif %}
+      {% endif %}
+      {% if is_staff and diligence_items %}
+      <form method="post" action="{{ url_for('add_due_diligence_item', dossier_id=dossier.id) }}" style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="text" name="label" placeholder="Point à vérifier" required style="flex:1;min-width:180px;">
+        <select name="category">{% for value, label in diligence_categories %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+        <button type="submit" class="btn btn-sm">Ajouter</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Comparaison de versions — Contract Intelligence</h3>
+      {% if documents|length >= 2 %}
+      <form method="get" action="{{ url_for('compare_documents', dossier_id=dossier.id) }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <select name="a" required>
+          <option value="">Document A</option>
+          {% for doc in documents %}<option value="{{ doc.id }}">{{ doc.original_name }} ({{ doc.created_at[:10] }})</option>{% endfor %}
+        </select>
+        <select name="b" required>
+          <option value="">Document B</option>
+          {% for doc in documents %}<option value="{{ doc.id }}">{{ doc.original_name }} ({{ doc.created_at[:10] }})</option>{% endfor %}
+        </select>
+        <button type="submit" class="btn btn-sm btn-primary">Comparer</button>
+      </form>
+      {% else %}
+        <p class="helptext">Au moins deux documents sont nécessaires pour comparer des versions.</p>
+      {% endif %}
+      {% if comparisons %}
+        <p class="helptext" style="margin:14px 0 4px;font-weight:600;">Observations enregistrées</p>
+        {% for c in comparisons %}
+          <div class="task-row">
+            <span class="tag">{{ c.created_at[:16] }}</span>
+            <span class="desc">{{ c.a_name }} ↔ {{ c.b_name }} — {{ c.note }}</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+
+    <div class="card">
       <h3 style="margin-top:0;">Tâches</h3>
       {% for t in tasks %}
         <div class="task-row {% if t.done %}done{% endif %}">

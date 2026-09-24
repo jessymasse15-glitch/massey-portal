@@ -6,6 +6,22 @@
   <a href="{{ url_for('portal_new_dossier') }}" class="btn btn-primary">Nouveau dossier</a>
 </div>
 
+{% if alerts %}
+<div class="card" style="border-color:var(--gold);margin-top:18px;">
+  <h3 style="margin-top:0;">Alertes — Tax &amp; Regulatory Intelligence</h3>
+  {% for a in alerts %}
+    <div class="task-row">
+      <span class="tag">{% if a.kind=='fiscal' %}Fiscal{% else %}Conformité{% endif %}</span>
+      <span class="desc">
+        <a href="{{ url_for('portal_dossier', dossier_id=a.dossier_id) }}">#{{ a.dossier_id }} — {{ a.dossier_title }}</a>
+        — {{ a.label }} <span class="helptext">({{ a.detail }}{% if a.due_date %} · échéance {{ a.due_date }}{% endif %})</span>
+      </span>
+      <span class="status-pill {% if a.urgent %}urgent{% else %}pending{% endif %}">{% if a.urgent %}Urgent{% else %}À surveiller{% endif %}</span>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
 {% if dossiers %}
 <table>
   <tr>

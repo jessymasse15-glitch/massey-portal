@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Expertise — Massey Contracts & Tax{% endblock %}
-{% block meta_description %}Quatre piliers d'intervention : ingénierie contractuelle, fiscalité des affaires, transactions internationales, legal technology & AI.{% endblock %}
+{% block meta_description %}Quatre domaines d'expertise juridique — ingénierie contractuelle, fiscalité des affaires, transactions internationales, legal technology & AI — activés par la plateforme Massey AI.{% endblock %}
 {% block content %}
 <section class="page-hero reveal">
   <div class="eyebrow">Expertise</div>
-  <h1>Quatre piliers d'intervention</h1>
-  <p class="lede">Chaque dossier est traité comme un système à sécuriser — pas comme un document isolé.</p>
+  <h1>Quatre domaines d'expertise juridique</h1>
+  <p class="lede">Chaque dossier est traité comme un système à sécuriser — pas comme un document isolé. Ces domaines sont mis en œuvre à travers les <a href="{{ url_for('home') }}#piliers">5 piliers de la plateforme Massey AI</a>.</p>
 </section>
 
 <section class="block" style="border-top:none;padding-top:0;">
@@ -38,11 +38,11 @@
   <div class="cta-banner reveal">
     <div>
       <h2>Un dossier, quatre expertises mobilisables</h2>
-      <p>Selon la nature de votre opération, un ou plusieurs piliers s'activent au sein d'un même mandat.</p>
+      <p>Selon la nature de votre opération, un ou plusieurs domaines s'activent au sein d'un même mandat, à travers les 5 piliers de la plateforme.</p>
     </div>
     <div class="ctas">
       <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
-      <a href="{{ url_for('about') }}" class="btn btn-ghost">En savoir plus sur notre approche</a>
+      <a href="{{ url_for('home') }}#piliers" class="btn btn-ghost">Découvrir la plateforme Massey AI</a>
     </div>
   </div>
 </section>

@@ -3,7 +3,8 @@ import re
 import secrets
 import functools
 import unicodedata
-from datetime import datetime
+import difflib
+from datetime import datetime, timedelta
 
 from flask import (
     Flask, render_template, request, redirect, url_for, session, flash,
@@ -873,6 +874,51 @@ def logout():
 # Client & staff portal
 # ---------------------------------------------------------------------------
 
+def _compute_alerts(conn, u):
+    """Alertes Tax & Compliance Intelligence : échéances fiscales proches/en retard
+    et points de conformité non résolus, tous dossiers visibles par l'utilisateur."""
+    is_staff = u["role"] in ("expert", "admin")
+    horizon = (datetime.utcnow().date() + timedelta(days=14)).isoformat()
+    today = datetime.utcnow().date().isoformat()
+    if is_staff:
+        tax_rows = conn.execute(
+            "SELECT t.*, d.title AS dossier_title FROM tax_obligations t JOIN dossiers d ON d.id=t.dossier_id "
+            "WHERE t.status != 'fait' AND (t.status='en_retard' OR (t.due_date IS NOT NULL AND t.due_date <= ?)) "
+            "ORDER BY (t.due_date IS NULL), t.due_date ASC", (horizon,),
+        ).fetchall()
+        compliance_rows = conn.execute(
+            "SELECT c.*, d.title AS dossier_title FROM compliance_items c JOIN dossiers d ON d.id=c.dossier_id "
+            "WHERE c.status IN ('a_faire','non_conforme') ORDER BY c.status='non_conforme' DESC, c.created_at ASC",
+        ).fetchall()
+    else:
+        tax_rows = conn.execute(
+            "SELECT t.*, d.title AS dossier_title FROM tax_obligations t JOIN dossiers d ON d.id=t.dossier_id "
+            "WHERE d.client_id=? AND t.status != 'fait' AND (t.status='en_retard' OR (t.due_date IS NOT NULL AND t.due_date <= ?)) "
+            "ORDER BY (t.due_date IS NULL), t.due_date ASC", (u["id"], horizon),
+        ).fetchall()
+        compliance_rows = conn.execute(
+            "SELECT c.*, d.title AS dossier_title FROM compliance_items c JOIN dossiers d ON d.id=c.dossier_id "
+            "WHERE d.client_id=? AND c.status IN ('a_faire','non_conforme') ORDER BY c.status='non_conforme' DESC, c.created_at ASC",
+            (u["id"],),
+        ).fetchall()
+    alerts = []
+    for t in tax_rows:
+        overdue = t["status"] == "en_retard" or (t["due_date"] and t["due_date"] < today)
+        alerts.append({
+            "kind": "fiscal", "dossier_id": t["dossier_id"], "dossier_title": t["dossier_title"],
+            "label": t["label"], "detail": dbm.TAX_TYPE_LABELS.get(t["tax_type"], t["tax_type"]),
+            "due_date": t["due_date"], "urgent": overdue,
+        })
+    for c in compliance_rows:
+        alerts.append({
+            "kind": "conformite", "dossier_id": c["dossier_id"], "dossier_title": c["dossier_title"],
+            "label": c["label"], "detail": dbm.COMPLIANCE_CATEGORY_LABELS.get(c["category"], c["category"]),
+            "due_date": None, "urgent": c["status"] == "non_conforme",
+        })
+    alerts.sort(key=lambda a: not a["urgent"])
+    return alerts
+
+
 @app.route("/portail")
 @login_required
 def portal_dashboard():
@@ -887,8 +933,9 @@ def portal_dashboard():
             "SELECT d.*, c.full_name AS client_name FROM dossiers d JOIN users c ON c.id=d.client_id WHERE d.client_id=? ORDER BY d.updated_at DESC",
             (u["id"],),
         ).fetchall()
+    alerts = _compute_alerts(conn, u)
     conn.close()
-    return render_template("portal/dashboard.html", dossiers=dossiers)
+    return render_template("portal/dashboard.html", dossiers=dossiers, alerts=alerts)
 
 
 @app.route("/portail/nouveau", methods=["GET", "POST"])
@@ -967,6 +1014,14 @@ def portal_dossier(dossier_id):
     compliance_items = conn.execute(
         "SELECT * FROM compliance_items WHERE dossier_id=? ORDER BY created_at ASC", (dossier_id,)
     ).fetchall()
+    diligence_items = conn.execute(
+        "SELECT * FROM due_diligence_items WHERE dossier_id=? ORDER BY category ASC, created_at ASC", (dossier_id,)
+    ).fetchall()
+    comparisons = conn.execute(
+        "SELECT c.*, a.original_name AS a_name, b.original_name AS b_name FROM document_comparisons c "
+        "JOIN documents a ON a.id=c.document_a_id JOIN documents b ON b.id=c.document_b_id "
+        "WHERE c.dossier_id=? ORDER BY c.created_at DESC", (dossier_id,)
+    ).fetchall()
     conn.close()
     stage = dbm.STATUS_TO_STAGE.get(dossier["status"], "creer")
     stage_keys = [s[0] for s in dbm.TRANSACTION_STAGES]
@@ -985,7 +1040,147 @@ def portal_dossier(dossier_id):
         tax_statuses=dbm.TAX_OBLIGATION_STATUSES, tax_type_labels=dbm.TAX_TYPE_LABELS,
         compliance_categories=dbm.COMPLIANCE_CATEGORIES, compliance_status_labels=dbm.COMPLIANCE_STATUS_LABELS,
         compliance_statuses=dbm.COMPLIANCE_STATUSES, compliance_category_labels=dbm.COMPLIANCE_CATEGORY_LABELS,
+        diligence_items=diligence_items, diligence_categories=dbm.DILIGENCE_CATEGORIES,
+        diligence_statuses=dbm.DILIGENCE_STATUSES, diligence_status_labels=dbm.DILIGENCE_STATUS_LABELS,
+        diligence_category_labels=dbm.DILIGENCE_CATEGORY_LABELS,
+        comparisons=comparisons,
     )
+
+
+@app.route("/portail/dossier/<int:dossier_id>/diligence/generer", methods=["POST"])
+@roles_required("expert", "admin")
+def generate_due_diligence_checklist(dossier_id):
+    u = current_user()
+    conn, dossier = _get_dossier_or_404(dossier_id, u)
+    existing = conn.execute("SELECT COUNT(*) AS c FROM due_diligence_items WHERE dossier_id=?", (dossier_id,)).fetchone()["c"]
+    if existing:
+        flash("Une checklist de due diligence existe déjà pour ce dossier.", "error")
+    else:
+        ts = dbm.now()
+        for label, category in dbm.DEFAULT_DILIGENCE_CHECKLIST:
+            conn.execute(
+                "INSERT INTO due_diligence_items (dossier_id, label, category, status, created_by, created_at) "
+                "VALUES (?,?,?,?,?,?)",
+                (dossier_id, label, category, "a_verifier", u["id"], ts),
+            )
+        conn.commit()
+        dbm.log_activity(u["id"], "due_diligence_checklist_generated", f"dossier #{dossier_id}")
+        flash("Checklist de due diligence standard générée.", "success")
+    conn.close()
+    return redirect(url_for("portal_dossier", dossier_id=dossier_id))
+
+
+@app.route("/portail/dossier/<int:dossier_id>/diligence/nouvelle", methods=["POST"])
+@roles_required("expert", "admin")
+def add_due_diligence_item(dossier_id):
+    u = current_user()
+    conn, dossier = _get_dossier_or_404(dossier_id, u)
+    label = request.form.get("label", "").strip()
+    category = request.form.get("category", "juridique")
+    if category not in dbm.DILIGENCE_CATEGORY_LABELS:
+        category = "juridique"
+    if label:
+        conn.execute(
+            "INSERT INTO due_diligence_items (dossier_id, label, category, status, created_by, created_at) "
+            "VALUES (?,?,?,?,?,?)",
+            (dossier_id, label, category, "a_verifier", u["id"], dbm.now()),
+        )
+        conn.commit()
+        dbm.log_activity(u["id"], "due_diligence_item_created", f"dossier #{dossier_id} — {label}")
+        flash("Point de due diligence ajouté.", "success")
+    else:
+        flash("La description du point de due diligence est requise.", "error")
+    conn.close()
+    return redirect(url_for("portal_dossier", dossier_id=dossier_id))
+
+
+@app.route("/portail/dossier/<int:dossier_id>/diligence/<int:item_id>/statut", methods=["POST"])
+@roles_required("expert", "admin")
+def update_due_diligence_item(dossier_id, item_id):
+    u = current_user()
+    conn, dossier = _get_dossier_or_404(dossier_id, u)
+    new_status = request.form.get("status", "a_verifier")
+    note = request.form.get("note", "").strip()
+    if new_status not in dbm.DILIGENCE_STATUS_LABELS:
+        new_status = "a_verifier"
+    conn.execute(
+        "UPDATE due_diligence_items SET status=?, note=? WHERE id=? AND dossier_id=?",
+        (new_status, note or None, item_id, dossier_id),
+    )
+    conn.commit()
+    conn.close()
+    flash("Point de due diligence mis à jour.", "success")
+    return redirect(url_for("portal_dossier", dossier_id=dossier_id))
+
+
+@app.route("/portail/dossier/<int:dossier_id>/comparer")
+@roles_required("expert", "admin")
+def compare_documents(dossier_id):
+    u = current_user()
+    conn, dossier = _get_dossier_or_404(dossier_id, u)
+    documents = conn.execute(
+        "SELECT d.*, u.full_name AS uploader FROM documents d JOIN users u ON u.id=d.uploaded_by WHERE dossier_id=? ORDER BY created_at DESC",
+        (dossier_id,),
+    ).fetchall()
+    doc_a_id = request.args.get("a", type=int)
+    doc_b_id = request.args.get("b", type=int)
+    doc_a = doc_b = None
+    diff_lines = None
+    text_compared = False
+    if doc_a_id and doc_b_id and doc_a_id != doc_b_id:
+        doc_a = conn.execute("SELECT * FROM documents WHERE id=? AND dossier_id=?", (doc_a_id, dossier_id)).fetchone()
+        doc_b = conn.execute("SELECT * FROM documents WHERE id=? AND dossier_id=?", (doc_b_id, dossier_id)).fetchone()
+        if doc_a and doc_b:
+            text_exts = (".txt", ".md", ".csv")
+            if doc_a["original_name"].lower().endswith(text_exts) and doc_b["original_name"].lower().endswith(text_exts):
+                try:
+                    path_a = os.path.join(UPLOAD_DIR, str(dossier_id), doc_a["stored_name"])
+                    path_b = os.path.join(UPLOAD_DIR, str(dossier_id), doc_b["stored_name"])
+                    with open(path_a, "r", encoding="utf-8", errors="replace") as fa:
+                        lines_a = fa.readlines()
+                    with open(path_b, "r", encoding="utf-8", errors="replace") as fb:
+                        lines_b = fb.readlines()
+                    diff_lines = list(difflib.unified_diff(
+                        lines_a, lines_b,
+                        fromfile=doc_a["original_name"], tofile=doc_b["original_name"], lineterm="",
+                    ))
+                    text_compared = True
+                except OSError:
+                    diff_lines = None
+    conn.close()
+    return render_template(
+        "portal/compare_documents.html", dossier=dossier, documents=documents,
+        doc_a=doc_a, doc_b=doc_b, doc_a_id=doc_a_id, doc_b_id=doc_b_id,
+        diff_lines=diff_lines, text_compared=text_compared,
+    )
+
+
+@app.route("/portail/dossier/<int:dossier_id>/comparer/note", methods=["POST"])
+@roles_required("expert", "admin")
+def save_document_comparison(dossier_id):
+    u = current_user()
+    conn, dossier = _get_dossier_or_404(dossier_id, u)
+    doc_a_id = request.form.get("document_a_id", type=int)
+    doc_b_id = request.form.get("document_b_id", type=int)
+    note = request.form.get("note", "").strip()
+    valid = doc_a_id and doc_b_id and doc_a_id != doc_b_id and note
+    if valid:
+        row_a = conn.execute("SELECT id FROM documents WHERE id=? AND dossier_id=?", (doc_a_id, dossier_id)).fetchone()
+        row_b = conn.execute("SELECT id FROM documents WHERE id=? AND dossier_id=?", (doc_b_id, dossier_id)).fetchone()
+        valid = bool(row_a and row_b)
+    if valid:
+        conn.execute(
+            "INSERT INTO document_comparisons (dossier_id, document_a_id, document_b_id, note, created_by, created_at) "
+            "VALUES (?,?,?,?,?,?)",
+            (dossier_id, doc_a_id, doc_b_id, note, u["id"], dbm.now()),
+        )
+        conn.commit()
+        dbm.log_activity(u["id"], "document_comparison_saved", f"dossier #{dossier_id}")
+        flash("Note de comparaison enregistrée.", "success")
+    else:
+        flash("Merci de sélectionner deux documents différents et de renseigner une observation.", "error")
+    conn.close()
+    return redirect(url_for("portal_dossier", dossier_id=dossier_id))
 
 
 @app.route("/portail/dossier/<int:dossier_id>/fiscalite/nouvelle", methods=["POST"])

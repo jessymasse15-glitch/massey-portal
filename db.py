@@ -264,6 +264,27 @@ CREATE TABLE IF NOT EXISTS compliance_items (
     created_by INTEGER REFERENCES users(id),
     created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS due_diligence_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    dossier_id INTEGER NOT NULL REFERENCES dossiers(id),
+    label TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'juridique',
+    status TEXT NOT NULL DEFAULT 'a_verifier',
+    note TEXT,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS document_comparisons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    dossier_id INTEGER NOT NULL REFERENCES dossiers(id),
+    document_a_id INTEGER NOT NULL REFERENCES documents(id),
+    document_b_id INTEGER NOT NULL REFERENCES documents(id),
+    note TEXT,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL
+);
 """
 
 CLAUSE_CATEGORIES = [
@@ -348,6 +369,41 @@ COMPLIANCE_STATUSES = [
     ("non_conforme", "Non conforme"),
 ]
 COMPLIANCE_STATUS_LABELS = dict(COMPLIANCE_STATUSES)
+
+DILIGENCE_CATEGORIES = [
+    ("juridique", "Juridique et corporate"),
+    ("fiscal", "Fiscal"),
+    ("commercial", "Commercial et contractuel"),
+    ("financier", "Financier et comptable"),
+    ("rh_social", "Ressources humaines et social"),
+    ("environnemental", "Environnemental et réglementaire"),
+    ("autre", "Autre"),
+]
+DILIGENCE_CATEGORY_LABELS = dict(DILIGENCE_CATEGORIES)
+
+DILIGENCE_STATUSES = [
+    ("a_verifier", "À vérifier"),
+    ("en_cours", "En cours"),
+    ("valide", "Validé"),
+    ("probleme", "Problème identifié"),
+]
+DILIGENCE_STATUS_LABELS = dict(DILIGENCE_STATUSES)
+
+# Checklist de due diligence standard, générée en un clic sur un dossier
+# (Transaction Intelligence) — couvre les grands axes d'une revue préalable
+# à une transaction, à affiner ensuite selon le dossier.
+DEFAULT_DILIGENCE_CHECKLIST = [
+    ("Statuts et registre des actionnaires à jour", "juridique"),
+    ("Pouvoirs des signataires et résolutions habilitantes", "juridique"),
+    ("Litiges en cours ou menaces de litige", "juridique"),
+    ("Situation fiscale et déclarations des trois derniers exercices", "fiscal"),
+    ("Dettes fiscales ou redressements en cours", "fiscal"),
+    ("Contrats commerciaux significatifs et clauses de changement de contrôle", "commercial"),
+    ("Propriété intellectuelle et licences détenues ou concédées", "commercial"),
+    ("États financiers et engagements hors bilan", "financier"),
+    ("Contrats de travail clés et engagements sociaux", "rh_social"),
+    ("Autorisations, permis et conformité réglementaire sectorielle", "environnemental"),
+]
 
 STATUS_FLOW = [
     ("demande_recue", "Demande reçue"),
