@@ -25,7 +25,7 @@
 </head>
 <body>
 <header class="site">
-  <div class="wrap nav-row">
+  <div class="wrap header-top">
     <a href="{{ url_for('home_en') if lang=='en' else url_for('home') }}" class="brand" style="text-decoration:none;">
       <span class="mark">M</span>
       <span class="brand-text">
@@ -33,59 +33,72 @@
         <small class="brand-sub">{% if lang=='en' %}Legal &amp; Tax Engineering{% else %}Ingénierie juridique &amp; Fiscale{% endif %}</small>
       </span>
     </a>
-    <nav class="links">
-      <div class="nav-dropdown">
-        <span>{% if lang=='en' %}Platform ▾{% else %}Plateforme ▾{% endif %}</span>
-        <div class="dropdown-panel">
-          {% if lang=='en' %}
-          <a href="{{ url_for('pillar_legal_intelligence_en') }}"><b>Legal Intelligence</b><small>Research, case law, doctrine</small></a>
-          <a href="{{ url_for('pillar_contract_intelligence_en') }}"><b>Contract Intelligence</b><small>Clauses, negotiation, e-signature</small></a>
-          <a href="{{ url_for('pillar_transaction_intelligence_en') }}"><b>Transaction Intelligence</b><small>Structuring, workflow, closing</small></a>
-          <a href="{{ url_for('pillar_tax_intelligence_en') }}"><b>Tax Intelligence</b><small>Tax obligations and deadlines</small></a>
-          <a href="{{ url_for('pillar_regulatory_compliance_en') }}"><b>Regulatory &amp; Compliance</b><small>AML / KYC / authorizations</small></a>
-          {% else %}
-          <a href="{{ url_for('pillar_legal_intelligence') }}"><b>Legal Intelligence</b><small>Recherche, jurisprudence, doctrine</small></a>
-          <a href="{{ url_for('pillar_contract_intelligence') }}"><b>Contract Intelligence</b><small>Clauses, négociation, signature</small></a>
-          <a href="{{ url_for('pillar_transaction_intelligence') }}"><b>Transaction Intelligence</b><small>Structuration, workflow, closing</small></a>
-          <a href="{{ url_for('pillar_tax_intelligence') }}"><b>Tax Intelligence</b><small>Obligations et échéances fiscales</small></a>
-          <a href="{{ url_for('pillar_regulatory_compliance') }}"><b>Regulatory &amp; Compliance</b><small>AML / KYC / autorisations</small></a>
-          {% endif %}
-        </div>
-      </div>
-      {% if lang=='en' %}
-        <a href="{{ url_for('about_en') }}">About</a>
-        <a href="{{ url_for('expertise_en') }}">Expertise</a>
-        <a href="{{ url_for('tarifs_en') }}">Pricing</a>
-        <a href="{{ url_for('securite_conformite_en') }}">Security</a>
-        <a href="{{ url_for('faq_en') }}">FAQ</a>
-        <a href="{{ url_for('contact_en') }}">Contact</a>
-      {% else %}
-        <a href="{{ url_for('about') }}">À propos</a>
-        <a href="{{ url_for('expertise') }}">Expertise</a>
-        <a href="{{ url_for('tarifs') }}">Tarifs</a>
-        <a href="{{ url_for('securite_conformite') }}">Sécurité</a>
-        <a href="{{ url_for('faq') }}">FAQ</a>
-        <a href="{{ url_for('contact') }}">Contact</a>
-        <a href="{{ url_for('revue_home') }}">Massey Law Review</a>
-      {% endif %}
+    <div class="header-actions">
       {% if current_user %}
         <a href="{{ url_for('portal_dashboard') }}">{% if lang=='en' %}Client area{% else %}Espace client{% endif %}</a>
-        {% if current_user['role'] in ('expert','admin') %}<a href="{{ url_for('admin_revue_articles') }}">Revue (admin)</a>{% endif %}
-        {% if current_user['role'] in ('expert','admin') %}<a href="{{ url_for('admin_corpus_list') }}">Corpus juridique</a>{% endif %}
-        {% if current_user['role'] in ('expert','admin') %}<a href="{{ url_for('admin_clauses_list') }}">Clauses</a>{% endif %}
-        {% if current_user['role'] in ('expert','admin') %}<a href="{{ url_for('admin_contact_messages') }}">Messages</a>{% endif %}
-        {% if current_user['role'] == 'admin' %}<a href="{{ url_for('admin_users') }}">Utilisateurs</a>{% endif %}
-        {% if current_user['role'] == 'admin' %}<a href="{{ url_for('admin_settings') }}">Paramètres</a>{% endif %}
         <a href="{{ url_for('logout') }}">{% if lang=='en' %}Log out{% else %}Déconnexion{% endif %}</a>
       {% else %}
         <a href="{{ url_for('espace_client_marketing') }}">{% if lang=='en' %}Client area{% else %}Espace client{% endif %}</a>
         <a href="{{ url_for('login') }}">{% if lang=='en' %}Sign in{% else %}Connexion{% endif %}</a>
       {% endif %}
       {% if lang_switch_url %}<a href="{{ lang_switch_url }}" class="lang-switch">{% if lang=='en' %}FR{% else %}EN{% endif %}</a>{% endif %}
-    </nav>
-    {% if not current_user %}
-      <a href="{{ url_for('intake') }}" class="btn btn-primary">{% if lang=='en' %}Open a file{% else %}Ouvrir un dossier{% endif %}</a>
-    {% endif %}
+      {% if not current_user %}
+        <a href="{{ url_for('intake') }}" class="btn btn-primary btn-sm">{% if lang=='en' %}Open a file{% else %}Ouvrir un dossier{% endif %}</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="site-nav">
+    <div class="wrap">
+      <nav class="links">
+        <div class="nav-dropdown">
+          <span>{% if lang=='en' %}Platform ▾{% else %}Plateforme ▾{% endif %}</span>
+          <div class="dropdown-panel">
+            {% if lang=='en' %}
+            <a href="{{ url_for('pillar_legal_intelligence_en') }}"><b>Legal Intelligence</b><small>Research, case law, doctrine</small></a>
+            <a href="{{ url_for('pillar_contract_intelligence_en') }}"><b>Contract Intelligence</b><small>Clauses, negotiation, e-signature</small></a>
+            <a href="{{ url_for('pillar_transaction_intelligence_en') }}"><b>Transaction Intelligence</b><small>Structuring, workflow, closing</small></a>
+            <a href="{{ url_for('pillar_tax_intelligence_en') }}"><b>Tax Intelligence</b><small>Tax obligations and deadlines</small></a>
+            <a href="{{ url_for('pillar_regulatory_compliance_en') }}"><b>Regulatory &amp; Compliance</b><small>AML / KYC / authorizations</small></a>
+            {% else %}
+            <a href="{{ url_for('pillar_legal_intelligence') }}"><b>Legal Intelligence</b><small>Recherche, jurisprudence, doctrine</small></a>
+            <a href="{{ url_for('pillar_contract_intelligence') }}"><b>Contract Intelligence</b><small>Clauses, négociation, signature</small></a>
+            <a href="{{ url_for('pillar_transaction_intelligence') }}"><b>Transaction Intelligence</b><small>Structuration, workflow, closing</small></a>
+            <a href="{{ url_for('pillar_tax_intelligence') }}"><b>Tax Intelligence</b><small>Obligations et échéances fiscales</small></a>
+            <a href="{{ url_for('pillar_regulatory_compliance') }}"><b>Regulatory &amp; Compliance</b><small>AML / KYC / autorisations</small></a>
+            {% endif %}
+          </div>
+        </div>
+        {% if lang=='en' %}
+          <a href="{{ url_for('about_en') }}">About</a>
+          <a href="{{ url_for('expertise_en') }}">Expertise</a>
+          <a href="{{ url_for('tarifs_en') }}">Pricing</a>
+          <a href="{{ url_for('securite_conformite_en') }}">Security</a>
+          <a href="{{ url_for('faq_en') }}">FAQ</a>
+          <a href="{{ url_for('contact_en') }}">Contact</a>
+        {% else %}
+          <a href="{{ url_for('about') }}">À propos</a>
+          <a href="{{ url_for('expertise') }}">Expertise</a>
+          <a href="{{ url_for('tarifs') }}">Tarifs</a>
+          <a href="{{ url_for('securite_conformite') }}">Sécurité</a>
+          <a href="{{ url_for('faq') }}">FAQ</a>
+          <a href="{{ url_for('contact') }}">Contact</a>
+          <a href="{{ url_for('revue_home') }}">Massey Law Review</a>
+        {% endif %}
+        {% if current_user and current_user['role'] in ('expert','admin') %}
+        <div class="nav-dropdown">
+          <span>{% if lang=='en' %}Administration ▾{% else %}Administration ▾{% endif %}</span>
+          <div class="dropdown-panel">
+            <a href="{{ url_for('admin_revue_articles') }}"><b>{% if lang=='en' %}Review (admin){% else %}Revue (admin){% endif %}</b></a>
+            <a href="{{ url_for('admin_corpus_list') }}"><b>{% if lang=='en' %}Legal corpus{% else %}Corpus juridique{% endif %}</b></a>
+            <a href="{{ url_for('admin_clauses_list') }}"><b>Clauses</b></a>
+            <a href="{{ url_for('admin_contact_messages') }}"><b>Messages</b></a>
+            {% if current_user['role'] == 'admin' %}<a href="{{ url_for('admin_users') }}"><b>{% if lang=='en' %}Users{% else %}Utilisateurs{% endif %}</b></a>{% endif %}
+            {% if current_user['role'] == 'admin' %}<a href="{{ url_for('admin_settings') }}"><b>{% if lang=='en' %}Settings{% else %}Paramètres{% endif %}</b></a>{% endif %}
+          </div>
+        </div>
+        {% endif %}
+      </nav>
+    </div>
   </div>
 </header>
 <main>
