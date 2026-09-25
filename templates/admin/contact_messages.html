@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Messages de contact — Administration{% endblock %}
+{% block content %}
+<h1>Messages reçus via la page Contact</h1>
+{% for m in messages %}
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div>
+        <b>{{ m.name }}</b> — <a href="mailto:{{ m.email }}">{{ m.email }}</a>
+        {% if m.subject %}<div class="helptext">{{ m.subject }}</div>{% endif %}
+      </div>
+      <span class="tag">{{ m.created_at[:16] }}</span>
+    </div>
+    <p style="margin:12px 0;">{{ m.message }}</p>
+    {% if not m.handled %}
+    <form method="post" action="{{ url_for('admin_mark_message_handled', message_id=m.id) }}">
+      <button type="submit" class="btn btn-sm">Marquer comme traité</button>
+    </form>
+    {% else %}
+    <span class="status-pill done">Traité</span>
+    {% endif %}
+  </div>
+{% else %}
+  <p class="helptext">Aucun message reçu pour l'instant.</p>
+{% endfor %}
+{% endblock %}

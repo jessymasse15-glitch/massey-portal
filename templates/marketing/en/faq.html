@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Frequently Asked Questions — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Answers to frequently asked questions about our services, turnaround times, confidentiality and how we work.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">FAQ</div>
+  <h1>Frequently asked questions</h1>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="prose" style="max-width:78ch;">
+    <h2>How does an engagement start?</h2>
+    <p>A professional engagement arises only from an accepted engagement letter. Opening a file through our form or booking a call does not, by itself, create an engagement — it's a scoping step that lets us assess your need, check for conflicts of interest, and propose a suitable pack.</p>
+
+    <h2>What are your response times?</h2>
+    <p>We aim for a fast first response to any initial request. File processing times vary with complexity and are specified in the engagement letter.</p>
+
+    <h2>Is my information and my documents confidential?</h2>
+    <p>Yes. Every file is siloed: only the client concerned and the team members assigned to it can access it. Our technical security measures (two-factor authentication, document hashing, access logging) are detailed on our <a href="{{ url_for('securite_conformite_en') }}">Security &amp; compliance</a> page.</p>
+
+    <h2>Do you only work on the Haitian market?</h2>
+    <p>Our base is the Haitian market, but a significant part of our practice involves cross-border deals with foreign partners — hence our Massey CrossBorder pack and our bilingual French/English platform.</p>
+
+    <h2>How is pricing set?</h2>
+    <p>Each pack is calibrated to the actual complexity of the file rather than a generic flat rate. The final amount is always confirmed in writing in the engagement letter before work begins — see our <a href="{{ url_for('tarifs_en') }}">Pricing</a> page.</p>
+
+    <h2>What is Massey AI?</h2>
+    <p>Massey AI is the name of our technology platform, organized into 5 pillars (Legal, Contract, Transaction, Tax and Regulatory &amp; Compliance Intelligence). Some features already rely on real tools today (clause library, tax tracking, due diligence checklists, document search); generative AI capabilities are being rolled out.</p>
+
+    <h2>Can I track my file online?</h2>
+    <p>Yes. Every client has a secure client area to track their file's progress, exchange messages, upload and sign documents, and track their tax and compliance obligations.</p>
+
+    <h2>How do I reach you for something not covered here?</h2>
+    <p>Use our <a href="{{ url_for('contact_en') }}">Contact page</a>.</p>
+  </div>
+</section>
+{% endblock %}

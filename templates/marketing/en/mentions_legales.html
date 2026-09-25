@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Legal Notice — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Legal notice</div>
+  <h1>Legal notice</h1>
+  <p class="lede">Last updated: {{ '2026' }}.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="prose" style="max-width:78ch;">
+    <h2>Site publisher</h2>
+    <p>
+      {{ site_settings.company_legal_name or "Massey Contracts & Tax" }}
+      {% if site_settings.business_number %}<br>Business number: {{ site_settings.business_number }}{% endif %}
+      {% if site_settings.address %}<br>{{ site_settings.address }}{% endif %}
+      {% if site_settings.contact_email %}<br>Email: {{ site_settings.contact_email }}{% endif %}
+      {% if site_settings.phone %}<br>Phone: {{ site_settings.phone }}{% endif %}
+    </p>
+
+    <h2>Nature of the site</h2>
+    <p>This site presents Massey Contracts &amp; Tax's services and offers a secure client area for file tracking, document exchange, e-signature and online payment of certain services.</p>
+
+    <h2>No legal advice from simply browsing the site</h2>
+    <p>The information published on this site is general and for informational purposes. It does not constitute legal or tax advice and does not create an attorney-client relationship or professional engagement. A professional engagement arises only from an engagement letter expressly accepted by both parties.</p>
+
+    <h2>Intellectual property</h2>
+    <p>Unless stated otherwise, the content of this site (text, layout, graphic elements, trademarks) is the property of {{ site_settings.company_legal_name or "Massey Contracts & Tax" }} or its licensors and may not be reproduced without prior authorization.</p>
+
+    <h2>Hosting</h2>
+    <p>This site is hosted by a third-party cloud infrastructure provider (Render.com). Data is stored on that host's servers, subject to the terms applicable between {{ site_settings.company_legal_name or "Massey Contracts & Tax" }} and that host.</p>
+
+    <h2>Governing law</h2>
+    <p>This legal notice is governed by the law applicable to the operation of the site, taking into account local rules applicable to services provided in Haiti and, where applicable, in the jurisdictions of cross-border clients.</p>
+  </div>
+  <div class="callout" style="max-width:78ch;margin-top:28px;">
+    This text is a standard template intended to be reviewed and completed by the platform's owner (legal name, registration, address) before final publication{% if current_user and current_user['role']=='admin' %} — see <a href="{{ url_for('admin_settings') }}">site settings</a>{% endif %}.
+  </div>
+</section>
+{% endblock %}

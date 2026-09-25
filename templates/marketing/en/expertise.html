@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Expertise — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Four legal expertise domains — contract engineering, business taxation, international transactions, legal technology & AI — powered by the Massey AI platform.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Expertise</div>
+  <h1>Four legal expertise domains</h1>
+  <p class="lede">Every file is treated as a system to secure — not a standalone document. These domains are delivered through the <a href="{{ url_for('home_en') }}#piliers">5 pillars of the Massey AI platform</a>.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="grid-2 reveal-stagger">
+    <div class="pillar-card">
+      <span class="n">01</span>
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/><path d="M8 13h8M8 17h8"/></svg></div>
+      <h3>Contract engineering</h3>
+      <p>Drafting, review, negotiation, portfolio audits, document standardization, obligation management, litigation prevention.</p>
+    </div>
+    <div class="pillar-card">
+      <span class="n">02</span>
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/></svg></div>
+      <h3>Business taxation</h3>
+      <p>Pre-contractual tax diagnostics, tax review of contracts, lawful tax structuring, documentation, professional coordination.</p>
+    </div>
+    <div class="pillar-card">
+      <span class="n">03</span>
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 4 6 4 9s-1.5 6.4-4 9c-2.5-2.6-4-6-4-9s1.5-6.4 4-9z"/></svg></div>
+      <h3>International transactions</h3>
+      <p>Bilingual contracts, governing law, arbitration, import-export, partnerships, cross-border investment.</p>
+    </div>
+    <div class="pillar-card">
+      <span class="n">04</span>
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="14" rx="1"/><path d="M7 9h4M7 12h7M3 18h18"/><circle cx="17" cy="9.5" r="1"/></svg></div>
+      <h3>Legal Technology &amp; AI</h3>
+      <p>Automation, document analysis, contract comparison, information organization and AI-powered tools in service of legal work.</p>
+    </div>
+  </div>
+  <div class="cta-banner reveal">
+    <div>
+      <h2>One file, four expertise domains available</h2>
+      <p>Depending on the nature of your deal, one or more domains activate within a single engagement, through the platform's 5 pillars.</p>
+    </div>
+    <div class="ctas">
+      <a href="{{ url_for('intake') }}" class="btn btn-primary">Open a file</a>
+      <a href="{{ url_for('home_en') }}#piliers" class="btn btn-ghost">Discover the Massey AI platform</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

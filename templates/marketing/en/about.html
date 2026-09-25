@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}About — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Massey Contracts & Tax: contract, tax and transaction engineering at the convergence of Haitian law, technology and artificial intelligence.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">About</div>
+  <h1>A LegalTech built for deals that can't wait</h1>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="two-col">
+    <aside>
+      <p class="lede">Massey Contracts &amp; Tax supports companies, investors, executives and business partners in designing, structuring and securing their contractual, tax and transactional operations.</p>
+      <ul class="toc">
+        <li><a href="#technologie"><span>01</span> Technology in service of judgment</a></li>
+        <li><a href="#cycle"><span>02</span> An integrated approach to the deal cycle</a></li>
+        <li><a href="#disponibilite"><span>03</span> Built for deals that can't wait</a></li>
+        <li><a href="#mission"><span>04</span> Our mission</a></li>
+        <li><a href="#equipe"><span>05</span> Our team</a></li>
+      </ul>
+      <div class="ctas" style="display:flex;flex-direction:column;gap:10px;margin-top:28px;">
+        <a href="{{ url_for('intake') }}" class="btn btn-primary" style="justify-content:center;">Open a file</a>
+        <a href="{{ url_for('expertise_en') }}" class="btn btn-ghost" style="justify-content:center;">See our expertise</a>
+      </div>
+    </aside>
+
+    <div class="prose">
+      <p>At the convergence of Haitian law, taxation, international trade and legal technology, our LegalTech offers an integrated approach for both local and cross-border operations.</p>
+
+      <p>Our conviction is simple: legal quality should never slow down a decision or delay execution. In business, a transaction demands rigorous documents, precise risk analysis, effective coordination among stakeholders, and the ability to respond quickly to the deal's requirements.</p>
+
+      <p>That is why Massey Contracts &amp; Tax combines legal expertise, transactional engineering and advanced technology to speed up file processing, improve information management and streamline execution — without compromising the rigor of our analysis or the quality of our documents.</p>
+
+      <section id="technologie">
+        <h2>Technology in service of professional judgment</h2>
+        <p>We integrate legal technology and AI-based solutions at every stage of transactional work: preliminary document analysis, information organization, contract version comparison, identification of sensitive clauses, document preparation, tracking of observations, and coordination of negotiation steps.</p>
+        <p>The goal is concrete: reduce turnaround times, improve traceability of exchanges, and enable smoother, better-organized execution.</p>
+        <p>For us, artificial intelligence is a lever for efficiency, not a substitute for professional judgment. Every file remains governed by contextualized legal and tax analysis, taking into account the client's commercial objectives, applicable law, documentary requirements, operational constraints and the realities of the parties involved.</p>
+        <p>Technology speeds up the process. Expertise ensures the coherence, relevance and safety of the solution.</p>
+        <p>Concretely, this approach is organized into <a href="{{ url_for('home_en') }}#piliers">5 intelligence pillars — Massey AI</a>: Legal, Contract, Transaction, Tax and Regulatory &amp; Compliance Intelligence, each covering a family of our clients' recurring needs.</p>
+      </section>
+
+      <section id="cycle">
+        <h2>An integrated approach to the deal cycle</h2>
+        <p>We work across every stage of a deal: preliminary risk analysis, structuring, drafting, review and negotiation of contracts, preparation of related documents, integration of tax considerations, verification of regulatory requirements, and organization of everything needed for execution.</p>
+        <p>Our engagements can cover commercial contracts, partnership agreements, service agreements, supply contracts, distribution agreements, non-disclosure agreements, general terms and conditions, payment mechanisms, compliance documentation and cross-border collaboration frameworks.</p>
+      </section>
+
+      <section id="disponibilite">
+        <h2>Expertise built for deals that can't wait</h2>
+        <p>Business opportunities, negotiations and transactional deadlines are not confined to office hours. Massey Contracts &amp; Tax places a strong emphasis on continuous availability, 24 hours a day, 7 days a week, as the mandate requires.</p>
+        <p>This responsiveness matters most when signing deadlines, financing timelines, cross-jurisdiction document flows, or a business partner's rapid decisions can determine whether a deal closes.</p>
+      </section>
+
+      <section id="mission">
+        <h2>Our mission</h2>
+        <p>Our mission is to contribute to a clearer, better-structured and more secure business environment.</p>
+        <p>We help our clients anticipate their obligations, identify and manage contractual and tax risks, reduce areas of uncertainty, and turn their projects into legally structured, documented operations ready for execution — in the Haitian market and internationally.</p>
+      </section>
+
+      <section id="equipe">
+        <h2>Our team</h2>
+        <p class="helptext">This section is ready to receive team profiles, professional credentials and photos — an important credibility signal for your visitors, to be completed with real information before publication.</p>
+      </section>
+    </div>
+  </div>
+</section>
+{% endblock %}

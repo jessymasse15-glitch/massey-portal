@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Regulatory & Compliance Intelligence — Massey AI{% endblock %}
+{% block meta_description %}AML/KYC compliance, authorizations and regulatory tracking — the Regulatory & Compliance Intelligence pillar of Massey AI.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 3.5v5.2c0 5-3.4 8.4-8 9.3-4.6-.9-8-4.3-8-9.3V6.5z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg></div>
+  <div class="eyebrow">Massey AI — Pillar 05</div>
+  <h1>Regulatory &amp; Compliance Intelligence</h1>
+  <p class="lede">Anticipate. Comply. Protect.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="pillar-feature-card" style="max-width:none;">
+    <h3>What this pillar covers</h3>
+    <ul style="display:grid;grid-template-columns:1fr 1fr;gap:9px 24px;">
+      <li>Sector-specific regulations</li>
+      <li>AML / KYC / sanctions compliance</li>
+      <li>Authorizations and licenses</li>
+      <li>Obligation tracking</li>
+      <li>Alerts and reminders</li>
+      <li>Regulatory risk analysis</li>
+      <li>Reporting and documentation</li>
+      <li>Standards updates</li>
+    </ul>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Tracking</div>
+      <h2>{% if logged_in %}Tracked compliance items{% else %}Compliance documented at every stage{% endif %}</h2>
+    </div>
+  </div>
+
+  {% if logged_in %}
+    <table>
+      <tr><th>File</th><th>Compliance item</th><th>Category</th><th>Status</th></tr>
+      {% for it in items %}
+      <tr>
+        <td><a href="{{ url_for('portal_dossier', dossier_id=it['dossier_id']) }}">#{{ it['dossier_id'] }} — {{ it['dossier_title'] }}</a></td>
+        <td>{{ it['label'] }}</td>
+        <td>{{ compliance_category_labels.get(it['category'], it['category']) }}</td>
+        <td><span class="status-pill {% if it['status']=='conforme' %}done{% elif it['status']=='non_conforme' %}{% else %}pending{% endif %}">{{ compliance_status_labels.get(it['status'], it['status']) }}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="helptext">No compliance item tracked yet — they will appear here as soon as a file has one.</td></tr>
+      {% endfor %}
+    </table>
+  {% else %}
+  <div class="cta-banner reveal">
+    <div>
+      <h2>Traceable compliance, file by file</h2>
+      <p>KYC, AML, authorizations: every file opened with Massey Contracts &amp; Tax includes real compliance tracking.</p>
+    </div>
+    <div class="ctas">
+      <a href="{{ url_for('login') }}" class="btn btn-primary">Sign in</a>
+      <a href="{{ url_for('register') }}" class="btn btn-ghost">Create an account</a>
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

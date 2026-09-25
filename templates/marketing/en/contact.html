@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Contact — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Contact Massey Contracts & Tax for any question about our contract, tax and transaction engineering services.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Contact</div>
+  <h1>Let's talk about your file</h1>
+  <p class="lede">A question, a mandate to discuss, a partnership inquiry? Write to us — we reply personally to every message.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="grid-2">
+    <div class="card">
+      <h3 style="margin-top:0;">Contact details</h3>
+      {% if site_settings.contact_email %}<p><b>Email:</b> <a href="mailto:{{ site_settings.contact_email }}">{{ site_settings.contact_email }}</a></p>{% endif %}
+      {% if site_settings.phone %}<p><b>Phone:</b> {{ site_settings.phone }}</p>{% endif %}
+      {% if site_settings.address %}<p><b>Address:</b><br>{{ site_settings.address }}</p>{% endif %}
+      {% if site_settings.support_hours %}<p><b>Availability:</b> {{ site_settings.support_hours }}</p>{% endif %}
+      {% if not (site_settings.contact_email or site_settings.phone or site_settings.address) %}
+        <p class="helptext">Use the form to reach us — we'll reply directly by email.</p>
+      {% endif %}
+      <p class="helptext" style="margin-top:18px;">To open a file directly, use <a href="{{ url_for('intake') }}">the intake form</a> instead.</p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Write to us</h3>
+      <form method="post">
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="name">Full name</label>
+            <input type="text" id="name" name="name" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="subject">Subject</label>
+          <input type="text" id="subject" name="subject" placeholder="E.g., partnership inquiry, question about a pack…">
+        </div>
+        <div class="form-group">
+          <label for="message">Message</label>
+          <textarea id="message" name="message" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Send</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

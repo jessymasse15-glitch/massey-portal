@@ -37,27 +37,32 @@
     </div>
   </div>
 
-  <form method="get" style="margin-bottom:24px;">
-    <select name="category" onchange="this.form.submit()" style="max-width:320px;">
-      <option value="">Toutes les catégories</option>
-      {% for key, label in categories %}
-      <option value="{{ key }}" {% if category==key %}selected{% endif %}>{{ label }}</option>
+  <div class="search-tool reveal">
+    <aside class="search-tool-sidebar">
+      <h5>Catégorie</h5>
+      <ul>
+        <li><a href="{{ url_for('pillar_contract_intelligence') }}" class="{{ 'active' if not category }}">Toutes les catégories</a></li>
+        {% for key, label in categories %}
+        <li><a href="{{ url_for('pillar_contract_intelligence', category=key) }}" class="{{ 'active' if category==key }}">{{ label }}</a></li>
+        {% endfor %}
+      </ul>
+    </aside>
+    <div class="search-tool-main">
+      <div class="search-tool-count">{{ clauses|length }} clause{{ 's' if clauses|length != 1 }}</div>
+      {% for c in clauses %}
+        <div class="clause-card reveal">
+          <div class="head">
+            <h4>{{ c['title'] }}</h4>
+            <span class="status-pill {% if c['risk_level']=='standard' %}done{% elif c['risk_level']=='sensible' %}{% endif %}">{{ risk_labels.get(c['risk_level'], c['risk_level']) }}</span>
+          </div>
+          <div class="body-text">{{ c['body_text'] }}</div>
+          {% if c['guidance'] %}<div class="guidance">{{ c['guidance'] }}</div>{% endif %}
+        </div>
+      {% else %}
+        <p class="helptext">Aucune clause dans cette catégorie pour l'instant.</p>
       {% endfor %}
-    </select>
-  </form>
-
-  {% for c in clauses %}
-    <div class="clause-card reveal">
-      <div class="head">
-        <h4>{{ c['title'] }}</h4>
-        <span class="status-pill {% if c['risk_level']=='standard' %}done{% elif c['risk_level']=='sensible' %}{% endif %}">{{ risk_labels.get(c['risk_level'], c['risk_level']) }}</span>
-      </div>
-      <div class="body-text">{{ c['body_text'] }}</div>
-      {% if c['guidance'] %}<div class="guidance">{{ c['guidance'] }}</div>{% endif %}
     </div>
-  {% else %}
-    <p class="helptext">Aucune clause dans cette catégorie pour l'instant.</p>
-  {% endfor %}
+  </div>
 </section>
 
 {% if current_user %}

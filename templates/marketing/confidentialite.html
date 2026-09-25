@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Politique de confidentialité — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Politique de confidentialité</div>
+  <h1>Comment nous traitons vos données</h1>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="prose" style="max-width:78ch;">
+    <h2>Données collectées</h2>
+    <p>Selon votre utilisation du site, nous pouvons collecter : votre nom et vos coordonnées (courriel, téléphone) lors de la création d'un compte, d'une prise de rendez-vous ou de l'envoi d'un message via la page Contact ; les informations relatives à votre dossier (description du besoin, documents déposés, échanges) ; les données techniques strictement nécessaires au fonctionnement du site (session de connexion, journal d'activité de sécurité).</p>
+
+    <h2>Finalités du traitement</h2>
+    <p>Ces données sont utilisées pour : évaluer et traiter votre demande de service ; assurer le suivi de votre dossier dans l'espace client sécurisé ; vous contacter en lien avec un dossier ou une demande ; assurer la sécurité de la plateforme (authentification, détection d'anomalies, journalisation).</p>
+
+    <h2>Base légale et confidentialité professionnelle</h2>
+    <p>Le traitement de vos données s'inscrit dans le cadre de l'exécution ou de la préparation d'un mandat professionnel, et est soumis aux règles de confidentialité applicables à l'exercice du droit et à la protection des renseignements personnels.</p>
+
+    <h2>Partage des données</h2>
+    <p>Vos données ne sont pas vendues. Elles peuvent être partagées avec des prestataires techniques strictement nécessaires au fonctionnement du service (hébergement infonuagique, traitement des paiements en ligne), dans la mesure requise pour l'exécution de ces services, et avec toute autorité lorsque la loi l'exige.</p>
+
+    <h2>Conservation</h2>
+    <p>Les données relatives à un dossier sont conservées pendant la durée nécessaire au mandat puis pendant la période de conservation applicable aux dossiers professionnels. Les messages envoyés via la page Contact sans suite donnée peuvent être supprimés périodiquement.</p>
+
+    <h2>Sécurité</h2>
+    <p>Les mesures techniques mises en place pour protéger vos données sont détaillées sur notre page <a href="{{ url_for('securite_conformite') }}">Sécurité &amp; conformité</a> (authentification à deux facteurs, hachage des mots de passe et des documents, cloisonnement par dossier, journalisation).</p>
+
+    <h2>Vos droits</h2>
+    <p>Vous pouvez demander l'accès, la rectification ou, sous réserve des obligations légales et professionnelles de conservation, la suppression de vos données personnelles en nous contactant via notre <a href="{{ url_for('contact') }}">page Contact</a>.</p>
+
+    <h2>Cookies</h2>
+    <p>Le site utilise uniquement les cookies strictement nécessaires à son fonctionnement (maintien de votre session de connexion). Aucun cookie publicitaire ou de suivi tiers n'est utilisé à ce jour.</p>
+  </div>
+  <div class="callout" style="max-width:78ch;margin-top:28px;">
+    Ce texte est un gabarit standard, à faire réviser par un conseiller juridique avant publication définitive afin de s'assurer de sa conformité complète avec les règles applicables en Haïti et dans les juridictions de vos clients transfrontaliers.
+  </div>
+</section>
+{% endblock %}

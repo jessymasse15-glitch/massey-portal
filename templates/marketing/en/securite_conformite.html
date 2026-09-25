@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Security & Compliance — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}The technical and organizational measures Massey Contracts & Tax uses to protect your files, documents and data.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 3.5v5.2c0 5-3.4 8.4-8 9.3-4.6-.9-8-4.3-8-9.3V6.5z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg></div>
+  <div class="eyebrow">Security &amp; compliance</div>
+  <h1>Confidentiality by design</h1>
+  <p class="lede">Our security measures aren't marketing promises — here's concretely how the platform protects your data.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="grid-2 reveal-stagger">
+    <div class="pillar-card">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="1.5"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></div>
+      <h3>Two-factor authentication (MFA)</h3>
+      <p>Every expert and admin account must enable TOTP-based authentication (Google Authenticator, Authy or equivalent) in addition to a password before accessing any file.</p>
+    </div>
+    <div class="pillar-card">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="14" rx="1"/><path d="M3 8h18"/><circle cx="8" cy="12.5" r="1"/><circle cx="12" cy="12.5" r="1"/></svg></div>
+      <h3>Strict per-file access control</h3>
+      <p>A client only sees their own files. An expert only sees files assigned to them or opened to the team. Every access is checked on every request, never assumed.</p>
+    </div>
+    <div class="pillar-card">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+      <h3>Time-stamped, hashed documents</h3>
+      <p>Every document uploaded or signed receives a SHA-256 cryptographic fingerprint at the time of upload. Any later modification of the file would break that fingerprint — a mechanism used to certify the integrity of electronically signed documents.</p>
+    </div>
+    <div class="pillar-card">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4v16h16"/><path d="M8 15l3-4 3 3 4-6"/></svg></div>
+      <h3>Activity log</h3>
+      <p>Sensitive actions (sign-in, document upload, status change, file creation, payment, signature) are logged with a timestamp, to ensure traceability when needed.</p>
+    </div>
+    <div class="pillar-card">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="11" width="18" height="10" rx="1.5"/><path d="M7 11V7a5 5 0 0110 0v4"/><path d="M12 15v2.5"/></svg></div>
+      <h3>Protected passwords</h3>
+      <p>Passwords are never stored in plain text: they are salted and hashed (industry-standard algorithm via Werkzeug/PBKDF2) before being saved to the database.</p>
+    </div>
+    <div class="pillar-card">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg></div>
+      <h3>Traceable e-signature</h3>
+      <p>Every signature records the signer's full legal name, the signed document's fingerprint, the IP address and the user agent at the time of signing, with a certificate available for later review.</p>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Good to know</div>
+      <h2>What this page doesn't claim</h2>
+    </div>
+  </div>
+  <div class="prose" style="max-width:78ch;">
+    <p>We prefer transparency over overselling: the platform is not currently certified SOC 2, ISO 27001 or equivalent, and has not yet undergone an independent external security audit. These measures describe the technical architecture actually implemented today, not a label obtained. If your organization has specific compliance requirements (financial sector, regulated institution), contact us to discuss them concretely before opening a file.</p>
+  </div>
+</section>
+
+<section class="block">
+  <div class="cta-banner reveal">
+    <div>
+      <h2>A question about the security of your data?</h2>
+      <p>We answer directly, without marketing detours.</p>
+    </div>
+    <div class="ctas">
+      <a href="{{ url_for('contact_en') }}" class="btn btn-primary">Write to us</a>
+      <a href="{{ url_for('confidentialite_en') }}" class="btn btn-ghost">Privacy policy</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

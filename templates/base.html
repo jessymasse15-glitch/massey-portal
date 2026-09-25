@@ -1,12 +1,24 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ lang }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="{% block meta_description %}Massey Contracts & Tax — ingénierie contractuelle, fiscalité des affaires et sécurisation des transactions transfrontalières pour le marché haïtien.{% endblock %}">
+<meta name="description" content="{% block meta_description %}{% if lang=='en' %}Massey Contracts & Tax — contract engineering, business tax and cross-border transaction security for the Haitian market.{% else %}Massey Contracts & Tax — ingénierie contractuelle, fiscalité des affaires et sécurisation des transactions transfrontalières pour le marché haïtien.{% endif %}{% endblock %}">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="{{ request.url_root.rstrip('/') }}{{ request.path }}">
+{% if lang_switch_url %}<link rel="alternate" hreflang="{{ 'en' if lang=='fr' else 'fr' }}" href="{{ request.url_root.rstrip('/') }}{{ lang_switch_url }}">{% endif %}
 <title>{% block title %}Massey Contracts & Tax{% endblock %}</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Massey Contracts & Tax">
+<meta property="og:title" content="{% block og_title %}Massey Contracts & Tax{% endblock %}">
+<meta property="og:description" content="{% block og_description %}{% if lang=='en' %}A LegalTech platform for contract, tax and transaction engineering in the Haitian market.{% else %}Une plateforme LegalTech d'ingénierie contractuelle, fiscale et transactionnelle pour le marché haïtien.{% endif %}{% endblock %}">
+<meta property="og:image" content="{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='img/og-image.png') }}">
+<meta property="og:url" content="{{ request.url_root.rstrip('/') }}{{ request.path }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{% block twitter_title %}Massey Contracts & Tax{% endblock %}">
+<meta name="twitter:description" content="{% block twitter_description %}{% if lang=='en' %}A LegalTech platform for contract, tax and transaction engineering in the Haitian market.{% else %}Une plateforme LegalTech d'ingénierie contractuelle, fiscale et transactionnelle pour le marché haïtien.{% endif %}{% endblock %}">
+<meta name="twitter:image" content="{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='img/og-image.png') }}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -14,39 +26,62 @@
 <body>
 <header class="site">
   <div class="wrap nav-row">
-    <a href="{{ url_for('home') }}" class="brand" style="text-decoration:none;color:inherit;">
+    <a href="{{ url_for('home_en') if lang=='en' else url_for('home') }}" class="brand" style="text-decoration:none;color:inherit;">
       <span class="mark">M</span>
-      <span>Massey Contracts &amp; Tax<small>Ingénierie juridique &amp; Fiscale</small></span>
+      <span>Massey Contracts &amp; Tax<small>{% if lang=='en' %}Legal &amp; Tax Engineering{% else %}Ingénierie juridique &amp; Fiscale{% endif %}</small></span>
     </a>
     <nav class="links">
       <div class="nav-dropdown">
-        <span>Plateforme ▾</span>
+        <span>{% if lang=='en' %}Platform ▾{% else %}Plateforme ▾{% endif %}</span>
         <div class="dropdown-panel">
+          {% if lang=='en' %}
+          <a href="{{ url_for('pillar_legal_intelligence_en') }}"><b>Legal Intelligence</b><small>Research, case law, doctrine</small></a>
+          <a href="{{ url_for('pillar_contract_intelligence_en') }}"><b>Contract Intelligence</b><small>Clauses, negotiation, e-signature</small></a>
+          <a href="{{ url_for('pillar_transaction_intelligence_en') }}"><b>Transaction Intelligence</b><small>Structuring, workflow, closing</small></a>
+          <a href="{{ url_for('pillar_tax_intelligence_en') }}"><b>Tax Intelligence</b><small>Tax obligations and deadlines</small></a>
+          <a href="{{ url_for('pillar_regulatory_compliance_en') }}"><b>Regulatory &amp; Compliance</b><small>AML / KYC / authorizations</small></a>
+          {% else %}
           <a href="{{ url_for('pillar_legal_intelligence') }}"><b>Legal Intelligence</b><small>Recherche, jurisprudence, doctrine</small></a>
           <a href="{{ url_for('pillar_contract_intelligence') }}"><b>Contract Intelligence</b><small>Clauses, négociation, signature</small></a>
           <a href="{{ url_for('pillar_transaction_intelligence') }}"><b>Transaction Intelligence</b><small>Structuration, workflow, closing</small></a>
           <a href="{{ url_for('pillar_tax_intelligence') }}"><b>Tax Intelligence</b><small>Obligations et échéances fiscales</small></a>
           <a href="{{ url_for('pillar_regulatory_compliance') }}"><b>Regulatory &amp; Compliance</b><small>AML / KYC / autorisations</small></a>
+          {% endif %}
         </div>
       </div>
-      <a href="{{ url_for('about') }}">À propos</a>
-      <a href="{{ url_for('expertise') }}">Expertise</a>
-      <a href="{{ url_for('tarifs') }}">Tarifs</a>
-      <a href="{{ url_for('revue_home') }}">Massey Law Review</a>
+      {% if lang=='en' %}
+        <a href="{{ url_for('about_en') }}">About</a>
+        <a href="{{ url_for('expertise_en') }}">Expertise</a>
+        <a href="{{ url_for('tarifs_en') }}">Pricing</a>
+        <a href="{{ url_for('securite_conformite_en') }}">Security</a>
+        <a href="{{ url_for('faq_en') }}">FAQ</a>
+        <a href="{{ url_for('contact_en') }}">Contact</a>
+      {% else %}
+        <a href="{{ url_for('about') }}">À propos</a>
+        <a href="{{ url_for('expertise') }}">Expertise</a>
+        <a href="{{ url_for('tarifs') }}">Tarifs</a>
+        <a href="{{ url_for('securite_conformite') }}">Sécurité</a>
+        <a href="{{ url_for('faq') }}">FAQ</a>
+        <a href="{{ url_for('contact') }}">Contact</a>
+        <a href="{{ url_for('revue_home') }}">Massey Law Review</a>
+      {% endif %}
       {% if current_user %}
-        <a href="{{ url_for('portal_dashboard') }}">Espace client</a>
+        <a href="{{ url_for('portal_dashboard') }}">{% if lang=='en' %}Client area{% else %}Espace client{% endif %}</a>
         {% if current_user['role'] in ('expert','admin') %}<a href="{{ url_for('admin_revue_articles') }}">Revue (admin)</a>{% endif %}
         {% if current_user['role'] in ('expert','admin') %}<a href="{{ url_for('admin_corpus_list') }}">Corpus juridique</a>{% endif %}
         {% if current_user['role'] in ('expert','admin') %}<a href="{{ url_for('admin_clauses_list') }}">Clauses</a>{% endif %}
+        {% if current_user['role'] in ('expert','admin') %}<a href="{{ url_for('admin_contact_messages') }}">Messages</a>{% endif %}
         {% if current_user['role'] == 'admin' %}<a href="{{ url_for('admin_users') }}">Utilisateurs</a>{% endif %}
-        <a href="{{ url_for('logout') }}">Déconnexion</a>
+        {% if current_user['role'] == 'admin' %}<a href="{{ url_for('admin_settings') }}">Paramètres</a>{% endif %}
+        <a href="{{ url_for('logout') }}">{% if lang=='en' %}Log out{% else %}Déconnexion{% endif %}</a>
       {% else %}
-        <a href="{{ url_for('espace_client_marketing') }}">Espace client</a>
-        <a href="{{ url_for('login') }}">Connexion</a>
+        <a href="{{ url_for('espace_client_marketing') }}">{% if lang=='en' %}Client area{% else %}Espace client{% endif %}</a>
+        <a href="{{ url_for('login') }}">{% if lang=='en' %}Sign in{% else %}Connexion{% endif %}</a>
       {% endif %}
+      {% if lang_switch_url %}<a href="{{ lang_switch_url }}" class="lang-switch">{% if lang=='en' %}FR{% else %}EN{% endif %}</a>{% endif %}
     </nav>
     {% if not current_user %}
-      <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
+      <a href="{{ url_for('intake') }}" class="btn btn-primary">{% if lang=='en' %}Open a file{% else %}Ouvrir un dossier{% endif %}</a>
     {% endif %}
   </div>
 </header>
@@ -67,43 +102,63 @@
     <div class="footer-grid">
       <div>
         <h4>Massey Contracts &amp; Tax</h4>
-        <p>LegalTech d'ingénierie juridique, fiscale et transactionnelle.</p>
+        <p>{% if lang=='en' %}Legal, tax and transaction engineering LegalTech.{% else %}LegalTech d'ingénierie juridique, fiscale et transactionnelle.{% endif %}</p>
+        {% if site_settings.address %}<p class="helptext">{{ site_settings.address }}</p>{% endif %}
+        {% if site_settings.contact_email %}<p class="helptext"><a href="mailto:{{ site_settings.contact_email }}">{{ site_settings.contact_email }}</a></p>{% endif %}
+        {% if site_settings.phone %}<p class="helptext">{{ site_settings.phone }}</p>{% endif %}
+        {% if site_settings.linkedin_url %}<p class="helptext"><a href="{{ site_settings.linkedin_url }}" target="_blank" rel="noopener">LinkedIn ↗</a></p>{% endif %}
       </div>
       <div>
-        <h4>Plateforme</h4>
+        <h4>{% if lang=='en' %}Platform{% else %}Plateforme{% endif %}</h4>
+        {% if lang=='en' %}
+        <a href="{{ url_for('pillar_legal_intelligence_en') }}">Legal Intelligence</a>
+        <a href="{{ url_for('pillar_contract_intelligence_en') }}">Contract Intelligence</a>
+        <a href="{{ url_for('pillar_transaction_intelligence_en') }}">Transaction Intelligence</a>
+        <a href="{{ url_for('pillar_tax_intelligence_en') }}">Tax Intelligence</a>
+        <a href="{{ url_for('pillar_regulatory_compliance_en') }}">Regulatory &amp; Compliance</a>
+        {% else %}
         <a href="{{ url_for('pillar_legal_intelligence') }}">Legal Intelligence</a>
         <a href="{{ url_for('pillar_contract_intelligence') }}">Contract Intelligence</a>
         <a href="{{ url_for('pillar_transaction_intelligence') }}">Transaction Intelligence</a>
         <a href="{{ url_for('pillar_tax_intelligence') }}">Tax Intelligence</a>
         <a href="{{ url_for('pillar_regulatory_compliance') }}">Regulatory &amp; Compliance</a>
+        {% endif %}
       </div>
       <div>
         <h4>LegalTech</h4>
+        {% if lang=='en' %}
+        <a href="{{ url_for('about_en') }}">About</a>
+        <a href="{{ url_for('expertise_en') }}">Expertise</a>
+        <a href="{{ url_for('tarifs_en') }}">Pricing</a>
+        <a href="{{ url_for('faq_en') }}">FAQ</a>
+        <a href="{{ url_for('contact_en') }}">Contact</a>
+        {% else %}
         <a href="{{ url_for('about') }}">À propos</a>
         <a href="{{ url_for('expertise') }}">Expertise</a>
         <a href="{{ url_for('tarifs') }}">Tarifs</a>
-        <a href="{{ url_for('home') }}#gouvernance">Gouvernance IA</a>
+        <a href="{{ url_for('faq') }}">FAQ</a>
+        <a href="{{ url_for('contact') }}">Contact</a>
         <a href="{{ url_for('revue_home') }}">Massey Law Review</a>
+        {% endif %}
       </div>
       <div>
-        <h4>Accès</h4>
-        <a href="{{ url_for('espace_client_marketing') }}">Espace client</a>
-        <a href="{{ url_for('intake') }}">Ouvrir un dossier</a>
-        <a href="{{ url_for('login') }}">Connexion</a>
-        <a href="{{ url_for('register') }}">Créer un compte</a>
+        <h4>{% if lang=='en' %}Access{% else %}Accès{% endif %}</h4>
+        <a href="{{ url_for('espace_client_marketing') }}">{% if lang=='en' %}Client area{% else %}Espace client{% endif %}</a>
+        <a href="{{ url_for('intake') }}">{% if lang=='en' %}Open a file{% else %}Ouvrir un dossier{% endif %}</a>
+        <a href="{{ url_for('login') }}">{% if lang=='en' %}Sign in{% else %}Connexion{% endif %}</a>
+        <a href="{{ url_for('register') }}">{% if lang=='en' %}Create an account{% else %}Créer un compte{% endif %}</a>
       </div>
       <div>
-        <h4>Sécurité</h4>
-        <div class="trust-row" style="flex-direction:column;gap:10px;">
-          <span>Authentification à deux facteurs</span>
-          <span>Documents horodatés et hachés</span>
-          <span>Accès strictement cloisonné par dossier</span>
-        </div>
+        <h4>{% if lang=='en' %}Security &amp; legal{% else %}Sécurité &amp; mentions{% endif %}</h4>
+        <a href="{{ url_for('securite_conformite_en') if lang=='en' else url_for('securite_conformite') }}">{% if lang=='en' %}Security &amp; compliance{% else %}Sécurité &amp; conformité{% endif %}</a>
+        <a href="{{ url_for('mentions_legales_en') if lang=='en' else url_for('mentions_legales') }}">{% if lang=='en' %}Legal notice{% else %}Mentions légales{% endif %}</a>
+        <a href="{{ url_for('confidentialite_en') if lang=='en' else url_for('confidentialite') }}">{% if lang=='en' %}Privacy policy{% else %}Politique de confidentialité{% endif %}</a>
+        <a href="{{ url_for('conditions_utilisation_en') if lang=='en' else url_for('conditions_utilisation') }}">{% if lang=='en' %}Terms of service{% else %}Conditions d'utilisation{% endif %}</a>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>© 2026 Massey Contracts &amp; Tax — Les informations de ce site sont générales et ne constituent pas un avis juridique ou fiscal.</span>
-      <span>Un mandat professionnel naît uniquement d'une lettre de mission acceptée.</span>
+      <span>© 2026 Massey Contracts &amp; Tax — {% if lang=='en' %}The information on this site is general and does not constitute legal or tax advice.{% else %}Les informations de ce site sont générales et ne constituent pas un avis juridique ou fiscal.{% endif %}</span>
+      <span>{% if lang=='en' %}A professional engagement arises only from an accepted engagement letter.{% else %}Un mandat professionnel naît uniquement d'une lettre de mission acceptée.{% endif %}</span>
     </div>
   </div>
 </footer>

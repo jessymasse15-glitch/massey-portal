@@ -285,7 +285,83 @@ CREATE TABLE IF NOT EXISTS document_comparisons (
     created_by INTEGER REFERENCES users(id),
     created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS site_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS contact_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    subject TEXT,
+    message TEXT NOT NULL,
+    handled INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS password_resets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    token TEXT UNIQUE NOT NULL,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    used INTEGER NOT NULL DEFAULT 0
+);
 """
+
+# Paramètres du site, éditables par un admin depuis /admin/parametres, avec des
+# valeurs par défaut volontairement vides ou explicitement "à compléter" — on ne
+# fabrique jamais une fausse adresse, un faux numéro d'entreprise ou un faux
+# numéro de téléphone à la place du vrai titulaire de la plateforme.
+DEFAULT_SITE_SETTINGS = {
+    "company_legal_name": "",
+    "business_number": "",
+    "address": "",
+    "phone": "",
+    "contact_email": "",
+    "linkedin_url": "",
+    "support_hours": "",
+}
+
+SITE_SETTINGS_LABELS = [
+    ("company_legal_name", "Raison sociale complète"),
+    ("business_number", "Numéro d'entreprise / immatriculation"),
+    ("address", "Adresse postale"),
+    ("phone", "Téléphone"),
+    ("contact_email", "Courriel de contact public"),
+    ("linkedin_url", "URL LinkedIn"),
+    ("support_hours", "Horaires de disponibilité"),
+]
+
+
+def get_setting(key, default=""):
+    conn = get_db()
+    row = conn.execute("SELECT value FROM site_settings WHERE key=?", (key,)).fetchone()
+    conn.close()
+    if row is None:
+        return DEFAULT_SITE_SETTINGS.get(key, default)
+    return row["value"]
+
+
+def get_all_settings():
+    conn = get_db()
+    rows = conn.execute("SELECT key, value FROM site_settings").fetchall()
+    conn.close()
+    values = dict(DEFAULT_SITE_SETTINGS)
+    values.update({r["key"]: r["value"] for r in rows})
+    return values
+
+
+def set_setting(key, value):
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO site_settings (key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        (key, value),
+    )
+    conn.commit()
+    conn.close()
 
 CLAUSE_CATEGORIES = [
     ("general", "Clauses générales"),
@@ -441,6 +517,82 @@ PAYMENT_PURPOSES = [
     ("solde", "Solde de facture"),
     ("abonnement_counsel", "Abonnement Massey Counsel (mensuel)"),
 ]
+
+
+# -----------------------------------------------------------------------
+# Étiquettes anglaises — mêmes clés que les listes françaises ci-dessus,
+# utilisées uniquement par les pages vitrines /en/... pour afficher les
+# mêmes données (mêmes valeurs stockées en base) dans l'autre langue.
+# -----------------------------------------------------------------------
+
+CORPUS_SOURCE_TYPES_EN = [
+    ("constitution", "Constitution"),
+    ("code", "Code (civil, commercial, labor, tax…)"),
+    ("decret", "Decree / order"),
+    ("jurisprudence", "Case law"),
+    ("doctrine", "Doctrine / article"),
+    ("autre", "Other"),
+]
+
+CLAUSE_CATEGORIES_EN = [
+    ("general", "General clauses"),
+    ("paiement", "Payment and invoicing"),
+    ("resiliation", "Termination"),
+    ("penale", "Penalty / indemnification clause"),
+    ("confidentialite", "Confidentiality"),
+    ("non_concurrence", "Non-compete"),
+    ("force_majeure", "Force majeure"),
+    ("reglement_differends", "Dispute resolution"),
+    ("fiscalite", "Taxation and withholding"),
+    ("conformite", "Compliance and representations"),
+]
+
+CLAUSE_RISK_LABELS_EN = {
+    "standard": "Standard",
+    "a_negocier": "Negotiate with care",
+    "sensible": "Sensitive — approval required",
+}
+
+TRANSACTION_STAGES_EN = [
+    ("creer", "Create"),
+    ("negocier", "Negotiate"),
+    ("approuver", "Approve"),
+    ("signer", "Sign"),
+    ("executer", "Execute"),
+    ("surveiller", "Monitor"),
+    ("renouveler", "Renew"),
+]
+
+TAX_TYPE_LABELS_EN = {
+    "tca": "Sales / turnover tax",
+    "impot_revenu": "Income tax",
+    "retenue_source": "Withholding tax",
+    "patente": "Business license tax",
+    "douane": "Customs duties / import-export",
+    "autre": "Other tax obligation",
+}
+
+TAX_STATUS_LABELS_EN = {
+    "a_faire": "To do",
+    "en_cours": "In progress",
+    "fait": "Completed",
+    "en_retard": "Overdue",
+}
+
+COMPLIANCE_CATEGORY_LABELS_EN = {
+    "kyc": "KYC — Know Your Customer",
+    "aml": "AML — Anti-Money Laundering",
+    "sanctions": "Sanctions and watchlists",
+    "autorisation": "Authorizations and licenses",
+    "reporting": "Regulatory reporting",
+}
+
+COMPLIANCE_STATUS_LABELS_EN = {
+    "a_faire": "To do",
+    "en_cours": "In progress",
+    "conforme": "Compliant",
+    "non_conforme": "Non-compliant",
+}
 
 
 def now() -> str:

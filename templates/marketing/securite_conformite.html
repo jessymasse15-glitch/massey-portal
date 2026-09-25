@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Sécurité & conformité — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Les mesures techniques et organisationnelles de Massey Contracts & Tax pour protéger vos dossiers, documents et données.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 3.5v5.2c0 5-3.4 8.4-8 9.3-4.6-.9-8-4.3-8-9.3V6.5z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg></div>
+  <div class="eyebrow">Sécurité &amp; conformité</div>
+  <h1>La confidentialité de vos dossiers, par construction</h1>
+  <p class="lede">Nos mesures techniques ne sont pas des promesses marketing — voici concrètement comment la plateforme protège vos données.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="grid-2 reveal-stagger">
+    <div class="pillar-card">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="1.5"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></div>
+      <h3>Authentification à deux facteurs (MFA)</h3>
+      <p>Chaque compte expert et administrateur doit activer une authentification par application TOTP (Google Authenticator, Authy ou équivalent) en plus du mot de passe, avant de pouvoir accéder aux dossiers.</p>
+    </div>
+    <div class="pillar-card">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="14" rx="1"/><path d="M3 8h18"/><circle cx="8" cy="12.5" r="1"/><circle cx="12" cy="12.5" r="1"/></svg></div>
+      <h3>Cloisonnement strict par dossier</h3>
+      <p>Un client ne voit que ses propres dossiers. Un expert ne voit que les dossiers qui lui sont assignés ou ouverts à l'équipe. Chaque accès est vérifié à chaque requête, jamais supposé.</p>
+    </div>
+    <div class="pillar-card">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+      <h3>Documents horodatés et hachés</h3>
+      <p>Chaque document déposé ou signé reçoit une empreinte cryptographique SHA-256, calculée au moment du dépôt. Toute modification ultérieure du fichier romprait cette empreinte — un mécanisme utilisé pour certifier l'intégrité des documents signés électroniquement.</p>
+    </div>
+    <div class="pillar-card">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4v16h16"/><path d="M8 15l3-4 3 3 4-6"/></svg></div>
+      <h3>Journal d'activité</h3>
+      <p>Les actions sensibles (connexion, dépôt de document, changement de statut, création de dossier, paiement, signature) sont journalisées avec horodatage, pour assurer une traçabilité en cas de besoin.</p>
+    </div>
+    <div class="pillar-card">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="11" width="18" height="10" rx="1.5"/><path d="M7 11V7a5 5 0 0110 0v4"/><path d="M12 15v2.5"/></svg></div>
+      <h3>Mots de passe protégés</h3>
+      <p>Les mots de passe ne sont jamais stockés en clair : ils sont hachés avec sel (algorithme standard de l'industrie via Werkzeug/PBKDF2) avant tout enregistrement en base de données.</p>
+    </div>
+    <div class="pillar-card">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg></div>
+      <h3>Signature électronique tracée</h3>
+      <p>Chaque signature enregistre le nom légal complet du signataire, l'empreinte du document signé, l'adresse IP et l'agent utilisateur au moment de la signature, avec un certificat consultable a posteriori.</p>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Bon à savoir</div>
+      <h2>Ce que cette page ne prétend pas</h2>
+    </div>
+  </div>
+  <div class="prose" style="max-width:78ch;">
+    <p>Nous préférons la transparence à la survente : la plateforme n'est actuellement pas certifiée SOC 2, ISO 27001 ou équivalent, et n'a pas encore fait l'objet d'un audit de sécurité externe indépendant. Ces mesures décrivent l'architecture technique réellement implémentée aujourd'hui, pas un label obtenu. Si votre organisation a des exigences de conformité spécifiques (secteur financier, institution réglementée), contactez-nous pour en discuter concrètement avant l'ouverture d'un dossier.</p>
+  </div>
+</section>
+
+<section class="block">
+  <div class="cta-banner reveal">
+    <div>
+      <h2>Une question sur la sécurité de vos données ?</h2>
+      <p>Nous répondons directement, sans détour marketing.</p>
+    </div>
+    <div class="ctas">
+      <a href="{{ url_for('contact') }}" class="btn btn-primary">Nous écrire</a>
+      <a href="{{ url_for('confidentialite') }}" class="btn btn-ghost">Politique de confidentialité</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

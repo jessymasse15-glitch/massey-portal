@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Mentions légales — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Mentions légales</div>
+  <h1>Mentions légales</h1>
+  <p class="lede">Dernière mise à jour : {{ '2026' }}.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="prose" style="max-width:78ch;">
+    <h2>Éditeur du site</h2>
+    <p>
+      {{ site_settings.company_legal_name or "Massey Contracts & Tax" }}
+      {% if site_settings.business_number %}<br>Numéro d'entreprise : {{ site_settings.business_number }}{% endif %}
+      {% if site_settings.address %}<br>{{ site_settings.address }}{% endif %}
+      {% if site_settings.contact_email %}<br>Courriel : {{ site_settings.contact_email }}{% endif %}
+      {% if site_settings.phone %}<br>Téléphone : {{ site_settings.phone }}{% endif %}
+    </p>
+
+    <h2>Nature du site</h2>
+    <p>Ce site présente les services de Massey Contracts &amp; Tax et propose un espace client sécurisé permettant le suivi de dossiers, l'échange de documents, la signature électronique et le paiement en ligne de certaines prestations.</p>
+
+    <h2>Absence de conseil juridique par la simple consultation du site</h2>
+    <p>Les informations publiées sur ce site sont générales et à but informatif. Elles ne constituent pas un avis juridique ou fiscal et ne créent aucune relation avocat-client ou mandat professionnel. Un mandat professionnel naît uniquement d'une lettre de mission expressément acceptée par les deux parties.</p>
+
+    <h2>Propriété intellectuelle</h2>
+    <p>Sauf mention contraire, les contenus de ce site (textes, mises en page, éléments graphiques, marques) sont la propriété de {{ site_settings.company_legal_name or "Massey Contracts & Tax" }} ou de ses concédants et ne peuvent être reproduits sans autorisation préalable.</p>
+
+    <h2>Hébergement</h2>
+    <p>Ce site est hébergé par un prestataire d'infrastructure infonuagique tiers (Render.com). Les données sont stockées sur les serveurs de cet hébergeur, conformément aux conditions applicables entre {{ site_settings.company_legal_name or "Massey Contracts & Tax" }} et cet hébergeur.</p>
+
+    <h2>Droit applicable</h2>
+    <p>Les présentes mentions légales sont régies par le droit applicable à l'exploitation du site, en tenant compte des règles locales applicables aux services fournis en Haïti et, le cas échéant, dans les juridictions des clients transfrontaliers.</p>
+  </div>
+  <div class="callout" style="max-width:78ch;margin-top:28px;">
+    Ce texte est un gabarit standard destiné à être révisé et complété par le titulaire de la plateforme (raison sociale, immatriculation, adresse) avant publication définitive{% if current_user and current_user['role']=='admin' %} — voir <a href="{{ url_for('admin_settings') }}">les paramètres du site</a>{% endif %}.
+  </div>
+</section>
+{% endblock %}

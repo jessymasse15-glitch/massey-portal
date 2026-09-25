@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Transaction Intelligence — Massey AI{% endblock %}
+{% block meta_description %}Structuring, due diligence and transactional workflow management — the Transaction Intelligence pillar of Massey AI.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 17l4-8 4 4 4-9 4 9"/><circle cx="4" cy="17" r="1.4"/><circle cx="20" cy="13" r="1.4"/></svg></div>
+  <div class="eyebrow">Massey AI — Pillar 03</div>
+  <h1>Transaction Intelligence</h1>
+  <p class="lede">From opportunity to closing.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="pillar-feature-card" style="max-width:none;">
+    <h3>What this pillar covers</h3>
+    <ul style="display:grid;grid-template-columns:1fr 1fr;gap:9px 24px;">
+      <li>Transaction structuring</li>
+      <li>Legal, tax and commercial due diligence</li>
+      <li>Corporate and governance</li>
+      <li>Stakeholder management</li>
+      <li>Transactional workflow</li>
+      <li>Risk mapping</li>
+      <li>Checklists and timelines</li>
+      <li>Post-closing and integration</li>
+    </ul>
+  </div>
+</section>
+
+<section class="block">
+  <div class="dark-band" style="border-radius:16px;padding:36px 32px;">
+    <div class="eyebrow">Integration engine</div>
+    <h2 style="margin-bottom:24px;">Create → Negotiate → Approve → Sign → Execute → Monitor → Renew</h2>
+    <div class="workflow-strip">
+      {% for value, label in stages %}
+        <div class="step"><b>{{ label }}</b></div>{% if not loop.last %}<span class="arrow">→</span>{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Pipeline</div>
+      <h2>{% if is_staff %}All transactions, by stage{% elif logged_in %}My transactions, by stage{% else %}The pipeline in action{% endif %}</h2>
+    </div>
+  </div>
+
+  {% if logged_in %}
+  <div class="kanban reveal">
+    {% for value, label in stages %}
+      <div class="kanban-col">
+        <h5>{{ label }}</h5>
+        {% for d in by_stage.get(value, []) %}
+          <div class="kanban-card">
+            <a href="{{ url_for('portal_dossier', dossier_id=d['id']) }}">File #{{ d['id'] }}</a>
+            <div class="meta">{{ d['title'] }}{% if is_staff %} — {{ d['client_name'] }}{% endif %}</div>
+          </div>
+        {% else %}
+          <p class="helptext" style="font-size:0.76rem;">—</p>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="cta-banner reveal">
+    <div>
+      <h2>Steer your transactions end to end</h2>
+      <p>Sign in to see your files positioned in the transactional pipeline, stage by stage.</p>
+    </div>
+    <div class="ctas">
+      <a href="{{ url_for('login') }}" class="btn btn-primary">Sign in</a>
+      <a href="{{ url_for('register') }}" class="btn btn-ghost">Create an account</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="callout reveal" style="max-width:74ch;margin-top:32px;">
+    Every file has a real due diligence checklist (legal, tax, commercial, financial, HR, regulatory), generated in one click and tracked item by item to completion. Automatic risk mapping and AI-assisted post-closing will follow once Massey AI is connected to a document analysis engine.
+  </div>
+</section>
+{% endblock %}

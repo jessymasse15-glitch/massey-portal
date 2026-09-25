@@ -2,71 +2,34 @@
 {% block title %}Massey Contracts & Tax — LegalTech d'ingénierie juridique, contractuelle, fiscale et transactionnelle{% endblock %}
 {% block meta_description %}Massey Contracts & Tax est une LegalTech d'ingénierie juridique, contractuelle, fiscale et transactionnelle sous droit haïtien, propulsée par Massey AI.{% endblock %}
 {% block content %}
-<section class="hero">
-  <div class="glow-orb gold" style="top:-140px;right:-100px;"></div>
-  <div class="glow-orb steel" style="bottom:-120px;left:-140px;"></div>
-  <div class="hero-grid">
-    <div>
-      <div style="display:flex;align-items:center;gap:12px;font-family:var(--serif);font-style:italic;font-size:1.05rem;color:var(--ink-soft);margin-bottom:18px;">
-        <span style="width:22px;height:1px;background:var(--gold);flex:none;"></span>
-        Structurer les transactions. Maîtriser les risques. Accélérer les affaires.
-      </div>
-      <h1>Massey Contracts &amp; Tax</h1>
+<section class="hero hero-search">
+  <div class="hero-search-inner">
+    <div class="eyebrow" style="justify-content:center;display:flex;">Massey AI — Recherche juridique &amp; plateforme transactionnelle</div>
+    <h1>Massey Contracts &amp; Tax</h1>
+    <p class="lede" style="max-width:60ch;margin:0 auto 26px;">Interrogez le corpus juridique haïtien, ou ouvrez directement un dossier contractuel, fiscal ou transactionnel.</p>
 
-      <div class="prose" style="margin:22px 0 28px;">
-        <p style="font-size:1rem;">LegalTech d'ingénierie juridique, contractuelle, fiscale et transactionnelle sous droit haïtien — à la convergence du droit, de la technologie et des données.</p>
-        <p style="font-size:1rem;margin-bottom:8px;">Propulsée par <strong>Massey AI</strong> et une base juridique haïtienne structurée, la plateforme accompagne chaque transaction de sa création à son renouvellement, avec une validation humaine systématique.</p>
-      </div>
-      <a href="#piliers" style="color:var(--gold);text-decoration:none;font-size:0.9rem;display:inline-flex;align-items:center;gap:6px;margin-bottom:30px;">
-        Découvrir les 5 piliers de la plateforme
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </a>
+    <form method="get" action="{{ url_for('pillar_legal_intelligence') }}" class="search-box hero-search-box reveal">
+      <input type="text" name="q" placeholder="Rechercher un texte de loi, une notion, une référence…" autofocus>
+      <select name="source_type">
+        <option value="">Toutes les sources</option>
+        {% for key, label in corpus_source_types %}
+        <option value="{{ key }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
+    </form>
 
-      <div class="ctas">
-        <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
-        {% if current_user %}<a href="{{ url_for('portal_dashboard') }}" class="btn btn-ghost">Mon espace client</a>{% else %}<a href="{{ url_for('register') }}" class="btn btn-ghost">Créer un compte</a>{% endif %}
-      </div>
+    <div class="hero-quicklinks">
+      <a href="{{ url_for('pillar_legal_intelligence') }}">Legal Intelligence</a>
+      <a href="{{ url_for('pillar_contract_intelligence') }}">Contract Intelligence</a>
+      <a href="{{ url_for('pillar_transaction_intelligence') }}">Transaction Intelligence</a>
+      <a href="{{ url_for('pillar_tax_intelligence') }}">Tax Intelligence</a>
+      <a href="{{ url_for('pillar_regulatory_compliance') }}">Regulatory &amp; Compliance</a>
     </div>
 
-    <div class="hero-art" aria-hidden="true">
-      <svg viewBox="0 0 420 420" fill="none">
-        <defs>
-          <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#B07C22" stop-opacity="0.75"/>
-            <stop offset="100%" stop-color="#2A5FD9" stop-opacity="0.55"/>
-          </linearGradient>
-          <radialGradient id="hubGrad" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#D4A24A"/>
-            <stop offset="100%" stop-color="#B07C22"/>
-          </radialGradient>
-        </defs>
-
-        <circle cx="210" cy="210" r="160" stroke="url(#lineGrad)" stroke-width="1" opacity="0.35"/>
-        <circle cx="210" cy="210" r="110" stroke="url(#lineGrad)" stroke-width="1" opacity="0.25"/>
-
-        <g stroke="url(#lineGrad)" stroke-width="1.2" opacity="0.8">
-          <line x1="210" y1="210" x2="90" y2="120"><animate attributeName="opacity" values="0.3;0.9;0.3" dur="4.5s" repeatCount="indefinite"/></line>
-          <line x1="210" y1="210" x2="340" y2="100"><animate attributeName="opacity" values="0.9;0.3;0.9" dur="5.2s" repeatCount="indefinite"/></line>
-          <line x1="210" y1="210" x2="350" y2="260"><animate attributeName="opacity" values="0.4;0.9;0.4" dur="3.8s" repeatCount="indefinite"/></line>
-          <line x1="210" y1="210" x2="260" y2="360"><animate attributeName="opacity" values="0.8;0.3;0.8" dur="4.2s" repeatCount="indefinite"/></line>
-          <line x1="210" y1="210" x2="80" y2="300"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="5.6s" repeatCount="indefinite"/></line>
-          <line x1="90" y1="120" x2="340" y2="100" opacity="0.25"/>
-          <line x1="350" y1="260" x2="260" y2="360" opacity="0.2"/>
-          <line x1="80" y1="300" x2="260" y2="360" opacity="0.2"/>
-        </g>
-
-        <circle cx="210" cy="210" r="30" fill="url(#hubGrad)"/>
-        <rect x="198" y="197" width="24" height="26" rx="2" fill="#0B2340" opacity="0.9"/>
-        <path d="M202 205h16M202 211h16M202 217h10" stroke="#D4A24A" stroke-width="1.4" stroke-linecap="round"/>
-
-        <g fill="#F5F8FC" stroke="url(#lineGrad)" stroke-width="1.4">
-          <circle cx="90" cy="120" r="12"><animate attributeName="r" values="10;13;10" dur="3.4s" repeatCount="indefinite"/></circle>
-          <circle cx="340" cy="100" r="10"><animate attributeName="r" values="9;12;9" dur="4.1s" repeatCount="indefinite"/></circle>
-          <circle cx="350" cy="260" r="11"><animate attributeName="r" values="10;13;10" dur="3.7s" repeatCount="indefinite"/></circle>
-          <circle cx="260" cy="360" r="9"><animate attributeName="r" values="8;11;8" dur="4.6s" repeatCount="indefinite"/></circle>
-          <circle cx="80" cy="300" r="10"><animate attributeName="r" values="9;12;9" dur="3.9s" repeatCount="indefinite"/></circle>
-        </g>
-      </svg>
+    <div class="ctas" style="justify-content:center;margin-top:26px;">
+      <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
+      {% if current_user %}<a href="{{ url_for('portal_dashboard') }}" class="btn btn-ghost">Mon espace client</a>{% else %}<a href="{{ url_for('register') }}" class="btn btn-ghost">Créer un compte</a>{% endif %}
     </div>
   </div>
 

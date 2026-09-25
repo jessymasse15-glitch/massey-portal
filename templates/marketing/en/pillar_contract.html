@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Contract Intelligence — Massey AI{% endblock %}
+{% block meta_description %}Clause library, negotiation, e-signature and contract tracking — the Contract Intelligence pillar of Massey AI.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3h9l5 5v13H6z"/><path d="M15 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></div>
+  <div class="eyebrow">Massey AI — Pillar 02</div>
+  <h1>Contract Intelligence</h1>
+  <p class="lede">From template to execution, with confidence.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="pillar-feature-card" style="max-width:none;">
+    <h3>What this pillar covers</h3>
+    <ul style="display:grid;grid-template-columns:1fr 1fr;gap:9px 24px;">
+      <li>AI-assisted contract drafting</li>
+      <li>Clause library</li>
+      <li>Templates and playbooks</li>
+      <li>Negotiation and redlining</li>
+      <li>Version comparison</li>
+      <li>Risk detection</li>
+      <li>Obligation extraction</li>
+      <li>Deadlines and renewals</li>
+      <li>Internal approvals</li>
+      <li>E-signature</li>
+      <li>Archiving and tracking</li>
+    </ul>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Library</div>
+      <h2>Clauses and templates</h2>
+      <p>A base of reusable clauses, sorted by category and risk level.</p>
+    </div>
+  </div>
+
+  <div class="search-tool reveal">
+    <aside class="search-tool-sidebar">
+      <h5>Category</h5>
+      <ul>
+        <li><a href="{{ url_for('pillar_contract_intelligence_en') }}" class="{{ 'active' if not category }}">All categories</a></li>
+        {% for key, label in categories %}
+        <li><a href="{{ url_for('pillar_contract_intelligence_en', category=key) }}" class="{{ 'active' if category==key }}">{{ label }}</a></li>
+        {% endfor %}
+      </ul>
+    </aside>
+    <div class="search-tool-main">
+      <div class="search-tool-count">{{ clauses|length }} clause{{ 's' if clauses|length != 1 }}</div>
+      {% for c in clauses %}
+        <div class="clause-card reveal">
+          <div class="head">
+            <h4>{{ c['title'] }}</h4>
+            <span class="status-pill {% if c['risk_level']=='standard' %}done{% elif c['risk_level']=='sensible' %}{% endif %}">{{ risk_labels.get(c['risk_level'], c['risk_level']) }}</span>
+          </div>
+          <div class="body-text">{{ c['body_text'] }}</div>
+          {% if c['guidance'] %}<div class="guidance">{{ c['guidance'] }}</div>{% endif %}
+        </div>
+      {% else %}
+        <p class="helptext">No clauses in this category yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% if current_user %}
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Tracking</div>
+      <h2>{% if current_user['role'] in ('expert','admin') %}Contracts in progress (all files){% else %}My contracts{% endif %}</h2>
+    </div>
+  </div>
+  {% for doc in my_documents %}
+    <div class="doc-row">
+      <span>
+        {{ doc['original_name'] }}
+        {% if doc['is_final'] %}<span class="status-pill done">final</span>{% endif %}
+        {% if doc['locked'] %}<span class="status-pill">signed</span>{% endif %}
+      </span>
+      <a href="{{ url_for('portal_dossier', dossier_id=doc['dossier_id']) }}" class="btn btn-sm">View file #{{ doc['dossier_id'] }}</a>
+    </div>
+  {% else %}
+    <p class="helptext">No contracts uploaded yet.</p>
+  {% endfor %}
+  <div class="callout reveal" style="max-width:74ch;margin-top:24px;">
+    From any file, compare two versions of the same contract (line-by-line diff for text files, metadata and fingerprint comparison for other formats) and log your redlining observations. AI contract generation and automatic risk detection will follow once Massey AI is connected to an analysis engine.
+  </div>
+</section>
+{% else %}
+<section class="block">
+  <div class="cta-banner reveal">
+    <div>
+      <h2>Track your contracts end to end</h2>
+      <p>Sign in to your client area to see your contracts, their deadlines and their signature status.</p>
+    </div>
+    <div class="ctas">
+      <a href="{{ url_for('login') }}" class="btn btn-primary">Sign in</a>
+      <a href="{{ url_for('register') }}" class="btn btn-ghost">Create an account</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

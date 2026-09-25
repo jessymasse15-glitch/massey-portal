@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Foire aux questions — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Réponses aux questions fréquentes sur nos services, nos délais, notre confidentialité et notre fonctionnement.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">FAQ</div>
+  <h1>Foire aux questions</h1>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="prose" style="max-width:78ch;">
+    <h2>Comment démarre un mandat ?</h2>
+    <p>Un mandat professionnel naît uniquement d'une lettre de mission acceptée. Ouvrir un dossier via notre formulaire ou prendre rendez-vous ne constitue pas en soi un engagement — c'est une étape de cadrage qui permet d'évaluer votre besoin, de vérifier l'absence de conflit d'intérêts et de vous proposer un pack adapté.</p>
+
+    <h2>Quels sont vos délais de réponse ?</h2>
+    <p>Nous visons une première réponse rapide à toute demande initiale. Les délais de traitement d'un dossier varient selon sa complexité et sont précisés dans la lettre de mission.</p>
+
+    <h2>Mes informations et documents sont-ils confidentiels ?</h2>
+    <p>Oui. Chaque dossier est cloisonné : seuls le client concerné et les membres de l'équipe qui y sont assignés y ont accès. Nos mesures de sécurité techniques (authentification à deux facteurs, hachage des documents, journalisation des accès) sont détaillées sur notre page <a href="{{ url_for('securite_conformite') }}">Sécurité &amp; conformité</a>.</p>
+
+    <h2>Travaillez-vous uniquement sur le marché haïtien ?</h2>
+    <p>Notre ancrage est le marché haïtien, mais une part importante de notre pratique concerne des opérations transfrontalières impliquant des partenaires étrangers — d'où notre pack Massey CrossBorder et notre plateforme bilingue français/anglais.</p>
+
+    <h2>Comment sont fixés vos tarifs ?</h2>
+    <p>Chaque pack est calibré sur la complexité réelle du dossier plutôt que sur un tarif fixe générique. Le montant final est toujours confirmé par écrit dans la lettre de mission avant le début des travaux — voir notre page <a href="{{ url_for('tarifs') }}">Tarifs</a>.</p>
+
+    <h2>Qu'est-ce que Massey AI ?</h2>
+    <p>Massey AI est le nom de notre plateforme technologique, organisée en 5 piliers (Legal, Contract, Transaction, Tax et Regulatory &amp; Compliance Intelligence). Certaines fonctionnalités reposent aujourd'hui sur des outils réels (bibliothèque de clauses, suivi fiscal, checklists de due diligence, recherche documentaire) ; les capacités génératives par intelligence artificielle sont en cours de déploiement.</p>
+
+    <h2>Puis-je suivre mon dossier en ligne ?</h2>
+    <p>Oui. Chaque client dispose d'un espace client sécurisé pour suivre l'avancement de son dossier, échanger des messages, déposer et signer des documents, et suivre ses obligations fiscales et de conformité.</p>
+
+    <h2>Comment vous contacter pour une question qui n'est pas couverte ici ?</h2>
+    <p>Utilisez notre <a href="{{ url_for('contact') }}">page Contact</a>.</p>
+  </div>
+</section>
+{% endblock %}

@@ -34,33 +34,44 @@
     </div>
   </div>
 
-  <form method="get" class="search-box reveal">
-    <input type="text" name="q" value="{{ q }}" placeholder="Rechercher un mot, une référence, une notion juridique…">
-    <select name="source_type">
-      <option value="">Toutes les sources</option>
-      {% for key, label in source_types %}
-      <option value="{{ key }}" {% if source_type==key %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
-  </form>
-
-  <div style="margin-top:8px;">
-    {% if searched %}
-      {% if results %}
-        {% for r in results %}
-          <div class="result-row">
-            <div class="meta">{{ source_types|selectattr('0','equalto',r['source_type'])|map(attribute='1')|first or r['source_type'] }}{% if r['citation_reference'] %} — {{ r['citation_reference'] }}{% endif %}</div>
-            <h4>{{ r['title'] }}</h4>
-            <div class="snippet">{{ r['full_text'][:420] }}{% if r['full_text']|length > 420 %}…{% endif %}</div>
-          </div>
+  <div class="search-tool reveal">
+    <aside class="search-tool-sidebar">
+      <h5>Type de source</h5>
+      <ul>
+        <li><a href="{{ url_for('pillar_legal_intelligence', q=q) if q else url_for('pillar_legal_intelligence') }}" class="{{ 'active' if not source_type }}">Toutes les sources</a></li>
+        {% for key, label in source_types %}
+        <li><a href="{{ url_for('pillar_legal_intelligence', q=q, source_type=key) }}" class="{{ 'active' if source_type==key }}">{{ label }}</a></li>
         {% endfor %}
+      </ul>
+      <h5>Base juridique</h5>
+      <ul>
+        <li style="padding:7px 10px;color:var(--ink-faint);font-size:0.8rem;">Corpus alimenté et validé par l'équipe Massey.</li>
+      </ul>
+    </aside>
+    <div class="search-tool-main">
+      <form method="get" class="search-tool-topbar">
+        <input type="hidden" name="source_type" value="{{ source_type }}">
+        <input type="text" name="q" value="{{ q }}" placeholder="Rechercher un mot, une référence, une notion juridique…">
+        <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
+      </form>
+
+      {% if searched %}
+        <div class="search-tool-count">{{ results|length }} résultat{{ 's' if results|length != 1 }}</div>
+        {% if results %}
+          {% for r in results %}
+            <div class="result-row">
+              <div class="meta">{{ source_types|selectattr('0','equalto',r['source_type'])|map(attribute='1')|first or r['source_type'] }}{% if r['citation_reference'] %} — {{ r['citation_reference'] }}{% endif %}</div>
+              <h4>{{ r['title'] }}</h4>
+              <div class="snippet">{{ r['full_text'][:420] }}{% if r['full_text']|length > 420 %}…{% endif %}</div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="helptext" style="margin-top:12px;">Aucun résultat pour cette recherche. Le corpus s'enrichit en continu — essayez un autre terme ou une autre source.</p>
+        {% endif %}
       {% else %}
-        <p class="helptext" style="margin-top:20px;">Aucun résultat pour cette recherche. Le corpus s'enrichit en continu — essayez un autre terme ou une autre source.</p>
+        <p class="helptext" style="margin-top:20px;">Lancez une recherche pour interroger le corpus, ou filtrez par type de source dans le panneau de gauche.</p>
       {% endif %}
-    {% else %}
-      <p class="helptext" style="margin-top:20px;">Lancez une recherche pour interroger le corpus, ou filtrez par type de source.</p>
-    {% endif %}
+    </div>
   </div>
 
   <div class="callout reveal" style="max-width:74ch;margin-top:32px;">

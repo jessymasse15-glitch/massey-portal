@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Pricing — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Packs by client type: Massey Start, Review, Business, CrossBorder, Counsel, Due Diligence.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Pricing</div>
+  <h1>Packs by client type</h1>
+  <p class="lede">Each pack is calibrated to the actual complexity of your file. The final amount is confirmed in an engagement letter.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="grid-3 reveal-stagger">
+    <div class="pack">
+      <h3>Massey Start</h3>
+      <div class="price">By quote</div>
+      <p>Scoping consultation, simple contract, one round of revisions.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Get started</a>
+    </div>
+    <div class="pack">
+      <h3>Massey Review</h3>
+      <div class="price">By quote</div>
+      <p>Review of an existing contract, risk table, annotated version.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Get started</a>
+    </div>
+    <div class="pack featured">
+      <span class="badge">Most requested</span>
+      <h3>Massey Business</h3>
+      <div class="price">By quote</div>
+      <p>Custom contract, baseline tax analysis, limited negotiation.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-primary btn-sm">Get started</a>
+    </div>
+    <div class="pack">
+      <h3>Massey CrossBorder</h3>
+      <div class="price">By quote</div>
+      <p>Bilingual contract, cross-border issues, coordination of experts.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Get started</a>
+    </div>
+    <div class="pack">
+      <h3>Massey Counsel</h3>
+      <div class="price">Monthly subscription</div>
+      <p>Consultations, reviews, deadline tracking — ongoing support.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Get started</a>
+    </div>
+    <div class="pack">
+      <h3>Massey Due Diligence</h3>
+      <div class="price">By quote</div>
+      <p>Documentary audit ahead of an investment or acquisition.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Get started</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

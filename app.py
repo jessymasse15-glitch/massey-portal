@@ -17,6 +17,7 @@ import db as dbm
 import totp
 import payments
 import signing
+import notifications
 
 APP_ROOT = os.path.dirname(__file__)
 # En production (Render), DATA_DIR pointe vers le disque persistant unique
@@ -54,9 +55,48 @@ def current_user():
     return g._user
 
 
+# Correspondance entre une page française et son équivalent anglais (et
+# inversement), utilisée pour construire le lien du sélecteur de langue dans
+# l'en-tête. Seules les pages vitrines/publiques ont un équivalent anglais à
+# ce stade (le portail client, l'admin et la revue restent en français).
+LANG_COUNTERPART = {
+    "home": "home_en", "home_en": "home",
+    "about": "about_en", "about_en": "about",
+    "expertise": "expertise_en", "expertise_en": "expertise",
+    "tarifs": "tarifs_en", "tarifs_en": "tarifs",
+    "pillar_legal_intelligence": "pillar_legal_intelligence_en", "pillar_legal_intelligence_en": "pillar_legal_intelligence",
+    "pillar_contract_intelligence": "pillar_contract_intelligence_en", "pillar_contract_intelligence_en": "pillar_contract_intelligence",
+    "pillar_transaction_intelligence": "pillar_transaction_intelligence_en", "pillar_transaction_intelligence_en": "pillar_transaction_intelligence",
+    "pillar_tax_intelligence": "pillar_tax_intelligence_en", "pillar_tax_intelligence_en": "pillar_tax_intelligence",
+    "pillar_regulatory_compliance": "pillar_regulatory_compliance_en", "pillar_regulatory_compliance_en": "pillar_regulatory_compliance",
+    "contact": "contact_en", "contact_en": "contact",
+    "faq": "faq_en", "faq_en": "faq",
+    "securite_conformite": "securite_conformite_en", "securite_conformite_en": "securite_conformite",
+    "mentions_legales": "mentions_legales_en", "mentions_legales_en": "mentions_legales",
+    "confidentialite": "confidentialite_en", "confidentialite_en": "confidentialite",
+    "conditions_utilisation": "conditions_utilisation_en", "conditions_utilisation_en": "conditions_utilisation",
+}
+
+
+@app.before_request
+def _set_lang():
+    g.lang = "en" if request.path == "/en" or request.path.startswith("/en/") else "fr"
+
+
 @app.context_processor
 def inject_user():
-    return {"current_user": current_user(), "status_labels": dbm.STATUS_LABELS}
+    counterpart = LANG_COUNTERPART.get(request.endpoint)
+    lang_switch_url = None
+    if counterpart:
+        try:
+            lang_switch_url = url_for(counterpart)
+        except Exception:
+            lang_switch_url = None
+    return {
+        "current_user": current_user(), "status_labels": dbm.STATUS_LABELS,
+        "lang": getattr(g, "lang", "fr"), "lang_switch_url": lang_switch_url,
+        "site_settings": dbm.get_all_settings(),
+    }
 
 
 EXEMPT_FROM_MFA_ENFORCEMENT = {"mfa_setup_prompt", "logout", "static"}
@@ -109,7 +149,12 @@ def can_view_dossier(user, dossier):
 
 @app.route("/")
 def home():
-    return render_template("marketing/home.html")
+    return render_template("marketing/home.html", corpus_source_types=dbm.CORPUS_SOURCE_TYPES)
+
+
+@app.route("/en/")
+def home_en():
+    return render_template("marketing/en/home.html", corpus_source_types=dbm.CORPUS_SOURCE_TYPES_EN)
 
 
 @app.route("/a-propos")
@@ -117,14 +162,29 @@ def about():
     return render_template("marketing/about.html")
 
 
+@app.route("/en/about")
+def about_en():
+    return render_template("marketing/en/about.html")
+
+
 @app.route("/expertise")
 def expertise():
     return render_template("marketing/expertise.html")
 
 
+@app.route("/en/expertise")
+def expertise_en():
+    return render_template("marketing/en/expertise.html")
+
+
 @app.route("/tarifs")
 def tarifs():
     return render_template("marketing/tarifs.html")
+
+
+@app.route("/en/pricing")
+def tarifs_en():
+    return render_template("marketing/en/tarifs.html")
 
 
 @app.route("/espace-client")
@@ -136,8 +196,7 @@ def espace_client_marketing():
 # Plateforme — les 5 piliers Massey AI
 # ---------------------------------------------------------------------------
 
-@app.route("/legal-intelligence")
-def pillar_legal_intelligence():
+def _legal_intelligence_context():
     q = request.args.get("q", "").strip()
     source_type = request.args.get("source_type", "")
     results = []
@@ -155,14 +214,25 @@ def pillar_legal_intelligence():
         query += " ORDER BY created_at DESC LIMIT 30"
         results = conn.execute(query, params).fetchall()
         conn.close()
-    return render_template(
-        "marketing/pillar_legal.html", q=q, source_type=source_type, results=results,
+    return dict(
+        q=q, source_type=source_type, results=results,
         source_types=dbm.CORPUS_SOURCE_TYPES, searched=bool(q or source_type),
     )
 
 
-@app.route("/contract-intelligence")
-def pillar_contract_intelligence():
+@app.route("/legal-intelligence")
+def pillar_legal_intelligence():
+    return render_template("marketing/pillar_legal.html", **_legal_intelligence_context())
+
+
+@app.route("/en/legal-intelligence")
+def pillar_legal_intelligence_en():
+    ctx = _legal_intelligence_context()
+    ctx["source_types"] = dbm.CORPUS_SOURCE_TYPES_EN
+    return render_template("marketing/en/pillar_legal.html", **ctx)
+
+
+def _contract_intelligence_context():
     conn = dbm.get_db()
     category = request.args.get("category", "")
     query = "SELECT * FROM contract_clauses WHERE 1=1"
@@ -183,15 +253,27 @@ def pillar_contract_intelligence():
             [] if u["role"] in ("expert", "admin") else [u["id"]],
         ).fetchall()
     conn.close()
-    return render_template(
-        "marketing/pillar_contract.html", clauses=clauses, category=category,
+    return dict(
+        clauses=clauses, category=category,
         categories=dbm.CLAUSE_CATEGORIES, risk_labels=dbm.CLAUSE_RISK_LABELS,
         my_documents=my_documents,
     )
 
 
-@app.route("/transaction-intelligence")
-def pillar_transaction_intelligence():
+@app.route("/contract-intelligence")
+def pillar_contract_intelligence():
+    return render_template("marketing/pillar_contract.html", **_contract_intelligence_context())
+
+
+@app.route("/en/contract-intelligence")
+def pillar_contract_intelligence_en():
+    ctx = _contract_intelligence_context()
+    ctx["categories"] = dbm.CLAUSE_CATEGORIES_EN
+    ctx["risk_labels"] = dbm.CLAUSE_RISK_LABELS_EN
+    return render_template("marketing/en/pillar_contract.html", **ctx)
+
+
+def _transaction_intelligence_context():
     u = current_user()
     conn = dbm.get_db()
     by_stage = {key: [] for key, _ in dbm.TRANSACTION_STAGES}
@@ -209,14 +291,25 @@ def pillar_transaction_intelligence():
             stage = dbm.STATUS_TO_STAGE.get(d["status"], "creer")
             by_stage[stage].append(d)
     conn.close()
-    return render_template(
-        "marketing/pillar_transaction.html", stages=dbm.TRANSACTION_STAGES, by_stage=by_stage,
+    return dict(
+        stages=dbm.TRANSACTION_STAGES, by_stage=by_stage,
         logged_in=bool(u), is_staff=bool(u and u["role"] in ("expert", "admin")),
     )
 
 
-@app.route("/tax-intelligence")
-def pillar_tax_intelligence():
+@app.route("/transaction-intelligence")
+def pillar_transaction_intelligence():
+    return render_template("marketing/pillar_transaction.html", **_transaction_intelligence_context())
+
+
+@app.route("/en/transaction-intelligence")
+def pillar_transaction_intelligence_en():
+    ctx = _transaction_intelligence_context()
+    ctx["stages"] = dbm.TRANSACTION_STAGES_EN  # mêmes clés que TRANSACTION_STAGES, libellés EN
+    return render_template("marketing/en/pillar_transaction.html", **ctx)
+
+
+def _tax_intelligence_context():
     u = current_user()
     conn = dbm.get_db()
     obligations = []
@@ -233,14 +326,26 @@ def pillar_tax_intelligence():
                 (u["id"],),
             ).fetchall()
     conn.close()
-    return render_template(
-        "marketing/pillar_tax.html", obligations=obligations, logged_in=bool(u),
+    return dict(
+        obligations=obligations, logged_in=bool(u),
         tax_type_labels=dbm.TAX_TYPE_LABELS, tax_status_labels=dbm.TAX_OBLIGATION_STATUS_LABELS,
     )
 
 
-@app.route("/regulatory-compliance")
-def pillar_regulatory_compliance():
+@app.route("/tax-intelligence")
+def pillar_tax_intelligence():
+    return render_template("marketing/pillar_tax.html", **_tax_intelligence_context())
+
+
+@app.route("/en/tax-intelligence")
+def pillar_tax_intelligence_en():
+    ctx = _tax_intelligence_context()
+    ctx["tax_type_labels"] = dbm.TAX_TYPE_LABELS_EN
+    ctx["tax_status_labels"] = dbm.TAX_STATUS_LABELS_EN
+    return render_template("marketing/en/pillar_tax.html", **ctx)
+
+
+def _regulatory_compliance_context():
     u = current_user()
     conn = dbm.get_db()
     items = []
@@ -257,10 +362,144 @@ def pillar_regulatory_compliance():
                 (u["id"],),
             ).fetchall()
     conn.close()
-    return render_template(
-        "marketing/pillar_compliance.html", items=items, logged_in=bool(u),
+    return dict(
+        items=items, logged_in=bool(u),
         compliance_category_labels=dbm.COMPLIANCE_CATEGORY_LABELS, compliance_status_labels=dbm.COMPLIANCE_STATUS_LABELS,
     )
+
+
+@app.route("/regulatory-compliance")
+def pillar_regulatory_compliance():
+    return render_template("marketing/pillar_compliance.html", **_regulatory_compliance_context())
+
+
+@app.route("/en/regulatory-compliance")
+def pillar_regulatory_compliance_en():
+    ctx = _regulatory_compliance_context()
+    ctx["compliance_category_labels"] = dbm.COMPLIANCE_CATEGORY_LABELS_EN
+    ctx["compliance_status_labels"] = dbm.COMPLIANCE_STATUS_LABELS_EN
+    return render_template("marketing/en/pillar_compliance.html", **ctx)
+
+
+# ---------------------------------------------------------------------------
+# Pages institutionnelles — contact, FAQ, sécurité, mentions légales
+# ---------------------------------------------------------------------------
+
+@app.route("/contact", methods=["GET", "POST"])
+def contact():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        subject = request.form.get("subject", "").strip()
+        message = request.form.get("message", "").strip()
+        if name and email and message:
+            conn = dbm.get_db()
+            conn.execute(
+                "INSERT INTO contact_messages (name, email, subject, message, created_at) VALUES (?,?,?,?,?)",
+                (name, email, subject, message, dbm.now()),
+            )
+            conn.commit()
+            conn.close()
+            dbm.log_activity(None, "contact_message_received", f"{name} <{email}>")
+            flash(
+                "Votre message a été envoyé. Nous vous répondrons dans les meilleurs délais." if g.lang == "fr"
+                else "Your message has been sent. We will get back to you shortly.",
+                "success",
+            )
+            return redirect(url_for("contact_en") if g.lang == "en" else url_for("contact"))
+        flash(
+            "Merci de remplir tous les champs obligatoires." if g.lang == "fr"
+            else "Please fill in all required fields.",
+            "error",
+        )
+    return render_template("marketing/en/contact.html" if g.lang == "en" else "marketing/contact.html")
+
+
+@app.route("/en/contact", methods=["GET", "POST"])
+def contact_en():
+    return contact()
+
+
+@app.route("/faq")
+def faq():
+    return render_template("marketing/faq.html")
+
+
+@app.route("/en/faq")
+def faq_en():
+    return render_template("marketing/en/faq.html")
+
+
+@app.route("/securite-conformite")
+def securite_conformite():
+    return render_template("marketing/securite_conformite.html")
+
+
+@app.route("/en/security")
+def securite_conformite_en():
+    return render_template("marketing/en/securite_conformite.html")
+
+
+@app.route("/mentions-legales")
+def mentions_legales():
+    return render_template("marketing/mentions_legales.html")
+
+
+@app.route("/en/legal-notice")
+def mentions_legales_en():
+    return render_template("marketing/en/mentions_legales.html")
+
+
+@app.route("/confidentialite")
+def confidentialite():
+    return render_template("marketing/confidentialite.html")
+
+
+@app.route("/en/privacy-policy")
+def confidentialite_en():
+    return render_template("marketing/en/confidentialite.html")
+
+
+@app.route("/conditions-utilisation")
+def conditions_utilisation():
+    return render_template("marketing/conditions_utilisation.html")
+
+
+@app.route("/en/terms-of-service")
+def conditions_utilisation_en():
+    return render_template("marketing/en/conditions_utilisation.html")
+
+
+@app.route("/admin/parametres", methods=["GET", "POST"])
+@roles_required("admin")
+def admin_settings():
+    if request.method == "POST":
+        for key, _label in dbm.SITE_SETTINGS_LABELS:
+            dbm.set_setting(key, request.form.get(key, "").strip())
+        flash("Paramètres du site mis à jour.", "success")
+        return redirect(url_for("admin_settings"))
+    return render_template(
+        "admin/settings.html", settings=dbm.get_all_settings(), fields=dbm.SITE_SETTINGS_LABELS,
+    )
+
+
+@app.route("/admin/messages")
+@roles_required("expert", "admin")
+def admin_contact_messages():
+    conn = dbm.get_db()
+    messages = conn.execute("SELECT * FROM contact_messages ORDER BY handled ASC, created_at DESC").fetchall()
+    conn.close()
+    return render_template("admin/contact_messages.html", messages=messages)
+
+
+@app.route("/admin/messages/<int:message_id>/traiter", methods=["POST"])
+@roles_required("expert", "admin")
+def admin_mark_message_handled(message_id):
+    conn = dbm.get_db()
+    conn.execute("UPDATE contact_messages SET handled=1 WHERE id=?", (message_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("admin_contact_messages"))
 
 
 @app.route("/robots.txt")
@@ -283,6 +522,10 @@ def sitemap_xml():
         "/legal-intelligence", "/contract-intelligence", "/transaction-intelligence", "/tax-intelligence", "/regulatory-compliance",
         "/revue", "/revue/articles", "/revue/forum", "/revue/references", "/revue/a-propos",
         "/revue/soumissions", "/revue/abonnement", "/revue/medias",
+        "/contact", "/faq", "/securite-conformite", "/mentions-legales", "/confidentialite", "/conditions-utilisation",
+        "/en/", "/en/about", "/en/expertise", "/en/pricing",
+        "/en/legal-intelligence", "/en/contract-intelligence", "/en/transaction-intelligence", "/en/tax-intelligence", "/en/regulatory-compliance",
+        "/en/contact", "/en/faq", "/en/security", "/en/legal-notice", "/en/privacy-policy", "/en/terms-of-service",
     ]
     root = request.url_root.rstrip("/")
     urls = "".join(f"<url><loc>{root}{p}</loc></url>" for p in pages)
@@ -754,6 +997,78 @@ def mfa_verify():
             return redirect(nxt)
         flash("Code invalide. Réessayez.", "error")
     return render_template("auth/mfa_verify.html")
+
+
+RESET_TOKEN_TTL_MINUTES = 60
+
+
+@app.route("/mot-de-passe-oublie", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        conn = dbm.get_db()
+        user = conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+        reset_url = None
+        if user:
+            token = secrets.token_urlsafe(32)
+            expires_at = (datetime.utcnow() + timedelta(minutes=RESET_TOKEN_TTL_MINUTES)).isoformat(timespec="seconds")
+            conn.execute(
+                "INSERT INTO password_resets (user_id, token, created_at, expires_at) VALUES (?,?,?,?)",
+                (user["id"], token, dbm.now(), expires_at),
+            )
+            conn.commit()
+            reset_url = url_for("reset_password", token=token, _external=True)
+            sent = notifications.send_email(
+                user["email"], "Réinitialisation de votre mot de passe — Massey Contracts & Tax",
+                f"Bonjour {user['full_name']},\n\nVoici votre lien de réinitialisation (valide {RESET_TOKEN_TTL_MINUTES} minutes) :\n{reset_url}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce courriel.",
+            )
+            dbm.log_activity(user["id"], "password_reset_requested", "")
+            if not sent:
+                # Pas de service courriel configuré : on affiche le lien directement,
+                # plutôt que de prétendre qu'un courriel invisible a été envoyé.
+                session["flash_reset_link"] = reset_url
+        conn.close()
+        # Message volontairement identique que le compte existe ou non, pour ne pas
+        # révéler si une adresse courriel est enregistrée sur la plateforme.
+        flash(
+            "Si un compte existe pour cette adresse, un lien de réinitialisation a été généré.",
+            "success",
+        )
+        return redirect(url_for("forgot_password_sent"))
+    return render_template("auth/forgot_password.html")
+
+
+@app.route("/mot-de-passe-oublie/confirmation")
+def forgot_password_sent():
+    reset_link = session.pop("flash_reset_link", None)
+    return render_template("auth/forgot_password_sent.html", reset_link=reset_link)
+
+
+@app.route("/reinitialiser/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    conn = dbm.get_db()
+    row = conn.execute("SELECT * FROM password_resets WHERE token=?", (token,)).fetchone()
+    valid = bool(row) and not row["used"] and row["expires_at"] >= datetime.utcnow().isoformat(timespec="seconds")
+    if request.method == "POST" and valid:
+        password = request.form.get("password", "")
+        confirm = request.form.get("confirm", "")
+        if len(password) < 8:
+            flash("Le mot de passe doit contenir au moins 8 caractères.", "error")
+        elif password != confirm:
+            flash("Les deux mots de passe ne correspondent pas.", "error")
+        else:
+            conn.execute(
+                "UPDATE users SET password_hash=? WHERE id=?",
+                (generate_password_hash(password), row["user_id"]),
+            )
+            conn.execute("UPDATE password_resets SET used=1 WHERE id=?", (row["id"],))
+            conn.commit()
+            dbm.log_activity(row["user_id"], "password_reset_completed", "")
+            conn.close()
+            flash("Mot de passe mis à jour. Vous pouvez maintenant vous connecter.", "success")
+            return redirect(url_for("login"))
+    conn.close()
+    return render_template("auth/reset_password.html", valid=valid)
 
 
 @app.route("/compte/mfa/activer", methods=["GET", "POST"])

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Legal Intelligence — Massey AI{% endblock %}
+{% block meta_description %}Legislative research, Haitian case law and doctrine, with verifiable sources — the Legal Intelligence pillar of Massey AI.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M21 21l-4.8-4.8"/></svg></div>
+  <div class="eyebrow">Massey AI — Pillar 01</div>
+  <h1>Legal Intelligence</h1>
+  <p class="lede">Legal knowledge at your fingertips.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="pillar-feature-card" style="max-width:none;">
+    <h3>What this pillar covers</h3>
+    <ul style="display:grid;grid-template-columns:1fr 1fr;gap:9px 24px;">
+      <li>Legislative and regulatory research</li>
+      <li>Case law and doctrine</li>
+      <li>Document analysis and synthesis</li>
+      <li>Legal watch / monitoring</li>
+      <li>Comparison of statute versions</li>
+      <li>Natural-language search</li>
+      <li>Sourced answers</li>
+      <li>Jurisdiction-based analysis</li>
+    </ul>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Search</div>
+      <h2>Search the Haitian legal corpus</h2>
+      <p>Constitution, codes, decrees, case law and doctrine — results with a citation reference.</p>
+    </div>
+  </div>
+
+  <div class="search-tool reveal">
+    <aside class="search-tool-sidebar">
+      <h5>Source type</h5>
+      <ul>
+        <li><a href="{{ url_for('pillar_legal_intelligence_en', q=q) if q else url_for('pillar_legal_intelligence_en') }}" class="{{ 'active' if not source_type }}">All sources</a></li>
+        {% for key, label in source_types %}
+        <li><a href="{{ url_for('pillar_legal_intelligence_en', q=q, source_type=key) }}" class="{{ 'active' if source_type==key }}">{{ label }}</a></li>
+        {% endfor %}
+      </ul>
+      <h5>Legal foundation</h5>
+      <ul>
+        <li style="padding:7px 10px;color:var(--ink-faint);font-size:0.8rem;">Corpus populated and validated by the Massey team.</li>
+      </ul>
+    </aside>
+    <div class="search-tool-main">
+      <form method="get" class="search-tool-topbar">
+        <input type="hidden" name="source_type" value="{{ source_type }}">
+        <input type="text" name="q" value="{{ q }}" placeholder="Search a word, a reference, a legal concept…">
+        <button type="submit" class="btn btn-primary btn-sm">Search</button>
+      </form>
+
+      {% if searched %}
+        <div class="search-tool-count">{{ results|length }} result{{ 's' if results|length != 1 }}</div>
+        {% if results %}
+          {% for r in results %}
+            <div class="result-row">
+              <div class="meta">{{ source_types|selectattr('0','equalto',r['source_type'])|map(attribute='1')|first or r['source_type'] }}{% if r['citation_reference'] %} — {{ r['citation_reference'] }}{% endif %}</div>
+              <h4>{{ r['title'] }}</h4>
+              <div class="snippet">{{ r['full_text'][:420] }}{% if r['full_text']|length > 420 %}…{% endif %}</div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="helptext" style="margin-top:12px;">No results for this search. The corpus grows continuously — try another term or source.</p>
+        {% endif %}
+      {% else %}
+        <p class="helptext" style="margin-top:20px;">Run a search to query the corpus, or filter by source type in the left panel.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="callout reveal" style="max-width:74ch;margin-top:32px;">
+    AI-generated natural-language answers (with automatic citations) will be enabled in a future phase, once an AI engine is connected. The keyword search above already queries the real corpus today.
+  </div>
+</section>
+{% endblock %}

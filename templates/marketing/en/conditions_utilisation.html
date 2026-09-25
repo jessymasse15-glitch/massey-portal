@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Terms of Service — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Terms of service</div>
+  <h1>Platform terms of service</h1>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="prose" style="max-width:78ch;">
+    <h2>Purpose</h2>
+    <p>These terms govern access to and use of the showcase site and client area of {{ site_settings.company_legal_name or "Massey Contracts & Tax" }}. By creating an account or using the platform, you accept these terms.</p>
+
+    <h2>No automatic engagement</h2>
+    <p>Opening a file through the intake form, booking a call, or creating an account does not, by itself, constitute a professional engagement. A professional engagement arises only from an engagement letter expressly accepted by both parties, specifying the scope of services, fees and applicable terms.</p>
+
+    <h2>Account and security</h2>
+    <p>You are responsible for the confidentiality of your login credentials and for enabling two-factor authentication where required. Any activity carried out from your account is presumed to have been carried out by you, unless fraudulent use is reported without delay.</p>
+
+    <h2>Documents and e-signature</h2>
+    <p>Documents uploaded to the client area are time-stamped and associated with a cryptographic fingerprint. E-signature performed on the platform generates a certificate linking your declared identity, the document's fingerprint, and the technical metadata of the signing session.</p>
+
+    <h2>Payments</h2>
+    <p>Online payments made through the platform are processed by a third-party payment provider. {{ site_settings.company_legal_name or "Massey Contracts & Tax" }} does not store any payment card data on its own servers.</p>
+
+    <h2>Service availability</h2>
+    <p>We use reasonable efforts to ensure the platform's availability, without guaranteeing continuous or error-free availability. Temporary interruptions may occur for maintenance or updates.</p>
+
+    <h2>Limitation of liability</h2>
+    <p>The general information published on the showcase site does not constitute legal or tax advice and cannot engage the liability of {{ site_settings.company_legal_name or "Massey Contracts & Tax" }} outside the scope of a formally accepted professional engagement.</p>
+
+    <h2>Changes to these terms</h2>
+    <p>These terms may be updated. The version in effect is the one published on this page at the time of your use of the service.</p>
+
+    <h2>Contact</h2>
+    <p>For any question about these terms, use our <a href="{{ url_for('contact_en') }}">Contact page</a>.</p>
+  </div>
+  <div class="callout" style="max-width:78ch;margin-top:28px;">
+    This text is a standard template, to be reviewed by legal counsel before final publication.
+  </div>
+</section>
+{% endblock %}

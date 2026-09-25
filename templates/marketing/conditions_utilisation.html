@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Conditions d'utilisation — Massey Contracts & Tax{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Conditions d'utilisation</div>
+  <h1>Conditions d'utilisation de la plateforme</h1>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="prose" style="max-width:78ch;">
+    <h2>Objet</h2>
+    <p>Les présentes conditions régissent l'accès et l'utilisation du site vitrine et de l'espace client de {{ site_settings.company_legal_name or "Massey Contracts & Tax" }}. En créant un compte ou en utilisant la plateforme, vous acceptez ces conditions.</p>
+
+    <h2>Absence de mandat automatique</h2>
+    <p>L'ouverture d'un dossier via le formulaire de prise en charge, la prise de rendez-vous ou la création d'un compte ne constitue pas, à elle seule, un mandat professionnel. Un mandat professionnel naît uniquement d'une lettre de mission expressément acceptée par les deux parties, précisant l'étendue des services, les honoraires et les modalités applicables.</p>
+
+    <h2>Compte et sécurité</h2>
+    <p>Vous êtes responsable de la confidentialité de vos identifiants de connexion et de l'activation de l'authentification à deux facteurs lorsqu'elle est requise. Toute activité effectuée depuis votre compte est présumée effectuée par vous, sauf usage frauduleux signalé sans délai.</p>
+
+    <h2>Documents et signature électronique</h2>
+    <p>Les documents déposés dans l'espace client sont horodatés et associés à une empreinte cryptographique. La signature électronique effectuée sur la plateforme génère un certificat associant votre identité déclarée, l'empreinte du document et les métadonnées techniques de la session de signature.</p>
+
+    <h2>Paiements</h2>
+    <p>Les paiements en ligne effectués via la plateforme sont traités par un prestataire de paiement tiers. {{ site_settings.company_legal_name or "Massey Contracts & Tax" }} ne stocke aucune donnée de carte de paiement sur ses propres serveurs.</p>
+
+    <h2>Disponibilité du service</h2>
+    <p>Nous mettons en œuvre des moyens raisonnables pour assurer la disponibilité de la plateforme, sans garantir une disponibilité continue ou exempte d'erreurs. Des interruptions temporaires peuvent survenir pour maintenance ou mise à jour.</p>
+
+    <h2>Limitation de responsabilité</h2>
+    <p>Les informations générales publiées sur le site vitrine ne constituent pas un avis juridique ou fiscal et ne sauraient engager la responsabilité de {{ site_settings.company_legal_name or "Massey Contracts & Tax" }} en dehors du cadre d'un mandat professionnel formellement accepté.</p>
+
+    <h2>Modification des conditions</h2>
+    <p>Ces conditions peuvent être mises à jour. La version en vigueur est celle publiée sur cette page à la date de votre utilisation du service.</p>
+
+    <h2>Contact</h2>
+    <p>Pour toute question relative aux présentes conditions, utilisez notre <a href="{{ url_for('contact') }}">page Contact</a>.</p>
+  </div>
+  <div class="callout" style="max-width:78ch;margin-top:28px;">
+    Ce texte est un gabarit standard, à faire réviser par un conseiller juridique avant publication définitive.
+  </div>
+</section>
+{% endblock %}

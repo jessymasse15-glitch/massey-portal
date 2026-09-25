@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Tax Intelligence — Massey AI{% endblock %}
+{% block meta_description %}Obligations, deadlines and tax structuring scenarios — the Tax Intelligence pillar of Massey AI.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M18 6L6 18"/></svg></div>
+  <div class="eyebrow">Massey AI — Pillar 04</div>
+  <h1>Tax Intelligence</h1>
+  <p class="lede">Tax under control, growth secured.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="pillar-feature-card" style="max-width:none;">
+    <h3>What this pillar covers</h3>
+    <ul style="display:grid;grid-template-columns:1fr 1fr;gap:9px 24px;">
+      <li>Tax analysis of transactions</li>
+      <li>Tax obligations and deadlines</li>
+      <li>Applicable taxes</li>
+      <li>Structuring scenarios</li>
+      <li>Tax optimization</li>
+      <li>Risks and controls</li>
+      <li>Required documents</li>
+      <li>Legal and regulatory sources</li>
+    </ul>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Tracking</div>
+      <h2>{% if logged_in %}Tracked tax obligations{% else %}Tax tracking built into every file{% endif %}</h2>
+    </div>
+  </div>
+
+  {% if logged_in %}
+    <table>
+      <tr><th>File</th><th>Obligation</th><th>Type</th><th>Due date</th><th>Status</th></tr>
+      {% for o in obligations %}
+      <tr>
+        <td><a href="{{ url_for('portal_dossier', dossier_id=o['dossier_id']) }}">#{{ o['dossier_id'] }} — {{ o['dossier_title'] }}</a></td>
+        <td>{{ o['label'] }}</td>
+        <td>{{ tax_type_labels.get(o['tax_type'], o['tax_type']) }}</td>
+        <td>{{ o['due_date'] or '—' }}</td>
+        <td><span class="status-pill {% if o['status']=='fait' %}done{% elif o['status']=='en_retard' %}{% else %}pending{% endif %}">{{ tax_status_labels.get(o['status'], o['status']) }}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="helptext">No tax obligation tracked yet — they will appear here as soon as a file has one.</td></tr>
+      {% endfor %}
+    </table>
+  {% else %}
+  <div class="cta-banner reveal">
+    <div>
+      <h2>Never miss a tax deadline again</h2>
+      <p>Every file opened with Massey Contracts &amp; Tax includes real tax obligation tracking, with deadlines and status.</p>
+    </div>
+    <div class="ctas">
+      <a href="{{ url_for('login') }}" class="btn btn-primary">Sign in</a>
+      <a href="{{ url_for('register') }}" class="btn btn-ghost">Create an account</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="callout reveal" style="max-width:74ch;margin-top:32px;">
+    Automated tax analysis and AI-based optimization scenarios will be enabled in a future phase. The obligation tracking above is real and maintained file by file by the Massey team.
+  </div>
+</section>
+{% endblock %}

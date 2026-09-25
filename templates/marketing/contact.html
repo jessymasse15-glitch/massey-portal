@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Contact — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Contactez Massey Contracts & Tax pour toute question sur nos services d'ingénierie contractuelle, fiscale et transactionnelle.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Contact</div>
+  <h1>Parlons de votre dossier</h1>
+  <p class="lede">Une question, un mandat à discuter, une demande de partenariat ? Écrivez-nous — nous répondons personnellement à chaque message.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="grid-2">
+    <div class="card">
+      <h3 style="margin-top:0;">Coordonnées</h3>
+      {% if site_settings.contact_email %}<p><b>Courriel :</b> <a href="mailto:{{ site_settings.contact_email }}">{{ site_settings.contact_email }}</a></p>{% endif %}
+      {% if site_settings.phone %}<p><b>Téléphone :</b> {{ site_settings.phone }}</p>{% endif %}
+      {% if site_settings.address %}<p><b>Adresse :</b><br>{{ site_settings.address }}</p>{% endif %}
+      {% if site_settings.support_hours %}<p><b>Disponibilité :</b> {{ site_settings.support_hours }}</p>{% endif %}
+      {% if not (site_settings.contact_email or site_settings.phone or site_settings.address) %}
+        <p class="helptext">Utilisez le formulaire ci-contre — nous vous répondrons directement par courriel.</p>
+      {% endif %}
+      <p class="helptext" style="margin-top:18px;">Pour ouvrir un dossier directement, utilisez plutôt <a href="{{ url_for('intake') }}">le formulaire de prise en charge</a>.</p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Écrivez-nous</h3>
+      <form method="post">
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="name">Nom complet</label>
+            <input type="text" id="name" name="name" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Courriel</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="subject">Sujet</label>
+          <input type="text" id="subject" name="subject" placeholder="Ex. : demande de partenariat, question sur un pack…">
+        </div>
+        <div class="form-group">
+          <label for="message">Message</label>
+          <textarea id="message" name="message" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Envoyer</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}
