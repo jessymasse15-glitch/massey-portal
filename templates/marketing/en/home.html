@@ -2,35 +2,42 @@
 {% block title %}Massey Contracts & Tax — Legal, Contract, Tax and Transaction Engineering LegalTech{% endblock %}
 {% block meta_description %}Massey Contracts & Tax is a LegalTech platform for contract, tax and transaction engineering under Haitian law, powered by Massey AI.{% endblock %}
 {% block content %}
-<section class="hero hero-search">
+<section class="hero hero-convert">
   <div class="hero-search-inner">
-    <div class="eyebrow" style="justify-content:center;display:flex;">Massey AI — Legal research &amp; transactional platform</div>
+    <div class="eyebrow" style="justify-content:center;display:flex;">Massey AI — Legal, contract and tax platform</div>
     <h1>Massey Contracts &amp; Tax</h1>
-    <p class="lede" style="max-width:60ch;margin:0 auto 26px;">Search the Haitian legal corpus, or open a contract, tax or transactional file directly.</p>
+    <p class="lede" style="max-width:62ch;margin:0 auto 10px;">Create an account to access the full suite of Massey AI tools — legal research, contract management, tax tracking and compliance — with a monthly or annual plan.</p>
+    {% if not current_user %}
+    <p class="helptext" style="margin:0 0 30px;">Already have a file open with us? <a href="{{ url_for('login', next=url_for('portal_dashboard')) }}">Sign in to your client area</a>.</p>
+    {% else %}
+    <div style="margin-bottom:30px;"></div>
+    {% endif %}
 
-    <form method="get" action="{{ url_for('pillar_legal_intelligence_en') }}" class="search-box hero-search-box reveal">
-      <input type="text" name="q" placeholder="Search a statute, a concept, a reference…" autofocus>
-      <select name="source_type">
-        <option value="">All sources</option>
-        {% for key, label in corpus_source_types %}
-        <option value="{{ key }}">{{ label }}</option>
-        {% endfor %}
-      </select>
-      <button type="submit" class="btn btn-primary btn-sm">Search</button>
-    </form>
-
-    <div class="hero-quicklinks">
-      <a href="{{ url_for('pillar_legal_intelligence_en') }}">Legal Intelligence</a>
-      <a href="{{ url_for('pillar_contract_intelligence_en') }}">Contract Intelligence</a>
-      <a href="{{ url_for('pillar_transaction_intelligence_en') }}">Transaction Intelligence</a>
-      <a href="{{ url_for('pillar_tax_intelligence_en') }}">Tax Intelligence</a>
-      <a href="{{ url_for('pillar_regulatory_compliance_en') }}">Regulatory &amp; Compliance</a>
+    <div class="hero-plans reveal-stagger">
+      {% for plan_key, plan_label, amount_cents, period in plans %}
+      <div class="hero-plan-card {{ 'featured' if plan_key=='annuel' else '' }}">
+        {% if plan_key == 'annuel' %}<span class="badge">2 months free</span>{% endif %}
+        <h3>{{ plan_label }}</h3>
+        <div class="price">{{ "%.0f"|format(amount_cents/100) }} $ <span>CAD / {{ period }}</span></div>
+        <ul>
+          {% for feat in features[:4] %}<li>{{ feat }}</li>{% endfor %}
+        </ul>
+        {% if current_user %}
+          {% if active_membership and active_membership['billing_cycle']==plan_key %}
+            <span class="status-pill done" style="width:100%;justify-content:center;">Active plan</span>
+          {% else %}
+            <form method="POST" action="{{ url_for('membership_new') }}">
+              <input type="hidden" name="cycle" value="{{ plan_key }}">
+              <button type="submit" class="btn {{ 'btn-primary' if plan_key=='annuel' else 'btn-ghost' }}" style="width:100%;justify-content:center;">Choose this plan</button>
+            </form>
+          {% endif %}
+        {% else %}
+          <a href="{{ url_for('register', next=url_for('membership_en')) }}" class="btn {{ 'btn-primary' if plan_key=='annuel' else 'btn-ghost' }}" style="width:100%;justify-content:center;">Create an account</a>
+        {% endif %}
+      </div>
+      {% endfor %}
     </div>
-
-    <div class="ctas" style="justify-content:center;margin-top:26px;">
-      <a href="{{ url_for('intake') }}" class="btn btn-primary">Open a file</a>
-      {% if current_user %}<a href="{{ url_for('portal_dashboard') }}" class="btn btn-ghost">My client area</a>{% else %}<a href="{{ url_for('register') }}" class="btn btn-ghost">Create an account</a>{% endif %}
-    </div>
+    <p class="helptext" style="margin-top:18px;"><a href="{{ url_for('membership_en') }}">See full plan details and everything included →</a></p>
   </div>
 
   <div class="statbar reveal">

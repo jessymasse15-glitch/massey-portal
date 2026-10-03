@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Créer un compte — Massey Contracts & Tax{% endblock %}
 {% block content %}
-<h1>Créer un compte client</h1>
+<h1>Créer un compte</h1>
+{% if next %}
+<p class="helptext" style="max-width:420px;">Votre compte créé, vous serez redirigé pour choisir votre formule d'abonnement.</p>
+{% endif %}
 <form method="post" class="card" style="max-width:420px;">
   <div class="form-group">
     <label for="full_name">Nom complet</label>
@@ -17,5 +20,5 @@
   </div>
   <button type="submit" class="btn btn-primary">Créer mon compte</button>
 </form>
-<p class="helptext">Déjà un compte ? <a href="{{ url_for('login') }}">Connectez-vous</a>.</p>
+<p class="helptext">Déjà un compte ? <a href="{{ url_for('login', next=next) if next else url_for('login') }}">Connectez-vous</a>.</p>
 {% endblock %}

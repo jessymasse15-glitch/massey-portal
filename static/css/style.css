@@ -186,6 +186,20 @@ th{color:var(--ink-faint);font-weight:500;font-size:0.74rem;text-transform:upper
 .hero-quicklinks a{font-family:var(--mono);font-size:0.72rem;letter-spacing:0.03em;color:var(--ink-soft);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:6px 14px;transition:border-color .2s ease, color .2s ease;}
 .hero-quicklinks a:hover{border-color:var(--gold);color:var(--gold);}
 
+.hero-convert{text-align:center;}
+.hero-convert h1{font-size:clamp(2rem,3.6vw,2.8rem);max-width:none;margin:10px 0 12px;}
+.hero-plans{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:680px;margin:0 auto;text-align:left;}
+.hero-plan-card{position:relative;border:1px solid var(--line-strong);border-radius:var(--radius);padding:24px 22px;background:var(--surface);display:flex;flex-direction:column;}
+.hero-plan-card.featured{border-color:var(--gold);box-shadow:var(--shadow-gold);background:linear-gradient(180deg, rgba(var(--gold-rgb),0.07), var(--surface));}
+.hero-plan-card .badge{position:absolute;top:-11px;right:20px;font-family:var(--mono);font-size:0.62rem;letter-spacing:0.07em;text-transform:uppercase;color:var(--gold);border:1px solid var(--gold);border-radius:20px;padding:2px 9px;background:var(--surface);}
+.hero-plan-card h3{margin:0 0 2px;font-size:1rem;}
+.hero-plan-card .price{font-family:var(--serif);font-size:1.5rem;color:var(--gold);margin:4px 0 14px;}
+.hero-plan-card .price span{font-family:var(--sans);font-size:0.72rem;color:var(--ink-faint);}
+.hero-plan-card ul{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:7px;flex:1;}
+.hero-plan-card ul li{font-size:0.8rem;color:var(--ink-soft);padding-left:18px;position:relative;line-height:1.35;}
+.hero-plan-card ul li::before{content:"✓";position:absolute;left:0;color:var(--good);font-weight:700;}
+@media (max-width:640px){.hero-plans{grid-template-columns:1fr;}}
+
 .statbar{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-top:56px;backdrop-filter:blur(6px);}
 .statbar .stat{padding:22px 22px;border-left:1px solid var(--line);background:rgba(255,255,255,0.7);transition:background .25s ease;}
 .statbar .stat:hover{background:rgba(var(--gold-rgb),0.06);}

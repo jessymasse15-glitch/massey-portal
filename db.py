@@ -199,6 +199,53 @@ REVIEW_PLANS = [
 REVIEW_PLAN_LABELS = {p[0]: p[1] for p in REVIEW_PLANS}
 
 # -----------------------------------------------------------------------
+# Abonnement plateforme (accès complet aux 5 piliers Massey AI)
+#
+# Montants indicatifs (placeholders) à ajuster selon la tarification réelle
+# souhaitée — formule annuelle = 10 mois au prix mensuel (2 mois offerts).
+# -----------------------------------------------------------------------
+
+MEMBERSHIP_PLANS = [
+    # clé, libellé, montant en cents, unité de période
+    ("mensuel", "Mensuel", 4900, "mois"),
+    ("annuel", "Annuel", 49000, "an"),
+]
+MEMBERSHIP_PLAN_LABELS = {p[0]: p[1] for p in MEMBERSHIP_PLANS}
+
+MEMBERSHIP_PLANS_EN = [
+    ("mensuel", "Monthly", 4900, "month"),
+    ("annuel", "Annual", 49000, "year"),
+]
+
+MEMBERSHIP_FEATURES = [
+    "Recherche illimitée dans le corpus juridique haïtien (Legal Intelligence)",
+    "Bibliothèque de clauses, négociation et comparaison de versions de contrats (Contract Intelligence)",
+    "Suivi de dossier transactionnel en temps réel (Transaction Intelligence)",
+    "Alertes et échéances fiscales personnalisées (Tax Intelligence)",
+    "Checklist de conformité réglementaire AML / KYC (Regulatory & Compliance)",
+    "Espace client sécurisé, messagerie, signature électronique",
+    "Authentification à deux facteurs disponible sur votre compte",
+]
+
+MEMBERSHIP_FEATURES_EN = [
+    "Unlimited search of the Haitian legal corpus (Legal Intelligence)",
+    "Clause library, negotiation and contract version comparison (Contract Intelligence)",
+    "Real-time transaction file tracking (Transaction Intelligence)",
+    "Personalized tax alerts and deadlines (Tax Intelligence)",
+    "AML / KYC regulatory compliance checklist (Regulatory & Compliance)",
+    "Secure client area, messaging, e-signature",
+    "Two-factor authentication available on your account",
+]
+
+
+def get_active_membership(conn, user_id):
+    return conn.execute(
+        "SELECT * FROM memberships WHERE user_id=? AND status='paid' ORDER BY paid_at DESC LIMIT 1",
+        (user_id,),
+    ).fetchone()
+
+
+# -----------------------------------------------------------------------
 # Corpus juridique (fondation de l'assistant de recherche IA — phase 0)
 # -----------------------------------------------------------------------
 
@@ -308,6 +355,16 @@ CREATE TABLE IF NOT EXISTS password_resets (
     created_at TEXT NOT NULL,
     expires_at TEXT NOT NULL,
     used INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS memberships (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    billing_cycle TEXT NOT NULL DEFAULT 'mensuel',
+    status TEXT NOT NULL DEFAULT 'pending',
+    provider_session_id TEXT,
+    created_at TEXT NOT NULL,
+    paid_at TEXT
 );
 """
 

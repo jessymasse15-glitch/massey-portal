@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Membership — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Create an account and choose a monthly or annual plan for full access to the Massey AI platform.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Membership</div>
+  <h1>Full access to Massey AI</h1>
+  <p class="lede">One plan, two billing rhythms — monthly or annual. Membership gives you access to all five pillars of the platform for as long as your account is active.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  {% if active %}
+    <div class="callout" style="max-width:74ch;border-left-color:var(--good);">
+      You're already a member — {{ plans|selectattr('0','equalto',active['billing_cycle'])|map(attribute='1')|first }} plan. Thank you for your trust.
+    </div>
+  {% endif %}
+
+  <div class="grid-2" style="margin-top:24px;">
+    {% for plan_key, plan_label, amount_cents, period in plans %}
+      <div class="plan-card {{ 'current' if active and active['billing_cycle']==plan_key else '' }}" style="position:relative;">
+        {% if plan_key == 'annuel' %}<span style="position:absolute;top:-12px;right:24px;font-family:var(--mono);font-size:0.66rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);border:1px solid var(--gold);border-radius:20px;padding:3px 10px;background:var(--surface);">2 months free</span>{% endif %}
+        <h3 style="margin-top:0;">{{ plan_label }}</h3>
+        <div class="price">{{ "%.0f"|format(amount_cents/100) }} $ <span>CAD / {{ period }}</span></div>
+        <ul style="color:var(--ink-soft);font-size:0.9rem;margin:0 0 20px;padding-left:18px;display:grid;gap:6px;">
+          {% for feat in features %}<li>{{ feat }}</li>{% endfor %}
+        </ul>
+        {% if current_user %}
+          {% if active and active['billing_cycle']==plan_key %}
+            <span class="status-pill done">Active plan</span>
+          {% else %}
+            <form method="POST" action="{{ url_for('membership_new') }}">
+              <input type="hidden" name="cycle" value="{{ plan_key }}">
+              <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Subscribe</button>
+            </form>
+          {% endif %}
+        {% else %}
+          <a href="{{ url_for('register', next=url_for('membership_en')) }}" class="btn btn-primary" style="width:100%;justify-content:center;">Create an account</a>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <p class="helptext" style="margin-top:24px;">Payment is processed securely via Stripe. No card information is stored on our servers. You can cancel at any time.</p>
+
+  {% if not current_user %}
+  <p class="helptext" style="margin-top:8px;">Already have an account? <a href="{{ url_for('login', next=url_for('membership_en')) }}">Sign in</a>.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -55,6 +55,13 @@ def current_user():
     return g._user
 
 
+def _safe_next(nxt):
+    """N'autorise qu'une redirection relative interne (évite les open-redirects)."""
+    if not nxt or not nxt.startswith("/") or nxt.startswith("//"):
+        return None
+    return nxt
+
+
 # Correspondance entre une page française et son équivalent anglais (et
 # inversement), utilisée pour construire le lien du sélecteur de langue dans
 # l'en-tête. Seules les pages vitrines/publiques ont un équivalent anglais à
@@ -64,6 +71,7 @@ LANG_COUNTERPART = {
     "about": "about_en", "about_en": "about",
     "expertise": "expertise_en", "expertise_en": "expertise",
     "tarifs": "tarifs_en", "tarifs_en": "tarifs",
+    "membership": "membership_en", "membership_en": "membership",
     "pillar_legal_intelligence": "pillar_legal_intelligence_en", "pillar_legal_intelligence_en": "pillar_legal_intelligence",
     "pillar_contract_intelligence": "pillar_contract_intelligence_en", "pillar_contract_intelligence_en": "pillar_contract_intelligence",
     "pillar_transaction_intelligence": "pillar_transaction_intelligence_en", "pillar_transaction_intelligence_en": "pillar_transaction_intelligence",
@@ -149,12 +157,30 @@ def can_view_dossier(user, dossier):
 
 @app.route("/")
 def home():
-    return render_template("marketing/home.html", corpus_source_types=dbm.CORPUS_SOURCE_TYPES)
+    u = current_user()
+    active_membership = None
+    if u:
+        conn = dbm.get_db()
+        active_membership = dbm.get_active_membership(conn, u["id"])
+        conn.close()
+    return render_template(
+        "marketing/home.html", corpus_source_types=dbm.CORPUS_SOURCE_TYPES,
+        plans=dbm.MEMBERSHIP_PLANS, features=dbm.MEMBERSHIP_FEATURES, active_membership=active_membership,
+    )
 
 
 @app.route("/en/")
 def home_en():
-    return render_template("marketing/en/home.html", corpus_source_types=dbm.CORPUS_SOURCE_TYPES_EN)
+    u = current_user()
+    active_membership = None
+    if u:
+        conn = dbm.get_db()
+        active_membership = dbm.get_active_membership(conn, u["id"])
+        conn.close()
+    return render_template(
+        "marketing/en/home.html", corpus_source_types=dbm.CORPUS_SOURCE_TYPES_EN,
+        plans=dbm.MEMBERSHIP_PLANS_EN, features=dbm.MEMBERSHIP_FEATURES_EN, active_membership=active_membership,
+    )
 
 
 @app.route("/a-propos")
@@ -190,6 +216,100 @@ def tarifs_en():
 @app.route("/espace-client")
 def espace_client_marketing():
     return render_template("marketing/espace_client.html")
+
+
+@app.route("/abonnement")
+def membership():
+    u = current_user()
+    active = None
+    if u:
+        conn = dbm.get_db()
+        active = dbm.get_active_membership(conn, u["id"])
+        conn.close()
+    return render_template(
+        "marketing/abonnement.html", plans=dbm.MEMBERSHIP_PLANS,
+        features=dbm.MEMBERSHIP_FEATURES, active=active,
+    )
+
+
+@app.route("/en/membership")
+def membership_en():
+    u = current_user()
+    active = None
+    if u:
+        conn = dbm.get_db()
+        active = dbm.get_active_membership(conn, u["id"])
+        conn.close()
+    return render_template(
+        "marketing/en/abonnement.html", plans=dbm.MEMBERSHIP_PLANS_EN,
+        features=dbm.MEMBERSHIP_FEATURES_EN, active=active,
+    )
+
+
+@app.route("/abonnement/nouveau", methods=["POST"])
+@login_required
+def membership_new():
+    u = current_user()
+    cycle = request.form.get("cycle", "mensuel")
+    plan_info = dict((p[0], p) for p in dbm.MEMBERSHIP_PLANS).get(cycle)
+    if not plan_info:
+        flash("Formule invalide.", "error")
+        return redirect(url_for("membership"))
+    _, plan_label, amount_cents, _period = plan_info
+
+    conn = dbm.get_db()
+    cur = conn.execute(
+        "INSERT INTO memberships (user_id, billing_cycle, status, created_at) VALUES (?,?,?,?)",
+        (u["id"], cycle, "pending", dbm.now()),
+    )
+    membership_id = cur.lastrowid
+    conn.commit()
+
+    if not payments.is_configured():
+        conn.close()
+        flash("Le paiement en ligne n'est pas encore configuré (clés Stripe manquantes).", "error")
+        return redirect(url_for("membership"))
+
+    try:
+        success_url = url_for("membership_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}"
+        cancel_url = url_for("membership_cancel", membership_id=membership_id, _external=True)
+        checkout = payments.create_checkout_session(
+            amount_cents=amount_cents, currency="cad",
+            description=f"Abonnement Massey AI — {plan_label}",
+            success_url=success_url, cancel_url=cancel_url,
+            client_email=u["email"],
+            metadata={"membership_id": membership_id},
+        )
+        conn.execute("UPDATE memberships SET provider_session_id=? WHERE id=?", (checkout["id"], membership_id))
+        conn.commit()
+        conn.close()
+        return redirect(checkout["url"])
+    except (payments.PaymentNotConfigured, payments.PaymentProviderError) as exc:
+        conn.execute("UPDATE memberships SET status='failed' WHERE id=?", (membership_id,))
+        conn.commit()
+        conn.close()
+        flash(str(exc), "error")
+        return redirect(url_for("membership"))
+
+
+@app.route("/abonnement/succes")
+@login_required
+def membership_success():
+    flash("Paiement en cours de confirmation — votre abonnement sera activé sous peu.", "success")
+    return redirect(url_for("membership"))
+
+
+@app.route("/abonnement/annule")
+@login_required
+def membership_cancel():
+    membership_id = request.args.get("membership_id")
+    if membership_id:
+        conn = dbm.get_db()
+        conn.execute("UPDATE memberships SET status='cancelled' WHERE id=?", (membership_id,))
+        conn.commit()
+        conn.close()
+    flash("Abonnement annulé.", "error")
+    return redirect(url_for("membership"))
 
 
 # ---------------------------------------------------------------------------
@@ -1149,19 +1269,20 @@ def mfa_disable():
 
 @app.route("/inscription", methods=["GET", "POST"])
 def register():
+    next_url = _safe_next(request.values.get("next", ""))
     if request.method == "POST":
         full_name = request.form.get("full_name", "").strip()
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         if len(password) < 8:
             flash("Le mot de passe doit contenir au moins 8 caractères.", "error")
-            return render_template("auth/register.html", form=request.form)
+            return render_template("auth/register.html", form=request.form, next=next_url)
         conn = dbm.get_db()
         existing = conn.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()
         if existing:
             conn.close()
             flash("Un compte existe déjà avec ce courriel.", "error")
-            return render_template("auth/register.html", form=request.form)
+            return render_template("auth/register.html", form=request.form, next=next_url)
         cur = conn.execute(
             "INSERT INTO users (email, password_hash, full_name, role, created_at) VALUES (?,?,?,?,?)",
             (email, generate_password_hash(password), full_name, "client", dbm.now()),
@@ -1172,8 +1293,8 @@ def register():
         session.clear()
         session["user_id"] = user_id
         dbm.log_activity(user_id, "register", "")
-        return redirect(url_for("portal_dashboard"))
-    return render_template("auth/register.html", form={})
+        return redirect(next_url or url_for("portal_dashboard"))
+    return render_template("auth/register.html", form={}, next=next_url)
 
 
 @app.route("/deconnexion")
@@ -1932,6 +2053,17 @@ def stripe_webhook():
                 )
                 conn.commit()
                 dbm.log_activity(sub["user_id"], "revue_subscription_confirmed", f"subscription #{sub['id']}")
+            else:
+                membership_row = conn.execute(
+                    "SELECT * FROM memberships WHERE provider_session_id=?", (session_id,)
+                ).fetchone()
+                if membership_row and membership_row["status"] != "paid":
+                    conn.execute(
+                        "UPDATE memberships SET status='paid', paid_at=? WHERE id=?",
+                        (dbm.now(), membership_row["id"]),
+                    )
+                    conn.commit()
+                    dbm.log_activity(membership_row["user_id"], "membership_confirmed", f"membership #{membership_row['id']}")
         conn.close()
     return {"received": True}, 200
 
