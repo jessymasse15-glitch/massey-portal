@@ -51,7 +51,7 @@
     <div class="wrap">
       <nav class="links">
         <div class="nav-dropdown">
-          <span>{% if lang=='en' %}Platform ▾{% else %}Plateforme ▾{% endif %}</span>
+          <span>{% if lang=='en' %}Platform{% else %}Plateforme{% endif %}</span>
           <div class="dropdown-panel">
             {% if lang=='en' %}
             <a href="{{ url_for('pillar_legal_intelligence_en') }}"><b>Legal Intelligence</b><small>Research, case law, doctrine</small></a>
@@ -86,7 +86,7 @@
         {% endif %}
         {% if current_user and current_user['role'] in ('expert','admin') %}
         <div class="nav-dropdown">
-          <span>{% if lang=='en' %}Administration ▾{% else %}Administration ▾{% endif %}</span>
+          <span>Administration</span>
           <div class="dropdown-panel">
             <a href="{{ url_for('admin_revue_articles') }}"><b>{% if lang=='en' %}Review (admin){% else %}Revue (admin){% endif %}</b></a>
             <a href="{{ url_for('admin_corpus_list') }}"><b>{% if lang=='en' %}Legal corpus{% else %}Corpus juridique{% endif %}</b></a>
