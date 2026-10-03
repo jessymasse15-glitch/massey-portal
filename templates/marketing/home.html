@@ -3,16 +3,37 @@
 {% block meta_description %}Massey Contracts & Tax est une LegalTech d'ingénierie juridique, contractuelle, fiscale et transactionnelle sous droit haïtien, propulsée par Massey AI.{% endblock %}
 {% block content %}
 <section class="hero reveal">
-  <div class="eyebrow">Massey AI — Ingénierie juridique, contractuelle et fiscale</div>
-  <h1>Le droit des affaires haïtien, sécurisé et outillé.</h1>
-  <p class="lede">Massey Contracts &amp; Tax combine des avocats d'affaires et une plateforme d'intelligence juridique, Massey AI, pour sécuriser vos contrats, vos transactions et votre fiscalité — que vous préfériez nous confier le dossier ou garder la main sur les outils.</p>
-  <div class="ctas">
-    <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
-    {% if current_user %}
-      <a href="{{ url_for('produits') }}" class="btn btn-ghost">Explorer les produits</a>
-    {% else %}
-      <a href="{{ url_for('register', next=url_for('membership')) }}" class="btn btn-ghost">Essayer gratuitement</a>
-    {% endif %}
+  <div class="hero-grid">
+    <div>
+      <div class="eyebrow">Massey AI — Ingénierie juridique, contractuelle et fiscale</div>
+      <h1>Le droit des affaires haïtien, sécurisé et outillé.</h1>
+      <p class="lede">Massey Contracts &amp; Tax combine des avocats d'affaires et une plateforme d'intelligence juridique, Massey AI, pour sécuriser vos contrats, vos transactions et votre fiscalité — que vous préfériez nous confier le dossier ou garder la main sur les outils.</p>
+      <div class="ctas">
+        <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
+        {% if current_user %}
+          <a href="{{ url_for('produits') }}" class="btn btn-ghost">Explorer les produits</a>
+        {% else %}
+          <a href="{{ url_for('register', next=url_for('membership')) }}" class="btn btn-ghost">Essayer gratuitement</a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="mock-panel">
+        <div class="mock-panel-bar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="label">Contract Intelligence — analyse de clause</span>
+        </div>
+        <div class="mock-panel-body">
+          <div class="mock-eyebrow">Clause détectée — Limitation de responsabilité</div>
+          <div class="mock-clause">« La responsabilité totale du Prestataire, toutes causes confondues, ne pourra excéder le montant des sommes versées au cours des trois (3) mois précédant l'événement. »</div>
+          <div class="mock-row">
+            <span class="mock-badge risk-medium">Risque : moyen</span>
+            <span class="mock-cite">Réf. Code civil haïtien, art. 1168</span>
+          </div>
+          <div class="mock-suggestion"><b>Suggestion :</b> plafond jugé bas pour un contrat de cette valeur — envisager un palier distinct pour la faute lourde.</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="statbar reveal" style="margin-top:40px;">
@@ -20,6 +41,44 @@
     <div class="stat"><b>2FA</b><span>Sur les comptes internes</span></div>
     <div class="stat"><b>SHA-256</b><span>Empreinte de chaque document</span></div>
     <div class="stat"><b>24&#8202;/&#8202;7</b><span>Suivi de dossier en ligne</span></div>
+  </div>
+</section>
+
+<section class="block" id="confiance">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Qui est derrière Massey</div>
+      <h2>Fondée par un avocat, construite comme un produit</h2>
+      <p>Pas d'anonymat ni de promesses vagues : voici qui conçoit la plateforme, et ce à quoi nous nous engageons pour chaque dossier.</p>
+    </div>
+  </div>
+
+  <div class="founder-card reveal">
+    <div class="founder-avatar">JM</div>
+    <div>
+      <h3>Jessy J. Massé</h3>
+      <p class="founder-title">Avocat au Barreau de Port-au-Prince &amp; Legal engineer</p>
+      <p class="bio">Diplômé en droit et titulaire d'une maîtrise en diplomatie et coopération internationale, Jessy poursuit actuellement une maîtrise en droit des affaires à l'Université Laval. Il a conçu Massey AI pour mettre une expertise juridique haïtienne réelle au service des entreprises — que celles-ci préfèrent nous confier leur dossier ou utiliser directement la plateforme.</p>
+    </div>
+  </div>
+
+  <div class="grid-2 reveal-stagger" style="margin-top:20px;">
+    <div class="pillar-card">
+      <h3>Réponse personnelle, jamais un gabarit</h3>
+      <p>Chaque message reçu par le formulaire de contact ou de prise en charge est lu et répondu personnellement.</p>
+    </div>
+    <div class="pillar-card">
+      <h3>Mandat écrit avant toute intervention</h3>
+      <p>Aucun travail ne débute sans lettre de mission acceptée, qui fixe la portée exacte et le prix à l'avance.</p>
+    </div>
+    <div class="pillar-card">
+      <h3>Confidentialité par cloisonnement</h3>
+      <p>Chaque dossier est isolé : un client ne voit que ses propres dossiers, un accès est toujours vérifié, jamais supposé.</p>
+    </div>
+    <div class="pillar-card">
+      <h3>Tarification transparente</h3>
+      <p>La portée et le prix d'un mandat sont présentés avant tout engagement — voir le détail sur la page Services.</p>
+    </div>
   </div>
 </section>
 
@@ -65,6 +124,30 @@
         {% endif %}
         <a href="{{ url_for('produits') }}" class="btn btn-ghost">Découvrir les produits</a>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="pourquoi">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Différence</div>
+      <h2>Pourquoi Massey, et pas autre chose</h2>
+      <p>Ni un cabinet classique, ni un outil d'IA générique importé d'ailleurs.</p>
+    </div>
+  </div>
+  <div class="grid-3 reveal-stagger">
+    <div class="pillar-card">
+      <h3>Le droit haïtien, pas un outil générique</h3>
+      <p>Massey AI est construit sur le socle juridique, fiscal et réglementaire haïtien — pas une IA généraliste adaptée après coup à un marché qu'elle ne connaît pas.</p>
+    </div>
+    <div class="pillar-card">
+      <h3>Conçu par un avocat, pas seulement par des développeurs</h3>
+      <p>La plateforme est pensée par quelqu'un qui pratique le droit des affaires, pour refléter la façon dont un dossier se construit réellement.</p>
+    </div>
+    <div class="pillar-card">
+      <h3>Vous arbitrez votre niveau d'implication</h3>
+      <p>Contrairement à un cabinet qui exige de tout déléguer, ou un logiciel qui vous laisse seul, vous choisissez dossier par dossier.</p>
     </div>
   </div>
 </section>
@@ -158,6 +241,19 @@
   </div>
 </section>
 
+{% if latest_article %}
+<section class="block">
+  <div class="review-teaser reveal">
+    <div>
+      <div class="eyebrow">Massey Law Review{% if latest_article['issue_label'] %} — {{ latest_article['issue_label'] }}{% endif %}</div>
+      <h3>{{ latest_article['title'] }}</h3>
+      {% if latest_article['abstract'] %}<p>{{ latest_article['abstract'] }}</p>{% endif %}
+    </div>
+    <a href="{{ url_for('revue_article_detail', slug=latest_article['slug']) }}" class="btn btn-ghost btn-sm">Lire l'article</a>
+  </div>
+</section>
+{% endif %}
+
 <section class="block" id="gouvernance">
   <div class="block-head reveal">
     <div>
@@ -177,11 +273,12 @@
   <div class="cta-banner reveal">
     <div>
       <h2>Le droit, la technologie et votre succès.</h2>
-      <p>Confiez-nous votre dossier, ou créez un compte gratuit pour essayer la plateforme Massey AI par vous-même.</p>
+      <p>Confiez-nous votre dossier, créez un compte gratuit, ou discutons d'abord de votre situation.</p>
     </div>
     <div class="ctas">
       <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
       <a href="{{ url_for('services') }}" class="btn btn-ghost">Voir les services</a>
+      <a href="{{ url_for('contact') }}" class="btn btn-ghost">Discuter de votre projet</a>
     </div>
   </div>
 </section>

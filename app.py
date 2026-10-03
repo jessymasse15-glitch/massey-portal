@@ -196,14 +196,23 @@ def can_view_dossier(user, dossier):
 # Marketing / public pages
 # ---------------------------------------------------------------------------
 
+def _latest_review_article():
+    conn = dbm.get_db()
+    article = conn.execute(
+        "SELECT * FROM review_articles WHERE published=1 ORDER BY published_at DESC LIMIT 1"
+    ).fetchone()
+    conn.close()
+    return article
+
+
 @app.route("/")
 def home():
-    return render_template("marketing/home.html")
+    return render_template("marketing/home.html", latest_article=_latest_review_article())
 
 
 @app.route("/en/")
 def home_en():
-    return render_template("marketing/en/home.html")
+    return render_template("marketing/en/home.html", latest_article=_latest_review_article())
 
 
 @app.route("/a-propos")
