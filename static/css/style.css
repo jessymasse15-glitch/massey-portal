@@ -148,6 +148,13 @@ th{color:var(--ink-faint);font-weight:500;font-size:0.74rem;text-transform:upper
 .tag{font-family:var(--mono);font-size:0.72rem;color:var(--gold);}
 .helptext{font-size:0.78rem;color:var(--ink-faint);margin-top:4px;}
 .callout{background:var(--surface);border-left:3px solid var(--steel);padding:16px 20px;font-size:0.86rem;color:var(--ink-soft);margin:20px 0;border-radius:var(--radius-sm);}
+.upsell-banner{background:linear-gradient(175deg, rgba(var(--gold-rgb),0.09), var(--surface));border:1px solid rgba(var(--gold-rgb),0.35);padding:18px 20px;font-size:0.86rem;color:var(--ink-soft);margin:18px 0;border-radius:var(--radius-sm);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;}
+.upsell-banner p{margin:0;max-width:52ch;}
+.upsell-banner b{color:var(--ink);}
+.upsell-banner .ctas{margin:0;flex-wrap:nowrap;}
+.locked-row{position:relative;padding:14px 16px;border-radius:var(--radius-sm);background:var(--surface);border:1px dashed var(--line-strong);text-align:center;color:var(--ink-faint);font-size:0.82rem;margin-top:10px;}
+.tier-pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:0.68rem;letter-spacing:0.04em;text-transform:uppercase;padding:3px 10px;border-radius:99px;border:1px solid var(--line-strong);color:var(--ink-faint);}
+.tier-pill.premium{color:var(--gold);border-color:rgba(var(--gold-rgb),0.45);}
 
 /* -------------------------------------------------- ambient glow orbs -------------------------------------------------- */
 .glow-orb{position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none;z-index:-1;opacity:0.5;animation:drift 22s ease-in-out infinite alternate;}

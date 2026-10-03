@@ -219,28 +219,68 @@ MEMBERSHIP_PLANS_EN = [
 
 MEMBERSHIP_FEATURES = [
     "Recherche illimitée dans le corpus juridique haïtien (Legal Intelligence)",
-    "Bibliothèque de clauses, négociation et comparaison de versions de contrats (Contract Intelligence)",
+    "Bibliothèque de clauses complète, négociation et comparaison de versions de contrats (Contract Intelligence)",
     "Suivi de dossier transactionnel en temps réel (Transaction Intelligence)",
     "Alertes et échéances fiscales personnalisées (Tax Intelligence)",
     "Checklist de conformité réglementaire AML / KYC (Regulatory & Compliance)",
+    "Accès complet à Massey Law Review — tous les articles et numéros en ligne et en PDF",
     "Espace client sécurisé, messagerie, signature électronique",
     "Authentification à deux facteurs disponible sur votre compte",
 ]
 
 MEMBERSHIP_FEATURES_EN = [
     "Unlimited search of the Haitian legal corpus (Legal Intelligence)",
-    "Clause library, negotiation and contract version comparison (Contract Intelligence)",
+    "Full clause library, negotiation and contract version comparison (Contract Intelligence)",
     "Real-time transaction file tracking (Transaction Intelligence)",
     "Personalized tax alerts and deadlines (Tax Intelligence)",
     "AML / KYC regulatory compliance checklist (Regulatory & Compliance)",
+    "Full access to Massey Law Review — every article and issue, online and in PDF",
     "Secure client area, messaging, e-signature",
     "Two-factor authentication available on your account",
 ]
+
+# Formule gratuite — créée automatiquement à l'inscription (aucun paiement).
+# Donne un accès de base, volontairement limité, à chaque pilier, et incite
+# à l'abonnement Premium pour un accès complet (voir FEATURE_LIMITS ci-dessous).
+FREE_PLAN_LABEL = "Gratuit"
+FREE_PLAN_LABEL_EN = "Free"
+
+FREE_PLAN_FEATURES = [
+    "Recherche limitée dans le corpus juridique (aperçu des résultats)",
+    "Aperçu de la bibliothèque de clauses contractuelles (titres et niveau de risque)",
+    "Ouverture d'un dossier client, sur devis selon le service demandé",
+    "Résumés des articles de Massey Law Review (aperçu, sans le texte intégral)",
+]
+
+FREE_PLAN_FEATURES_EN = [
+    "Limited search of the legal corpus (preview of results)",
+    "Preview of the contract clause library (titles and risk level)",
+    "Open a client file, quoted according to the service requested",
+    "Massey Law Review article summaries (preview only, not the full text)",
+]
+
+# Nombre maximal de résultats renvoyés par les outils d'essai des piliers
+# Legal Intelligence et Contract Intelligence, selon le palier d'accès.
+SEARCH_RESULT_LIMITS = {"anonymous": 3, "free": 12, "premium": 50}
+CLAUSE_RESULT_LIMITS = {"anonymous": 4, "free": 15, "premium": 500}
 
 
 def get_active_membership(conn, user_id):
     return conn.execute(
         "SELECT * FROM memberships WHERE user_id=? AND status='paid' ORDER BY paid_at DESC LIMIT 1",
+        (user_id,),
+    ).fetchone()
+
+
+def is_premium_membership(membership):
+    """Vrai si la ligne memberships correspond à une formule payante active (mensuelle ou annuelle)."""
+    return bool(membership) and membership["billing_cycle"] in ("mensuel", "annuel")
+
+
+def get_active_review_subscription(conn, user_id):
+    """Abonnement Massey Law Review autonome (historique), distinct de l'abonnement plateforme."""
+    return conn.execute(
+        "SELECT * FROM review_subscriptions WHERE user_id=? AND status='paid' ORDER BY paid_at DESC LIMIT 1",
         (user_id,),
     ).fetchone()
 

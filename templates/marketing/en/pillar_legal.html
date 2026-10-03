@@ -56,7 +56,7 @@
       </form>
 
       {% if searched %}
-        <div class="search-tool-count">{{ results|length }} result{{ 's' if results|length != 1 }}</div>
+        <div class="search-tool-count">{{ results|length }} result{{ 's' if results|length != 1 }}{% if tier != 'premium' and more_available %} <span style="color:var(--ink-faint);font-weight:400;">(limited preview — {{ 'Free' if tier=='free' else 'visitor' }})</span>{% endif %}</div>
         {% if results %}
           {% for r in results %}
             <div class="result-row">
@@ -67,6 +67,22 @@
           {% endfor %}
         {% else %}
           <p class="helptext" style="margin-top:12px;">No results for this search. The corpus grows continuously — try another term or source.</p>
+        {% endif %}
+        {% if more_available %}
+          <div class="upsell-banner reveal">
+            {% if tier == 'anonymous' %}
+              <p><b>More results exist for this search.</b> Create a free account to see more results, or subscribe to Premium for unlimited search.</p>
+              <div class="ctas">
+                <a href="{{ url_for('register', next=request.full_path) }}" class="btn btn-primary btn-sm">Create a free account</a>
+                <a href="{{ url_for('membership_en') }}" class="btn btn-ghost btn-sm">See Premium</a>
+              </div>
+            {% else %}
+              <p><b>More results exist for this search.</b> The Free plan limits the preview — upgrade to Premium for unlimited corpus search.</p>
+              <div class="ctas">
+                <a href="{{ url_for('membership_en') }}" class="btn btn-primary btn-sm">Upgrade to Premium</a>
+              </div>
+            {% endif %}
+          </div>
         {% endif %}
       {% else %}
         <p class="helptext" style="margin-top:20px;">Run a search to query the corpus, or filter by source type in the left panel.</p>

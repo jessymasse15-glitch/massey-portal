@@ -15,14 +15,24 @@
     {% if article['abstract'] %}
       <div class="callout" style="max-width:74ch;">{{ article['abstract'] }}</div>
     {% endif %}
-    <div style="margin-top:28px;">
-      {{ article['body_html']|safe }}
-    </div>
+    {% if has_access %}
+      <div style="margin-top:28px;">
+        {{ article['body_html']|safe }}
+      </div>
+    {% else %}
+      <div class="upsell-banner reveal" style="margin-top:28px;max-width:74ch;">
+        <p><b>Texte intégral réservé aux abonnés.</b> L'accès complet à Massey Law Review est inclus dans l'abonnement Premium Massey AI (avec les 5 piliers), ou disponible séparément via l'abonnement Lecteur/Institution de la revue.</p>
+        <div class="ctas">
+          <a href="{{ url_for('membership') }}" class="btn btn-primary btn-sm">Voir Premium</a>
+          <a href="{{ url_for('revue_subscription') }}" class="btn btn-ghost btn-sm">Abonnement Revue seule</a>
+        </div>
+      </div>
+    {% endif %}
   </div>
 
   {% if article['pdf_stored_name'] %}
     <div class="ctas" style="margin-top:24px;">
-      <a href="{{ url_for('revue_article_pdf', slug=article['slug']) }}" class="btn btn-ghost">Télécharger le PDF</a>
+      <a href="{{ url_for('revue_article_pdf', slug=article['slug']) }}" class="btn btn-ghost">Télécharger le PDF{% if not has_access %} (abonnés){% endif %}</a>
     </div>
   {% endif %}
 

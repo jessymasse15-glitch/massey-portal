@@ -4,38 +4,62 @@
 {% block content %}
 <section class="page-hero reveal">
   <div class="eyebrow">Membership</div>
-  <h1>Full access to Massey AI</h1>
-  <p class="lede">One plan, two billing rhythms — monthly or annual. Membership gives you access to all five pillars of the platform for as long as your account is active.</p>
+  <h1>A free account to start, Premium to unlock everything</h1>
+  <p class="lede">Creating an account is free and gives basic access to every Massey AI pillar. The Premium plan (monthly or annual) removes every limit and adds full access to Massey Law Review.</p>
 </section>
 
 <section class="block" style="border-top:none;padding-top:0;">
-  {% if active %}
+  {% if active and active['billing_cycle']=='gratuit' %}
+    <div class="callout" style="max-width:74ch;">
+      You're currently on the <b>Free</b> plan. Upgrade to Premium below for unlimited access.
+    </div>
+  {% elif active %}
     <div class="callout" style="max-width:74ch;border-left-color:var(--good);">
       You're already a member — {{ plans|selectattr('0','equalto',active['billing_cycle'])|map(attribute='1')|first }} plan. Thank you for your trust.
     </div>
   {% endif %}
 
-  <div class="grid-2" style="margin-top:24px;">
+  <div class="grid-3" style="margin-top:24px;align-items:stretch;">
+    <div class="plan-card {{ 'current' if active and active['billing_cycle']=='gratuit' else '' }}" style="position:relative;display:flex;flex-direction:column;">
+      <h3 style="margin-top:0;">Free</h3>
+      <div class="price">$0 <span>forever</span></div>
+      <ul style="color:var(--ink-soft);font-size:0.9rem;margin:0 0 20px;padding-left:18px;display:grid;gap:6px;">
+        {% for feat in free_features %}<li>{{ feat }}</li>{% endfor %}
+      </ul>
+      <div style="margin-top:auto;">
+        {% if current_user %}
+          {% if active and active['billing_cycle']=='gratuit' %}
+            <span class="status-pill done">Active plan</span>
+          {% else %}
+            <span class="helptext">Included automatically on sign-up.</span>
+          {% endif %}
+        {% else %}
+          <a href="{{ url_for('register', next=url_for('membership_en')) }}" class="btn btn-ghost" style="width:100%;justify-content:center;">Create a free account</a>
+        {% endif %}
+      </div>
+    </div>
     {% for plan_key, plan_label, amount_cents, period in plans %}
-      <div class="plan-card {{ 'current' if active and active['billing_cycle']==plan_key else '' }}" style="position:relative;">
+      <div class="plan-card {{ 'current' if active and active['billing_cycle']==plan_key else '' }}" style="position:relative;display:flex;flex-direction:column;">
         {% if plan_key == 'annuel' %}<span style="position:absolute;top:-12px;right:24px;font-family:var(--mono);font-size:0.66rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);border:1px solid var(--gold);border-radius:20px;padding:3px 10px;background:var(--surface);">2 months free</span>{% endif %}
         <h3 style="margin-top:0;">{{ plan_label }}</h3>
         <div class="price">{{ "%.0f"|format(amount_cents/100) }} $ <span>CAD / {{ period }}</span></div>
         <ul style="color:var(--ink-soft);font-size:0.9rem;margin:0 0 20px;padding-left:18px;display:grid;gap:6px;">
           {% for feat in features %}<li>{{ feat }}</li>{% endfor %}
         </ul>
-        {% if current_user %}
-          {% if active and active['billing_cycle']==plan_key %}
-            <span class="status-pill done">Active plan</span>
+        <div style="margin-top:auto;">
+          {% if current_user %}
+            {% if active and active['billing_cycle']==plan_key %}
+              <span class="status-pill done">Active plan</span>
+            {% else %}
+              <form method="POST" action="{{ url_for('membership_new') }}">
+                <input type="hidden" name="cycle" value="{{ plan_key }}">
+                <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Subscribe</button>
+              </form>
+            {% endif %}
           {% else %}
-            <form method="POST" action="{{ url_for('membership_new') }}">
-              <input type="hidden" name="cycle" value="{{ plan_key }}">
-              <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Subscribe</button>
-            </form>
+            <a href="{{ url_for('register', next=url_for('membership_en')) }}" class="btn btn-primary" style="width:100%;justify-content:center;">Create an account</a>
           {% endif %}
-        {% else %}
-          <a href="{{ url_for('register', next=url_for('membership_en')) }}" class="btn btn-primary" style="width:100%;justify-content:center;">Create an account</a>
-        {% endif %}
+        </div>
       </div>
     {% endfor %}
   </div>

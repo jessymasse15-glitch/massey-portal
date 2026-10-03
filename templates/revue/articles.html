@@ -8,6 +8,17 @@
   <p class="lede">Les textes publiés par la revue. Chaque titre ouvre la version web intégrale ; le lien PDF permet le téléchargement.</p>
 </section>
 
+{% if not is_premium %}
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="upsell-banner reveal">
+    <p><b>Texte intégral et PDF réservés aux abonnés.</b> Inclus dans l'abonnement Premium Massey AI, ou disponible séparément via l'abonnement Massey Law Review.</p>
+    <div class="ctas">
+      <a href="{{ url_for('membership') }}" class="btn btn-primary btn-sm">Voir Premium</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
 {% include "revue/_subnav.html" %}
 
 <section class="block" style="border-top:none;padding-top:0;">

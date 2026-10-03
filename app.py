@@ -62,6 +62,41 @@ def _safe_next(nxt):
     return nxt
 
 
+def _access_info(u):
+    """Palier d'accès de l'utilisateur courant : anonymous / free / premium.
+
+    Mis en cache sur g pour éviter une requête supplémentaire par appel —
+    utilisé à la fois par le context processor global (bannières, nav) et
+    par les piliers qui limitent leurs outils d'essai selon le palier.
+    """
+    if u is None:
+        return {"tier": "anonymous", "membership": None, "is_premium": False}
+    if not hasattr(g, "_access_info"):
+        conn = dbm.get_db()
+        membership = dbm.get_active_membership(conn, u["id"])
+        conn.close()
+        is_premium = dbm.is_premium_membership(membership)
+        g._access_info = {
+            "tier": "premium" if is_premium else "free",
+            "membership": membership,
+            "is_premium": is_premium,
+        }
+    return g._access_info
+
+
+def _has_review_access(u):
+    """Accès à l'intégralité de Massey Law Review : abonnement plateforme Premium,
+    ou abonnement autonome à la revue (ancien système, conservé pour compatibilité)."""
+    if u is None:
+        return False
+    if _access_info(u)["is_premium"]:
+        return True
+    conn = dbm.get_db()
+    sub = dbm.get_active_review_subscription(conn, u["id"])
+    conn.close()
+    return bool(sub)
+
+
 # Correspondance entre une page française et son équivalent anglais (et
 # inversement), utilisée pour construire le lien du sélecteur de langue dans
 # l'en-tête. Seules les pages vitrines/publiques ont un équivalent anglais à
@@ -100,10 +135,14 @@ def inject_user():
             lang_switch_url = url_for(counterpart)
         except Exception:
             lang_switch_url = None
+    u = current_user()
+    access = _access_info(u)
     return {
-        "current_user": current_user(), "status_labels": dbm.STATUS_LABELS,
+        "current_user": u, "status_labels": dbm.STATUS_LABELS,
         "lang": getattr(g, "lang", "fr"), "lang_switch_url": lang_switch_url,
         "site_settings": dbm.get_all_settings(),
+        "access_tier": access["tier"], "is_premium": access["is_premium"],
+        "active_membership": access["membership"],
     }
 
 
@@ -157,29 +196,19 @@ def can_view_dossier(user, dossier):
 
 @app.route("/")
 def home():
-    u = current_user()
-    active_membership = None
-    if u:
-        conn = dbm.get_db()
-        active_membership = dbm.get_active_membership(conn, u["id"])
-        conn.close()
     return render_template(
         "marketing/home.html", corpus_source_types=dbm.CORPUS_SOURCE_TYPES,
-        plans=dbm.MEMBERSHIP_PLANS, features=dbm.MEMBERSHIP_FEATURES, active_membership=active_membership,
+        plans=dbm.MEMBERSHIP_PLANS, features=dbm.MEMBERSHIP_FEATURES,
+        free_features=dbm.FREE_PLAN_FEATURES,
     )
 
 
 @app.route("/en/")
 def home_en():
-    u = current_user()
-    active_membership = None
-    if u:
-        conn = dbm.get_db()
-        active_membership = dbm.get_active_membership(conn, u["id"])
-        conn.close()
     return render_template(
         "marketing/en/home.html", corpus_source_types=dbm.CORPUS_SOURCE_TYPES_EN,
-        plans=dbm.MEMBERSHIP_PLANS_EN, features=dbm.MEMBERSHIP_FEATURES_EN, active_membership=active_membership,
+        plans=dbm.MEMBERSHIP_PLANS_EN, features=dbm.MEMBERSHIP_FEATURES_EN,
+        free_features=dbm.FREE_PLAN_FEATURES_EN,
     )
 
 
@@ -220,29 +249,19 @@ def espace_client_marketing():
 
 @app.route("/abonnement")
 def membership():
-    u = current_user()
-    active = None
-    if u:
-        conn = dbm.get_db()
-        active = dbm.get_active_membership(conn, u["id"])
-        conn.close()
+    active = _access_info(current_user())["membership"]
     return render_template(
         "marketing/abonnement.html", plans=dbm.MEMBERSHIP_PLANS,
-        features=dbm.MEMBERSHIP_FEATURES, active=active,
+        features=dbm.MEMBERSHIP_FEATURES, free_features=dbm.FREE_PLAN_FEATURES, active=active,
     )
 
 
 @app.route("/en/membership")
 def membership_en():
-    u = current_user()
-    active = None
-    if u:
-        conn = dbm.get_db()
-        active = dbm.get_active_membership(conn, u["id"])
-        conn.close()
+    active = _access_info(current_user())["membership"]
     return render_template(
         "marketing/en/abonnement.html", plans=dbm.MEMBERSHIP_PLANS_EN,
-        features=dbm.MEMBERSHIP_FEATURES_EN, active=active,
+        features=dbm.MEMBERSHIP_FEATURES_EN, free_features=dbm.FREE_PLAN_FEATURES_EN, active=active,
     )
 
 
@@ -320,6 +339,9 @@ def _legal_intelligence_context():
     q = request.args.get("q", "").strip()
     source_type = request.args.get("source_type", "")
     results = []
+    tier = _access_info(current_user())["tier"]
+    cap = dbm.SEARCH_RESULT_LIMITS[tier]
+    total_found = 0
     if q or source_type:
         conn = dbm.get_db()
         query = "SELECT * FROM legal_corpus_documents WHERE 1=1"
@@ -331,12 +353,15 @@ def _legal_intelligence_context():
         if source_type:
             query += " AND source_type=?"
             params.append(source_type)
-        query += " ORDER BY created_at DESC LIMIT 30"
-        results = conn.execute(query, params).fetchall()
+        query += " ORDER BY created_at DESC LIMIT 50"
+        all_results = conn.execute(query, params).fetchall()
         conn.close()
+        total_found = len(all_results)
+        results = all_results[:cap]
     return dict(
         q=q, source_type=source_type, results=results,
         source_types=dbm.CORPUS_SOURCE_TYPES, searched=bool(q or source_type),
+        tier=tier, more_available=total_found > cap,
     )
 
 
@@ -361,9 +386,12 @@ def _contract_intelligence_context():
         query += " AND category=?"
         params.append(category)
     query += " ORDER BY created_at ASC"
-    clauses = conn.execute(query, params).fetchall()
-    my_documents = []
+    all_clauses = conn.execute(query, params).fetchall()
     u = current_user()
+    tier = _access_info(u)["tier"]
+    cap = dbm.CLAUSE_RESULT_LIMITS[tier]
+    clauses = all_clauses[:cap]
+    my_documents = []
     if u:
         my_documents = conn.execute(
             "SELECT doc.*, d.title AS dossier_title, d.id AS dossier_id FROM documents doc "
@@ -376,7 +404,7 @@ def _contract_intelligence_context():
     return dict(
         clauses=clauses, category=category,
         categories=dbm.CLAUSE_CATEGORIES, risk_labels=dbm.CLAUSE_RISK_LABELS,
-        my_documents=my_documents,
+        my_documents=my_documents, tier=tier, more_available=len(all_clauses) > cap,
     )
 
 
@@ -716,7 +744,8 @@ def revue_article_detail(slug):
     conn.close()
     if article is None:
         abort(404)
-    return render_template("revue/article_detail.html", article=article)
+    has_access = _has_review_access(current_user())
+    return render_template("revue/article_detail.html", article=article, has_access=has_access)
 
 
 @app.route("/revue/articles/<slug>/pdf")
@@ -728,6 +757,9 @@ def revue_article_pdf(slug):
     conn.close()
     if article is None or not article["pdf_stored_name"]:
         abort(404)
+    if not _has_review_access(current_user()):
+        flash("Le PDF intégral est réservé aux abonnés Premium Massey AI ou à la Revue — créez un compte ou abonnez-vous pour le télécharger.", "error")
+        return redirect(url_for("revue_article_detail", slug=slug))
     return send_from_directory(
         os.path.join(UPLOAD_DIR, "revue", "articles"), article["pdf_stored_name"],
         as_attachment=True, download_name=article["pdf_original_name"] or f"{slug}.pdf",
@@ -1287,12 +1319,19 @@ def register():
             "INSERT INTO users (email, password_hash, full_name, role, created_at) VALUES (?,?,?,?,?)",
             (email, generate_password_hash(password), full_name, "client", dbm.now()),
         )
-        conn.commit()
         user_id = cur.lastrowid
+        # Abonnement gratuit souscrit automatiquement — accès de base immédiat,
+        # sans paiement ; l'utilisateur peut passer à une formule Premium à tout moment.
+        conn.execute(
+            "INSERT INTO memberships (user_id, billing_cycle, status, created_at, paid_at) VALUES (?,?,?,?,?)",
+            (user_id, "gratuit", "paid", dbm.now(), dbm.now()),
+        )
+        conn.commit()
         conn.close()
         session.clear()
         session["user_id"] = user_id
         dbm.log_activity(user_id, "register", "")
+        dbm.log_activity(user_id, "membership_free_start", "")
         return redirect(next_url or url_for("portal_dashboard"))
     return render_template("auth/register.html", form={}, next=next_url)
 

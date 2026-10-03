@@ -6,9 +6,11 @@
   <div class="hero-search-inner">
     <div class="eyebrow" style="justify-content:center;display:flex;">Massey AI — Legal, contract and tax platform</div>
     <h1>Massey Contracts &amp; Tax</h1>
-    <p class="lede" style="max-width:62ch;margin:0 auto 10px;">Create an account to access the full suite of Massey AI tools — legal research, contract management, tax tracking and compliance — with a monthly or annual plan.</p>
+    <p class="lede" style="max-width:62ch;margin:0 auto 10px;">Create a free account to try the Massey AI tools — legal research, clause library and more — then upgrade to Premium for full access to all five pillars and Massey Law Review.</p>
     {% if not current_user %}
     <p class="helptext" style="margin:0 0 30px;">Already have a file open with us? <a href="{{ url_for('login', next=url_for('portal_dashboard')) }}">Sign in to your client area</a>.</p>
+    {% elif access_tier == 'free' %}
+    <p class="helptext" style="margin:0 0 30px;">You're on the <b>Free</b> plan — upgrade to Premium below to remove every limit.</p>
     {% else %}
     <div style="margin-bottom:30px;"></div>
     {% endif %}

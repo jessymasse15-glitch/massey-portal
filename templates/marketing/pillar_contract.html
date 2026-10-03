@@ -48,19 +48,39 @@
       </ul>
     </aside>
     <div class="search-tool-main">
-      <div class="search-tool-count">{{ clauses|length }} clause{{ 's' if clauses|length != 1 }}</div>
+      <div class="search-tool-count">{{ clauses|length }} clause{{ 's' if clauses|length != 1 }}{% if tier != 'premium' and more_available %} <span style="color:var(--ink-faint);font-weight:400;">(aperçu limité — {{ 'Gratuit' if tier=='free' else 'visiteur' }})</span>{% endif %}</div>
       {% for c in clauses %}
         <div class="clause-card reveal">
           <div class="head">
             <h4>{{ c['title'] }}</h4>
             <span class="status-pill {% if c['risk_level']=='standard' %}done{% elif c['risk_level']=='sensible' %}{% endif %}">{{ risk_labels.get(c['risk_level'], c['risk_level']) }}</span>
           </div>
-          <div class="body-text">{{ c['body_text'] }}</div>
-          {% if c['guidance'] %}<div class="guidance">{{ c['guidance'] }}</div>{% endif %}
+          {% if tier == 'anonymous' %}
+            <div class="locked-row">Texte intégral de la clause réservé aux comptes enregistrés — <a href="{{ url_for('register', next=request.full_path) }}">créez un compte gratuit</a> pour le consulter.</div>
+          {% else %}
+            <div class="body-text">{{ c['body_text'] }}</div>
+            {% if c['guidance'] %}<div class="guidance">{{ c['guidance'] }}</div>{% endif %}
+          {% endif %}
         </div>
       {% else %}
         <p class="helptext">Aucune clause dans cette catégorie pour l'instant.</p>
       {% endfor %}
+      {% if more_available %}
+        <div class="upsell-banner reveal">
+          {% if tier == 'anonymous' %}
+            <p><b>La bibliothèque contient d'autres clauses.</b> Créez un compte gratuit pour en consulter davantage, ou abonnez-vous à Premium pour un accès complet et illimité.</p>
+            <div class="ctas">
+              <a href="{{ url_for('register', next=request.full_path) }}" class="btn btn-primary btn-sm">Créer un compte gratuit</a>
+              <a href="{{ url_for('membership') }}" class="btn btn-ghost btn-sm">Voir Premium</a>
+            </div>
+          {% else %}
+            <p><b>La bibliothèque contient d'autres clauses.</b> La formule Gratuite limite l'aperçu — passez à Premium pour la bibliothèque complète.</p>
+            <div class="ctas">
+              <a href="{{ url_for('membership') }}" class="btn btn-primary btn-sm">Passer à Premium</a>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
     </div>
   </div>
 </section>

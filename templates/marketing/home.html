@@ -6,9 +6,11 @@
   <div class="hero-search-inner">
     <div class="eyebrow" style="justify-content:center;display:flex;">Massey AI — Plateforme juridique, contractuelle et fiscale</div>
     <h1>Massey Contracts &amp; Tax</h1>
-    <p class="lede" style="max-width:62ch;margin:0 auto 10px;">Créez un compte pour accéder à l'ensemble des outils Massey AI — recherche juridique, gestion contractuelle, suivi fiscal et conformité — avec une formule mensuelle ou annuelle.</p>
+    <p class="lede" style="max-width:62ch;margin:0 auto 10px;">Créez un compte gratuit pour essayer les outils Massey AI — recherche juridique, bibliothèque de clauses et plus — puis passez à Premium pour un accès complet aux cinq piliers et à Massey Law Review.</p>
     {% if not current_user %}
     <p class="helptext" style="margin:0 0 30px;">Vous avez déjà un dossier en cours ? <a href="{{ url_for('login', next=url_for('portal_dashboard')) }}">Connectez-vous à votre espace client</a>.</p>
+    {% elif access_tier == 'free' %}
+    <p class="helptext" style="margin:0 0 30px;">Vous êtes sur la formule <b>Gratuite</b> — passez à Premium ci-dessous pour retirer toutes les limites.</p>
     {% else %}
     <div style="margin-bottom:30px;"></div>
     {% endif %}

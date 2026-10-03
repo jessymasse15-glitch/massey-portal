@@ -48,19 +48,39 @@
       </ul>
     </aside>
     <div class="search-tool-main">
-      <div class="search-tool-count">{{ clauses|length }} clause{{ 's' if clauses|length != 1 }}</div>
+      <div class="search-tool-count">{{ clauses|length }} clause{{ 's' if clauses|length != 1 }}{% if tier != 'premium' and more_available %} <span style="color:var(--ink-faint);font-weight:400;">(limited preview — {{ 'Free' if tier=='free' else 'visitor' }})</span>{% endif %}</div>
       {% for c in clauses %}
         <div class="clause-card reveal">
           <div class="head">
             <h4>{{ c['title'] }}</h4>
             <span class="status-pill {% if c['risk_level']=='standard' %}done{% elif c['risk_level']=='sensible' %}{% endif %}">{{ risk_labels.get(c['risk_level'], c['risk_level']) }}</span>
           </div>
-          <div class="body-text">{{ c['body_text'] }}</div>
-          {% if c['guidance'] %}<div class="guidance">{{ c['guidance'] }}</div>{% endif %}
+          {% if tier == 'anonymous' %}
+            <div class="locked-row">Full clause text is reserved for registered accounts — <a href="{{ url_for('register', next=request.full_path) }}">create a free account</a> to read it.</div>
+          {% else %}
+            <div class="body-text">{{ c['body_text'] }}</div>
+            {% if c['guidance'] %}<div class="guidance">{{ c['guidance'] }}</div>{% endif %}
+          {% endif %}
         </div>
       {% else %}
         <p class="helptext">No clauses in this category yet.</p>
       {% endfor %}
+      {% if more_available %}
+        <div class="upsell-banner reveal">
+          {% if tier == 'anonymous' %}
+            <p><b>The library has more clauses.</b> Create a free account to see more, or subscribe to Premium for full, unlimited access.</p>
+            <div class="ctas">
+              <a href="{{ url_for('register', next=request.full_path) }}" class="btn btn-primary btn-sm">Create a free account</a>
+              <a href="{{ url_for('membership_en') }}" class="btn btn-ghost btn-sm">See Premium</a>
+            </div>
+          {% else %}
+            <p><b>The library has more clauses.</b> The Free plan limits the preview — upgrade to Premium for the full library.</p>
+            <div class="ctas">
+              <a href="{{ url_for('membership_en') }}" class="btn btn-primary btn-sm">Upgrade to Premium</a>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
     </div>
   </div>
 </section>

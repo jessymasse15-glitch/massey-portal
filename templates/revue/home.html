@@ -7,6 +7,17 @@
   <h1>Une revue juridique au service de la pratique des affaires</h1>
 </section>
 
+{% if not is_premium %}
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="upsell-banner reveal">
+    <p><b>Massey Law Review est incluse dans l'abonnement Premium Massey AI.</b> Les visiteurs et comptes gratuits peuvent lire les résumés ; le texte intégral et le PDF de chaque article sont réservés aux abonnés.</p>
+    <div class="ctas">
+      <a href="{{ url_for('membership') }}" class="btn btn-primary btn-sm">Découvrir Premium</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
 {% include "revue/_subnav.html" %}
 
 <section class="block" style="border-top:none;padding-top:0;">

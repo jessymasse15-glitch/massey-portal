@@ -3,7 +3,9 @@
 {% block content %}
 <h1>Créer un compte</h1>
 {% if next %}
-<p class="helptext" style="max-width:420px;">Votre compte créé, vous serez redirigé pour choisir votre formule d'abonnement.</p>
+<p class="helptext" style="max-width:420px;">Votre compte créé, vous serez redirigé vers la page demandée. Un accès gratuit de base est activé automatiquement — vous pourrez passer à Premium à tout moment.</p>
+{% else %}
+<p class="helptext" style="max-width:420px;">Un accès gratuit de base est activé automatiquement à la création du compte — vous pourrez passer à Premium à tout moment pour un accès complet.</p>
 {% endif %}
 <form method="post" class="card" style="max-width:420px;">
   <div class="form-group">
