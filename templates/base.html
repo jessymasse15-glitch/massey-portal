@@ -32,7 +32,7 @@
 <header class="site">
   <div class="wrap header-top">
     <a href="{{ url_for('home_en') if lang=='en' else url_for('home') }}" class="brand" style="text-decoration:none;">
-      <span class="mark">M</span>
+      <span class="mark"><img src="{{ url_for('static', filename='img/favicon-192.png') }}" alt="Massey Contracts &amp; Tax" width="192" height="192"></span>
       <span class="brand-text">
         <span class="brand-title">Massey Contracts &amp; Tax</span>
         <small class="brand-sub">{% if lang=='en' %}Legal &amp; Tax Engineering{% else %}Ingénierie juridique &amp; Fiscale{% endif %}</small>
