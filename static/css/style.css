@@ -172,8 +172,8 @@ th{color:var(--ink-faint);font-weight:500;font-size:0.74rem;text-transform:upper
 .hero{padding:64px 0 40px;position:relative;overflow:hidden;}
 .hero::after{
   content:"";position:absolute;inset:0;top:0;height:100%;pointer-events:none;z-index:-1;
-  background-image:linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
-  background-size:56px 56px; mask-image:radial-gradient(ellipse 70% 60% at 50% 0%, black, transparent 85%); opacity:0.5;
+  background-image:linear-gradient(var(--line-strong) 1px, transparent 1px), linear-gradient(90deg, var(--line-strong) 1px, transparent 1px);
+  background-size:56px 56px; mask-image:radial-gradient(ellipse 70% 60% at 50% 0%, black, transparent 85%); opacity:0.75;
 }
 .hero-grid{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:40px;align-items:center;}
 .hero h1{font-size:clamp(2.4rem,4.4vw,3.5rem);line-height:1.06;margin:0 0 18px;max-width:17ch;}
@@ -184,13 +184,26 @@ th{color:var(--ink-faint);font-weight:500;font-size:0.74rem;text-transform:upper
 .hero-art svg{width:100%;height:100%;overflow:visible;}
 @media (max-width:980px){.hero-grid{grid-template-columns:1fr;} .hero-art{display:none;}}
 
-/* Aperçu produit dans le hero — mockup statique illustrant une sortie réelle de
-   Contract Intelligence (extrait de clause + analyse de risque), pas une capture
-   d'écran littérale : évite toute confusion avec une interface qui changera. */
+/* Aperçu produit dans le hero — mockups statiques illustrant des sorties réelles
+   de Massey AI (clause, échéance fiscale, recherche juridique), pas une capture
+   d'écran littérale : évite toute confusion avec une interface qui changera.
+   Les trois panneaux sont empilés et défilent en continu par un fondu CSS pur
+   (aucun JS requis), au rythme d'un panneau toutes les 6 secondes. */
 .hero-visual{position:relative;}
 .hero-visual::before{
   content:"";position:absolute;inset:-18px -14px auto auto;top:-18px;right:-14px;width:120px;height:120px;
   background:radial-gradient(circle, rgba(var(--gold-rgb),0.14), transparent 70%);pointer-events:none;
+}
+.mock-stack{position:relative;min-height:326px;}
+.mock-panel.cycle{position:absolute;top:0;left:0;right:0;width:100%;opacity:0;animation:mockCycle 18s infinite;}
+@keyframes mockCycle{
+  0%{opacity:0;transform:rotate(-1.2deg) translateY(10px);}
+  4%,29%{opacity:1;transform:rotate(-1.2deg) translateY(0);}
+  34%,100%{opacity:0;transform:rotate(-1.2deg) translateY(-10px);}
+}
+@media (prefers-reduced-motion: reduce){
+  .mock-panel.cycle{animation:none;opacity:0;}
+  .mock-panel.cycle:first-child{opacity:1;}
 }
 .mock-panel{position:relative;border:1px solid var(--line-strong);border-radius:14px;background:var(--surface);box-shadow:var(--shadow-md);overflow:hidden;transform:rotate(-1.2deg);}
 .mock-panel-bar{display:flex;align-items:center;gap:6px;padding:12px 16px;background:linear-gradient(165deg, var(--navy), var(--navy-2));}
@@ -257,8 +270,8 @@ th{color:var(--ink-faint);font-weight:500;font-size:0.74rem;text-transform:upper
 .page-hero{padding:64px 0 40px;position:relative;}
 .page-hero::after{
   content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;
-  background-image:linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
-  background-size:64px 64px; mask-image:linear-gradient(180deg, black, transparent 75%); opacity:0.4;
+  background-image:linear-gradient(var(--line-strong) 1px, transparent 1px), linear-gradient(90deg, var(--line-strong) 1px, transparent 1px);
+  background-size:64px 64px; mask-image:linear-gradient(180deg, black, transparent 75%); opacity:0.65;
 }
 .page-hero h1{font-size:clamp(1.9rem,3.4vw,2.6rem);margin:0 0 12px;}
 .page-hero .lede{color:var(--ink-soft);font-size:1.02rem;max-width:64ch;}
@@ -330,8 +343,8 @@ section.block{padding:64px 0;border-top:1px solid var(--line);position:relative;
   display:flex;align-items:center;justify-content:space-between;gap:28px;flex-wrap:wrap;}
 .cta-banner::before{
   content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
-  background-image:linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
-  background-size:48px 48px; mask-image:radial-gradient(ellipse 80% 100% at 50% 0%, black, transparent 80%); opacity:0.5;
+  background-image:linear-gradient(var(--line-strong) 1px, transparent 1px), linear-gradient(90deg, var(--line-strong) 1px, transparent 1px);
+  background-size:48px 48px; mask-image:radial-gradient(ellipse 80% 100% at 50% 0%, black, transparent 80%); opacity:0.65;
 }
 .cta-banner > *{position:relative;z-index:1;}
 .cta-banner h2{margin:0 0 8px;font-size:1.6rem;max-width:26ch;}

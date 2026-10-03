@@ -18,19 +18,51 @@
       </div>
     </div>
     <div class="hero-visual">
-      <div class="mock-panel">
-        <div class="mock-panel-bar">
-          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-          <span class="label">Contract Intelligence — clause analysis</span>
-        </div>
-        <div class="mock-panel-body">
-          <div class="mock-eyebrow">Clause detected — Limitation of liability</div>
-          <div class="mock-clause">"The Provider's total liability, on any grounds, shall not exceed the amounts paid over the three (3) months preceding the event."</div>
-          <div class="mock-row">
-            <span class="mock-badge risk-medium">Risk: medium</span>
-            <span class="mock-cite">Ref. Haitian Civil Code, art. 1168</span>
+      <div class="mock-stack">
+        <div class="mock-panel cycle" style="animation-delay:-0s;">
+          <div class="mock-panel-bar">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <span class="label">Contract Intelligence — clause analysis</span>
           </div>
-          <div class="mock-suggestion"><b>Suggestion:</b> cap looks low for a contract of this value — consider a separate tier for gross negligence.</div>
+          <div class="mock-panel-body">
+            <div class="mock-eyebrow">Clause detected — Limitation of liability</div>
+            <div class="mock-clause">"The Provider's total liability, on any grounds, shall not exceed the amounts paid over the three (3) months preceding the event."</div>
+            <div class="mock-row">
+              <span class="mock-badge risk-medium">Risk: medium</span>
+              <span class="mock-cite">Ref. Haitian Civil Code, art. 1168</span>
+            </div>
+            <div class="mock-suggestion"><b>Suggestion:</b> cap looks low for a contract of this value — consider a separate tier for gross negligence.</div>
+          </div>
+        </div>
+        <div class="mock-panel cycle" style="animation-delay:-6s;">
+          <div class="mock-panel-bar">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <span class="label">Tax Intelligence — deadline tracking</span>
+          </div>
+          <div class="mock-panel-body">
+            <div class="mock-eyebrow">Deadline detected — Quarterly filing</div>
+            <div class="mock-clause">Corporate income tax — 3rd-quarter installment due to the DGI before the statutory deadline.</div>
+            <div class="mock-row">
+              <span class="mock-badge risk-medium">Due: 12 days</span>
+              <span class="mock-cite">Ref. General Tax Code</span>
+            </div>
+            <div class="mock-suggestion"><b>Reminder:</b> file prepared automatically, human review required before filing.</div>
+          </div>
+        </div>
+        <div class="mock-panel cycle" style="animation-delay:-12s;">
+          <div class="mock-panel-bar">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <span class="label">Legal Intelligence — legal research</span>
+          </div>
+          <div class="mock-panel-body">
+            <div class="mock-eyebrow">Search — "wrongful termination of commercial contract"</div>
+            <div class="mock-clause">Haitian case law treats contractual good faith as the central test for an abusive termination, paired with reasonable notice.</div>
+            <div class="mock-row">
+              <span class="mock-badge risk-low">3 sources found</span>
+              <span class="mock-cite">Doctrine &amp; case law</span>
+            </div>
+            <div class="mock-suggestion"><b>Sources:</b> verifiable citations, one click away before you rely on them.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -41,44 +73,6 @@
     <div class="stat"><b>2FA</b><span>On internal accounts</span></div>
     <div class="stat"><b>SHA-256</b><span>Fingerprint on every document</span></div>
     <div class="stat"><b>24&#8202;/&#8202;7</b><span>Online file tracking</span></div>
-  </div>
-</section>
-
-<section class="block" id="confiance">
-  <div class="block-head reveal">
-    <div>
-      <div class="eyebrow">Who's behind Massey</div>
-      <h2>Founded by a lawyer, built like a product</h2>
-      <p>No anonymity and no vague promises: here's who builds the platform, and what we commit to on every file.</p>
-    </div>
-  </div>
-
-  <div class="founder-card reveal">
-    <div class="founder-avatar">JM</div>
-    <div>
-      <h3>Jessy J. Massé</h3>
-      <p class="founder-title">Lawyer, Port-au-Prince Bar &amp; Legal engineer</p>
-      <p class="bio">A law graduate with a Master's in diplomacy and international cooperation, Jessy is currently pursuing a Master's in business law at Université Laval. He built Massey AI to put real Haitian legal expertise to work for businesses — whether they'd rather hand us the file or use the platform directly.</p>
-    </div>
-  </div>
-
-  <div class="grid-2 reveal-stagger" style="margin-top:20px;">
-    <div class="pillar-card">
-      <h3>A personal reply, never a template</h3>
-      <p>Every message received through the contact or intake form is read and answered personally.</p>
-    </div>
-    <div class="pillar-card">
-      <h3>A written mandate before any work</h3>
-      <p>No work begins without an accepted engagement letter, which fixes the exact scope and price upfront.</p>
-    </div>
-    <div class="pillar-card">
-      <h3>Confidentiality through isolation</h3>
-      <p>Every file is isolated: a client only sees their own files, and access is always verified, never assumed.</p>
-    </div>
-    <div class="pillar-card">
-      <h3>Transparent pricing</h3>
-      <p>The scope and price of an engagement are presented before any commitment — see the detail on the Services page.</p>
-    </div>
   </div>
 </section>
 
@@ -279,6 +273,44 @@
       <a href="{{ url_for('intake') }}" class="btn btn-primary">Open a file</a>
       <a href="{{ url_for('services_en') }}" class="btn btn-ghost">See services</a>
       <a href="{{ url_for('contact_en') }}" class="btn btn-ghost">Discuss your project</a>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="confiance">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Who's behind Massey</div>
+      <h2>Founded by a lawyer, built like a product</h2>
+      <p>No anonymity and no vague promises: here's who builds the platform, and what we commit to on every file.</p>
+    </div>
+  </div>
+
+  <div class="founder-card reveal">
+    <div class="founder-avatar">JM</div>
+    <div>
+      <h3>Jessy J. Massé</h3>
+      <p class="founder-title">Lawyer, Port-au-Prince Bar &amp; Legal engineer</p>
+      <p class="bio">A law graduate with a Master's in international cooperation and a certification in full-stack web development, Jessy is pursuing a Master's in business law at Université Laval. He built Massey Contracts &amp; Tax to put real Haitian legal expertise to work for businesses: whether they'd rather hand us the file or use the Massey AI platform directly.</p>
+    </div>
+  </div>
+
+  <div class="grid-2 reveal-stagger" style="margin-top:20px;">
+    <div class="pillar-card">
+      <h3>A personal reply, never a template</h3>
+      <p>Every message received through the contact or intake form is read and answered personally.</p>
+    </div>
+    <div class="pillar-card">
+      <h3>A written mandate before any work</h3>
+      <p>No work begins without an accepted engagement letter, which fixes the exact scope and price upfront.</p>
+    </div>
+    <div class="pillar-card">
+      <h3>Confidentiality through isolation</h3>
+      <p>Every file is isolated: a client only sees their own files, and access is always verified, never assumed.</p>
+    </div>
+    <div class="pillar-card">
+      <h3>Transparent pricing</h3>
+      <p>The scope and price of an engagement are presented before any commitment — see the detail on the Services page.</p>
     </div>
   </div>
 </section>
