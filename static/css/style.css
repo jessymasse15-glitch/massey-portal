@@ -344,15 +344,19 @@ footer.site{border-top:1px solid var(--line);padding:56px 0 28px;background:var(
 .lang-switch:hover{border-color:var(--gold);color:var(--gold);}
 
 /* -------------------------------------------------- nav : menus déroulants (Plateforme, Administration) -------------------------------------------------- */
-.nav-dropdown{position:relative;}
+.nav-dropdown{position:relative;padding-bottom:14px;margin-bottom:-14px;}
 .nav-dropdown > span::after{content:"";display:inline-block;width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-2px) rotate(45deg);transition:transform .2s ease;}
 .nav-dropdown:hover > span::after, .nav-dropdown:focus-within > span::after{transform:translateY(0) rotate(225deg);}
 .nav-dropdown .dropdown-panel{
+  /* top:100% resolves against nav-dropdown's PADDING box, so the 14px padding-bottom
+     above becomes a hoverable bridge between the trigger and the panel — without it,
+     that gap is empty space outside both elements and the mouse drops out of :hover
+     while crossing it, closing the panel before the cursor ever reaches it. */
   position:absolute;top:100%;left:50%;transform:translateX(-50%) translateY(4px) scale(0.98);transform-origin:top center;
   background:linear-gradient(175deg, var(--navy-2), var(--navy));
   border:1px solid rgba(255,255,255,0.10);border-radius:12px;
   box-shadow:0 28px 56px -22px rgba(0,0,0,0.6), 0 6px 18px -8px rgba(0,0,0,0.35);
-  padding:10px;margin-top:12px;min-width:300px;display:grid;gap:1px;
+  padding:10px;min-width:300px;display:grid;gap:1px;
   opacity:0;pointer-events:none;transition:opacity .16s var(--ease), transform .16s var(--ease);z-index:50;
 }
 .nav-dropdown .dropdown-panel::before{
@@ -360,7 +364,7 @@ footer.site{border-top:1px solid var(--line);padding:56px 0 28px;background:var(
   width:12px;height:12px;background:var(--navy-2);border-left:1px solid rgba(255,255,255,0.10);border-top:1px solid rgba(255,255,255,0.10);
   border-radius:2px 0 0 0;margin-bottom:-7px;transform-origin:center;transform:translateX(-50%) rotate(45deg);
 }
-.nav-dropdown:hover .dropdown-panel, .nav-dropdown:focus-within .dropdown-panel{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0) scale(1);}
+.nav-dropdown:hover .dropdown-panel, .nav-dropdown:focus-within .dropdown-panel, .nav-dropdown.open .dropdown-panel{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0) scale(1);}
 .dropdown-panel a{display:flex;flex-direction:column;gap:3px;padding:12px 16px;border-radius:8px;text-decoration:none;color:#FFFFFF;position:relative;transition:background .16s ease, padding-left .16s ease;}
 .dropdown-panel a:not(:last-child){border-bottom:1px solid rgba(255,255,255,0.07);}
 .dropdown-panel a::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:2px;background:var(--gold);opacity:0;transition:opacity .16s ease;}
@@ -369,7 +373,9 @@ footer.site{border-top:1px solid var(--line);padding:56px 0 28px;background:var(
 .dropdown-panel a b{font-size:0.87rem;font-weight:600;letter-spacing:0.01em;color:#FFFFFF;}
 .dropdown-panel a small{font-size:0.74rem;color:rgba(255,255,255,0.56);font-weight:400;}
 @media (max-width:760px){
-  .nav-dropdown > span::after{display:none;}
+  .nav-dropdown{padding-bottom:0;margin-bottom:0;}
+  .nav-dropdown > span::after{transform:translateY(-2px) rotate(45deg) !important;}
+  .nav-dropdown.open > span::after{transform:translateY(0) rotate(225deg) !important;}
   .nav-dropdown .dropdown-panel{position:static;transform:none;opacity:1;pointer-events:auto;box-shadow:none;border:none;background:rgba(0,0,0,0.18);margin-top:6px;padding:4px;display:none;}
   .nav-dropdown .dropdown-panel::before{display:none;}
   .nav-dropdown.open .dropdown-panel{display:grid;}

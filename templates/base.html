@@ -56,23 +56,32 @@
     <div class="wrap">
       <nav class="links">
         {% if lang=='en' %}
+          <a href="{{ url_for('home_en') }}">Home</a>
           <a href="{{ url_for('produits_en') }}">Products</a>
-          <a href="{{ url_for('about_en') }}">About</a>
           <a href="{{ url_for('services_en') }}">Services</a>
-          <a href="{{ url_for('membership_en') }}">Membership</a>
-          <a href="{{ url_for('securite_conformite_en') }}">Security</a>
-          <a href="{{ url_for('faq_en') }}">FAQ</a>
-          <a href="{{ url_for('contact_en') }}">Contact</a>
-        {% else %}
-          <a href="{{ url_for('produits') }}">Produits</a>
-          <a href="{{ url_for('about') }}">À propos</a>
-          <a href="{{ url_for('services') }}">Services</a>
-          <a href="{{ url_for('membership') }}">Abonnement</a>
-          <a href="{{ url_for('securite_conformite') }}">Sécurité</a>
-          <a href="{{ url_for('faq') }}">FAQ</a>
-          <a href="{{ url_for('contact') }}">Contact</a>
           <a href="{{ url_for('revue_home') }}">Massey Law Review</a>
+          <a href="{{ url_for('about_en') }}">About</a>
+        {% else %}
+          <a href="{{ url_for('home') }}">Accueil</a>
+          <a href="{{ url_for('produits') }}">Produits</a>
+          <a href="{{ url_for('services') }}">Services</a>
+          <a href="{{ url_for('revue_home') }}">Massey Law Review</a>
+          <a href="{{ url_for('about') }}">À propos</a>
         {% endif %}
+        <div class="nav-dropdown">
+          <span>{% if lang=='en' %}Help{% else %}Aide{% endif %}</span>
+          <div class="dropdown-panel">
+            {% if lang=='en' %}
+              <a href="{{ url_for('aide_securite_en') }}">Security</a>
+              <a href="{{ url_for('contact_en') }}">Contact</a>
+              <a href="{{ url_for('aide_assistance_compte_en') }}">Account assistance</a>
+            {% else %}
+              <a href="{{ url_for('aide_securite') }}">Sécurité</a>
+              <a href="{{ url_for('contact') }}">Contact</a>
+              <a href="{{ url_for('aide_assistance_compte') }}">Assistance compte</a>
+            {% endif %}
+          </div>
+        </div>
         {% if current_user and current_user['role'] in ('expert','admin') %}
         <div class="nav-dropdown">
           <span>Administration</span>

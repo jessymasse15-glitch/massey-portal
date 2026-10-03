@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Account assistance — Help — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Request help managing your Massey Contracts & Tax account: access, email, billing, account closure.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Help &amp; support</div>
+  <h1>Account management assistance</h1>
+  <p class="lede">Lost access, email change, billing question or account closure: describe what you need and our team will get back to you directly.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="grid-2">
+    <div class="card">
+      <h3 style="margin-top:0;">Before you send</h3>
+      <p class="helptext">For general security questions (password, two-factor authentication, phishing), see our <a href="{{ url_for('aide_securite_en') }}">Secure my account</a> page first.</p>
+      <p class="helptext">For anything else that isn't about managing your account, use <a href="{{ url_for('contact_en') }}">the Contact page</a> instead.</p>
+      {% if site_settings.support_hours %}<p class="helptext" style="margin-top:18px;"><b>Availability:</b> {{ site_settings.support_hours }}</p>{% endif %}
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Your request</h3>
+      <form method="post">
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="name">Full name</label>
+            <input type="text" id="name" name="name" value="{{ current_user['name'] if current_user else '' }}" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" value="{{ current_user['email'] if current_user else '' }}" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="category">Type of request</label>
+          <select id="category" name="category">
+            {% for key, label in categories %}
+            <option value="{{ key }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="message">Describe what you need</label>
+          <textarea id="message" name="message" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Send request</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

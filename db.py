@@ -481,6 +481,24 @@ CLAUSE_RISK_LEVELS = [
 ]
 CLAUSE_RISK_LABELS = dict(CLAUSE_RISK_LEVELS)
 
+# Catégories du formulaire d'assistance « gestion de compte » (page Aide).
+# Le message est archivé dans contact_messages, avec la catégorie préfixée
+# au sujet — pas de table dédiée, pour rester cohérent avec /contact.
+ACCOUNT_HELP_CATEGORIES = [
+    ("acces", "Perte d'accès / authentification à deux facteurs"),
+    ("courriel", "Changer mon adresse courriel"),
+    ("facturation", "Facturation ou abonnement"),
+    ("fermeture", "Fermeture de compte"),
+    ("autre", "Autre demande"),
+]
+ACCOUNT_HELP_CATEGORIES_EN = [
+    ("acces", "Lost access / two-factor authentication"),
+    ("courriel", "Change my email address"),
+    ("facturation", "Billing or membership"),
+    ("fermeture", "Close my account"),
+    ("autre", "Other request"),
+]
+
 # Pipeline transactionnel unifié (Transaction Intelligence) — chaque statut
 # granulaire du suivi de dossier se rattache à l'une des 7 grandes étapes
 # du moteur d'intégration CRÉER → NÉGOCIER → APPROUVER → SIGNER → EXÉCUTER

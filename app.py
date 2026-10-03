@@ -114,6 +114,8 @@ LANG_COUNTERPART = {
     "pillar_regulatory_compliance": "pillar_regulatory_compliance_en", "pillar_regulatory_compliance_en": "pillar_regulatory_compliance",
     "contact": "contact_en", "contact_en": "contact",
     "faq": "faq_en", "faq_en": "faq",
+    "aide_securite": "aide_securite_en", "aide_securite_en": "aide_securite",
+    "aide_assistance_compte": "aide_assistance_compte_en", "aide_assistance_compte_en": "aide_assistance_compte",
     "securite_conformite": "securite_conformite_en", "securite_conformite_en": "securite_conformite",
     "mentions_legales": "mentions_legales_en", "mentions_legales_en": "mentions_legales",
     "confidentialite": "confidentialite_en", "confidentialite_en": "confidentialite",
@@ -580,6 +582,57 @@ def contact():
 @app.route("/en/contact", methods=["GET", "POST"])
 def contact_en():
     return contact()
+
+
+@app.route("/aide/securite")
+def aide_securite():
+    return render_template("marketing/aide_securite.html")
+
+
+@app.route("/en/help/security")
+def aide_securite_en():
+    return render_template("marketing/en/aide_securite.html")
+
+
+@app.route("/aide/assistance-compte", methods=["GET", "POST"])
+def aide_assistance_compte():
+    categories = dbm.ACCOUNT_HELP_CATEGORIES_EN if g.lang == "en" else dbm.ACCOUNT_HELP_CATEGORIES
+    if request.method == "POST":
+        u = current_user()
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        category = request.form.get("category", "")
+        message = request.form.get("message", "").strip()
+        cat_label = dict(categories).get(category, category)
+        if name and email and message:
+            conn = dbm.get_db()
+            conn.execute(
+                "INSERT INTO contact_messages (name, email, subject, message, created_at) VALUES (?,?,?,?,?)",
+                (name, email, f"[{'Account help' if g.lang == 'en' else 'Assistance compte'}] {cat_label}", message, dbm.now()),
+            )
+            conn.commit()
+            conn.close()
+            dbm.log_activity(u["id"] if u else None, "account_help_request", f"{name} <{email}> — {cat_label}")
+            flash(
+                "Votre demande a été envoyée à notre équipe. Nous vous répondrons dans les meilleurs délais." if g.lang == "fr"
+                else "Your request has been sent to our team. We will get back to you shortly.",
+                "success",
+            )
+            return redirect(url_for("aide_assistance_compte_en") if g.lang == "en" else url_for("aide_assistance_compte"))
+        flash(
+            "Merci de remplir tous les champs obligatoires." if g.lang == "fr"
+            else "Please fill in all required fields.",
+            "error",
+        )
+    return render_template(
+        "marketing/en/aide_assistance_compte.html" if g.lang == "en" else "marketing/aide_assistance_compte.html",
+        categories=categories,
+    )
+
+
+@app.route("/en/help/account", methods=["GET", "POST"])
+def aide_assistance_compte_en():
+    return aide_assistance_compte()
 
 
 @app.route("/faq")

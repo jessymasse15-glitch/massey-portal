@@ -12,6 +12,34 @@
     window.addEventListener("scroll", onScroll, { passive: true });
   }
 
+  // Nav dropdowns (Plateforme/Administration/Aide-style menus): click/tap toggles
+  // the panel open, so they work on touch devices where :hover never fires. Also
+  // closes on an outside click/tap and on Escape, and only ever keeps one open.
+  var navDropdowns = document.querySelectorAll(".nav-dropdown");
+  if (navDropdowns.length) {
+    var closeAllDropdowns = function (except) {
+      navDropdowns.forEach(function (dd) {
+        if (dd !== except) dd.classList.remove("open");
+      });
+    };
+    navDropdowns.forEach(function (dd) {
+      var trigger = dd.querySelector(":scope > span");
+      if (!trigger) return;
+      trigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var willOpen = !dd.classList.contains("open");
+        closeAllDropdowns(dd);
+        dd.classList.toggle("open", willOpen);
+      });
+    });
+    document.addEventListener("click", function () {
+      closeAllDropdowns(null);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeAllDropdowns(null);
+    });
+  }
+
   // Scroll-reveal: elements marked .reveal / .reveal-stagger fade+rise into view once.
   var revealTargets = document.querySelectorAll(".reveal, .reveal-stagger");
   if ("IntersectionObserver" in window && revealTargets.length) {

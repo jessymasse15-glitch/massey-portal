@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Assistance pour mon compte — Aide — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Demandez de l'aide pour la gestion de votre compte Massey Contracts & Tax : accès, courriel, facturation, fermeture de compte.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Aide &amp; assistance</div>
+  <h1>Assistance pour la gestion de mon compte</h1>
+  <p class="lede">Perte d'accès, changement de courriel, question de facturation ou fermeture de compte : décrivez votre besoin, notre équipe vous répond directement.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="grid-2">
+    <div class="card">
+      <h3 style="margin-top:0;">Avant d'envoyer</h3>
+      <p class="helptext">Pour une question de sécurité générale (mot de passe, double authentification, hameçonnage), consultez d'abord notre page <a href="{{ url_for('aide_securite') }}">Sécuriser mon compte</a>.</p>
+      <p class="helptext">Pour toute autre question qui ne concerne pas la gestion de votre compte, utilisez plutôt <a href="{{ url_for('contact') }}">la page Contact</a>.</p>
+      {% if site_settings.support_hours %}<p class="helptext" style="margin-top:18px;"><b>Disponibilité :</b> {{ site_settings.support_hours }}</p>{% endif %}
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Votre demande</h3>
+      <form method="post">
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="name">Nom complet</label>
+            <input type="text" id="name" name="name" value="{{ current_user['name'] if current_user else '' }}" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Courriel</label>
+            <input type="email" id="email" name="email" value="{{ current_user['email'] if current_user else '' }}" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="category">Nature de la demande</label>
+          <select id="category" name="category">
+            {% for key, label in categories %}
+            <option value="{{ key }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="message">Décrivez votre besoin</label>
+          <textarea id="message" name="message" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Envoyer la demande</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}
