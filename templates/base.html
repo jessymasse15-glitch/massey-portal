@@ -32,7 +32,7 @@
 <header class="site">
   <div class="wrap header-top">
     <a href="{{ url_for('home_en') if lang=='en' else url_for('home') }}" class="brand" style="text-decoration:none;">
-      <span class="mark"><img src="{{ url_for('static', filename='img/favicon-192.png') }}" alt="Massey Contracts &amp; Tax" width="192" height="192"></span>
+      <span class="mark"><img src="{{ url_for('static', filename='img/mark-header.png') }}" alt="Massey Contracts &amp; Tax" width="194" height="137"></span>
       <span class="brand-text">
         <span class="brand-title">Massey Contracts &amp; Tax</span>
         <small class="brand-sub">{% if lang=='en' %}Legal &amp; Tax Engineering{% else %}Ingénierie juridique &amp; Fiscale{% endif %}</small>
@@ -55,36 +55,18 @@
   <div class="site-nav">
     <div class="wrap">
       <nav class="links">
-        <div class="nav-dropdown">
-          <span>{% if lang=='en' %}Platform{% else %}Plateforme{% endif %}</span>
-          <div class="dropdown-panel">
-            {% if lang=='en' %}
-            <a href="{{ url_for('pillar_legal_intelligence_en') }}"><b>Legal Intelligence</b><small>Research, case law, doctrine</small></a>
-            <a href="{{ url_for('pillar_contract_intelligence_en') }}"><b>Contract Intelligence</b><small>Clauses, negotiation, e-signature</small></a>
-            <a href="{{ url_for('pillar_transaction_intelligence_en') }}"><b>Transaction Intelligence</b><small>Structuring, workflow, closing</small></a>
-            <a href="{{ url_for('pillar_tax_intelligence_en') }}"><b>Tax Intelligence</b><small>Tax obligations and deadlines</small></a>
-            <a href="{{ url_for('pillar_regulatory_compliance_en') }}"><b>Regulatory &amp; Compliance</b><small>AML / KYC / authorizations</small></a>
-            {% else %}
-            <a href="{{ url_for('pillar_legal_intelligence') }}"><b>Legal Intelligence</b><small>Recherche, jurisprudence, doctrine</small></a>
-            <a href="{{ url_for('pillar_contract_intelligence') }}"><b>Contract Intelligence</b><small>Clauses, négociation, signature</small></a>
-            <a href="{{ url_for('pillar_transaction_intelligence') }}"><b>Transaction Intelligence</b><small>Structuration, workflow, closing</small></a>
-            <a href="{{ url_for('pillar_tax_intelligence') }}"><b>Tax Intelligence</b><small>Obligations et échéances fiscales</small></a>
-            <a href="{{ url_for('pillar_regulatory_compliance') }}"><b>Regulatory &amp; Compliance</b><small>AML / KYC / autorisations</small></a>
-            {% endif %}
-          </div>
-        </div>
         {% if lang=='en' %}
+          <a href="{{ url_for('produits_en') }}">Products</a>
           <a href="{{ url_for('about_en') }}">About</a>
-          <a href="{{ url_for('expertise_en') }}">Expertise</a>
-          <a href="{{ url_for('tarifs_en') }}">Pricing</a>
+          <a href="{{ url_for('services_en') }}">Services</a>
           <a href="{{ url_for('membership_en') }}">Membership</a>
           <a href="{{ url_for('securite_conformite_en') }}">Security</a>
           <a href="{{ url_for('faq_en') }}">FAQ</a>
           <a href="{{ url_for('contact_en') }}">Contact</a>
         {% else %}
+          <a href="{{ url_for('produits') }}">Produits</a>
           <a href="{{ url_for('about') }}">À propos</a>
-          <a href="{{ url_for('expertise') }}">Expertise</a>
-          <a href="{{ url_for('tarifs') }}">Tarifs</a>
+          <a href="{{ url_for('services') }}">Services</a>
           <a href="{{ url_for('membership') }}">Abonnement</a>
           <a href="{{ url_for('securite_conformite') }}">Sécurité</a>
           <a href="{{ url_for('faq') }}">FAQ</a>
@@ -132,7 +114,7 @@
         {% if site_settings.linkedin_url %}<p class="helptext"><a href="{{ site_settings.linkedin_url }}" target="_blank" rel="noopener">LinkedIn ↗</a></p>{% endif %}
       </div>
       <div>
-        <h4>{% if lang=='en' %}Platform{% else %}Plateforme{% endif %}</h4>
+        <h4><a href="{{ url_for('produits_en') if lang=='en' else url_for('produits') }}" style="color:inherit;text-decoration:none;">{% if lang=='en' %}Products{% else %}Produits{% endif %}</a></h4>
         {% if lang=='en' %}
         <a href="{{ url_for('pillar_legal_intelligence_en') }}">Legal Intelligence</a>
         <a href="{{ url_for('pillar_contract_intelligence_en') }}">Contract Intelligence</a>
@@ -151,15 +133,13 @@
         <h4>LegalTech</h4>
         {% if lang=='en' %}
         <a href="{{ url_for('about_en') }}">About</a>
-        <a href="{{ url_for('expertise_en') }}">Expertise</a>
-        <a href="{{ url_for('tarifs_en') }}">Pricing</a>
+        <a href="{{ url_for('services_en') }}">Services</a>
         <a href="{{ url_for('membership_en') }}">Membership</a>
         <a href="{{ url_for('faq_en') }}">FAQ</a>
         <a href="{{ url_for('contact_en') }}">Contact</a>
         {% else %}
         <a href="{{ url_for('about') }}">À propos</a>
-        <a href="{{ url_for('expertise') }}">Expertise</a>
-        <a href="{{ url_for('tarifs') }}">Tarifs</a>
+        <a href="{{ url_for('services') }}">Services</a>
         <a href="{{ url_for('membership') }}">Abonnement</a>
         <a href="{{ url_for('faq') }}">FAQ</a>
         <a href="{{ url_for('contact') }}">Contact</a>

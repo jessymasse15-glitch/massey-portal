@@ -60,8 +60,8 @@ header.site.is-scrolled{box-shadow:0 12px 30px -16px rgba(0,0,0,0.5);}
 /* top tier: logo + title/subtitle, and account actions */
 .header-top{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:16px 0 14px;border-bottom:1px solid var(--header-line);}
 .brand{display:flex;align-items:center;gap:14px;min-width:0;flex:1 1 auto;}
-.brand .mark{width:46px;height:46px;flex:none;border-radius:9px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:#F6F2E9;box-shadow:0 2px 10px -2px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.4);}
-.brand .mark img{width:72%;height:72%;object-fit:contain;display:block;}
+.brand .mark{height:44px;flex:none;display:flex;align-items:center;justify-content:center;}
+.brand .mark img{height:100%;width:auto;object-fit:contain;display:block;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.28));}
 .brand-text{display:flex;flex-direction:column;gap:3px;line-height:1.1;min-width:0;}
 .brand-title{font-family:var(--serif);font-weight:700;font-size:clamp(1.35rem,2vw,1.7rem);letter-spacing:-0.01em;color:#FFFFFF;white-space:nowrap;}
 .brand-sub{display:block;font-family:var(--sans);font-weight:600;font-size:0.94rem;letter-spacing:0.045em;text-transform:uppercase;color:#E0B25E;text-shadow:0 1px 14px rgba(224,178,94,0.35);white-space:nowrap;}
@@ -84,6 +84,7 @@ nav.links .nav-dropdown > span{color:inherit;cursor:pointer;display:inline-flex;
 
 @media (max-width:760px){
   .header-top{flex-wrap:wrap;padding:14px 0 10px;gap:10px 16px;}
+  .brand .mark{height:34px;}
   .brand-title{font-size:1.25rem;}
   .brand-sub{font-size:0.72rem;}
   .header-actions{flex-basis:100%;justify-content:flex-start;flex-wrap:wrap;}
@@ -406,6 +407,24 @@ footer.site{border-top:1px solid var(--line);padding:56px 0 28px;background:var(
 /* -------------------------------------------------- base juridique haïtienne (bandeau de sources) -------------------------------------------------- */
 .source-strip{display:flex;flex-wrap:wrap;gap:10px;}
 .source-chip{border:1px solid var(--line-strong);border-radius:999px;padding:8px 18px;font-size:0.82rem;color:var(--ink-soft);background:var(--surface-2);}
+.product-chip{border:1px solid var(--line-strong);border-radius:999px;padding:9px 20px;font-size:0.84rem;color:var(--ink-soft);background:var(--surface-2);text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:border-color .2s ease, color .2s ease, transform .2s ease;}
+.product-chip:hover{border-color:var(--gold);color:var(--ink);transform:translateY(-2px);}
+.product-chip .n{font-family:var(--mono);font-size:0.68rem;color:var(--gold);}
+
+/* -------------------------------------------------- two-path split (homepage) -------------------------------------------------- */
+.path-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px;}
+.path-card{position:relative;border-radius:18px;padding:38px 34px;border:1px solid var(--line-strong);background:linear-gradient(165deg, var(--surface), var(--surface-2));display:flex;flex-direction:column;box-shadow:var(--shadow-sm);}
+.path-card .path-icon{width:54px;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(var(--gold-rgb),0.10);color:var(--gold);margin-bottom:20px;}
+.path-card .path-icon svg{width:26px;height:26px;}
+.path-card .path-tag{font-family:var(--mono);font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+.path-card h3{margin:0 0 10px;font-size:1.45rem;font-family:var(--serif);max-width:20ch;}
+.path-card p.desc{color:var(--ink-soft);font-size:0.95rem;margin:0 0 20px;}
+.path-card ul{list-style:none;margin:0 0 26px;padding:0;display:grid;gap:10px;}
+.path-card ul li{font-size:0.88rem;color:var(--ink-soft);display:flex;align-items:baseline;gap:9px;}
+.path-card ul li::before{content:"✓";color:var(--good);flex:none;font-weight:700;}
+.path-card .ctas{margin-top:auto;display:flex;gap:10px;flex-wrap:wrap;}
+.path-card.featured{border-color:var(--gold);box-shadow:var(--shadow-gold);}
+@media (max-width:760px){.path-grid{grid-template-columns:1fr;}}
 
 /* -------------------------------------------------- moteur d'intégration : workflow -------------------------------------------------- */
 .workflow-strip{display:flex;align-items:center;flex-wrap:wrap;gap:0;justify-content:center;}

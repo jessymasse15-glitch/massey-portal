@@ -2,47 +2,20 @@
 {% block title %}Massey Contracts & Tax — Legal, Contract, Tax and Transaction Engineering LegalTech{% endblock %}
 {% block meta_description %}Massey Contracts & Tax is a LegalTech platform for contract, tax and transaction engineering under Haitian law, powered by Massey AI.{% endblock %}
 {% block content %}
-<section class="hero hero-convert">
-  <div class="hero-search-inner">
-    <div class="eyebrow" style="justify-content:center;display:flex;">Massey AI — Legal, contract and tax platform</div>
-    <h1>Massey Contracts &amp; Tax</h1>
-    <p class="lede" style="max-width:62ch;margin:0 auto 10px;">Create a free account to try the Massey AI tools — legal research, clause library and more — then upgrade to Premium for full access to all five pillars and Massey Law Review.</p>
-    {% if not current_user %}
-    <p class="helptext" style="margin:0 0 30px;">Already have a file open with us? <a href="{{ url_for('login', next=url_for('portal_dashboard')) }}">Sign in to your client area</a>.</p>
-    {% elif access_tier == 'free' %}
-    <p class="helptext" style="margin:0 0 30px;">You're on the <b>Free</b> plan — upgrade to Premium below to remove every limit.</p>
+<section class="hero reveal">
+  <div class="eyebrow">Massey AI — Legal, contract and tax engineering</div>
+  <h1>Haitian business law, secured and equipped.</h1>
+  <p class="lede">Massey Contracts &amp; Tax combines business lawyers with a legal intelligence platform, Massey AI, to secure your contracts, transactions and tax position — whether you'd rather hand us the file or keep the tools in your own hands.</p>
+  <div class="ctas">
+    <a href="{{ url_for('intake') }}" class="btn btn-primary">Open a file</a>
+    {% if current_user %}
+      <a href="{{ url_for('produits_en') }}" class="btn btn-ghost">Explore the products</a>
     {% else %}
-    <div style="margin-bottom:30px;"></div>
+      <a href="{{ url_for('register', next=url_for('membership_en')) }}" class="btn btn-ghost">Try it for free</a>
     {% endif %}
-
-    <div class="hero-plans reveal-stagger">
-      {% for plan_key, plan_label, amount_cents, period in plans %}
-      <div class="hero-plan-card {{ 'featured' if plan_key=='annuel' else '' }}">
-        {% if plan_key == 'annuel' %}<span class="badge">2 months free</span>{% endif %}
-        <h3>{{ plan_label }}</h3>
-        <div class="price">{{ "%.0f"|format(amount_cents/100) }} $ <span>CAD / {{ period }}</span></div>
-        <ul>
-          {% for feat in features[:4] %}<li>{{ feat }}</li>{% endfor %}
-        </ul>
-        {% if current_user %}
-          {% if active_membership and active_membership['billing_cycle']==plan_key %}
-            <span class="status-pill done" style="width:100%;justify-content:center;">Active plan</span>
-          {% else %}
-            <form method="POST" action="{{ url_for('membership_new') }}">
-              <input type="hidden" name="cycle" value="{{ plan_key }}">
-              <button type="submit" class="btn {{ 'btn-primary' if plan_key=='annuel' else 'btn-ghost' }}" style="width:100%;justify-content:center;">Choose this plan</button>
-            </form>
-          {% endif %}
-        {% else %}
-          <a href="{{ url_for('register', next=url_for('membership_en')) }}" class="btn {{ 'btn-primary' if plan_key=='annuel' else 'btn-ghost' }}" style="width:100%;justify-content:center;">Create an account</a>
-        {% endif %}
-      </div>
-      {% endfor %}
-    </div>
-    <p class="helptext" style="margin-top:18px;"><a href="{{ url_for('membership_en') }}">See full plan details and everything included →</a></p>
   </div>
 
-  <div class="statbar reveal">
+  <div class="statbar reveal" style="margin-top:40px;">
     <div class="stat"><b>05</b><span>Intelligence pillars</span></div>
     <div class="stat"><b>2FA</b><span>On internal accounts</span></div>
     <div class="stat"><b>SHA-256</b><span>Fingerprint on every document</span></div>
@@ -50,11 +23,57 @@
   </div>
 </section>
 
+<section class="block" id="deux-voies">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Two ways to work with us</div>
+      <h2>You choose who holds the pen</h2>
+      <p>The same legal foundation and the same Massey AI platform, whether you'd rather delegate or stay in control.</p>
+    </div>
+  </div>
+  <div class="path-grid reveal-stagger">
+    <div class="path-card">
+      <div class="path-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 3.5v5.2c0 5-3.4 8.4-8 9.3-4.6-.9-8-4.3-8-9.3V6.5z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg></div>
+      <div class="path-tag">Hand us your file</div>
+      <h3>Services — a business lawyer takes over</h3>
+      <p class="desc">You hand us the operation; our team runs it end to end in the client area, backed by Massey AI.</p>
+      <ul>
+        <li>Drafting, negotiation and signature by our lawyers</li>
+        <li>File tracking, messaging and deadlines in the client area</li>
+        <li>A pack calibrated to the actual complexity, confirmed by engagement letter</li>
+      </ul>
+      <div class="ctas">
+        <a href="{{ url_for('intake') }}" class="btn btn-primary">Open a file</a>
+        <a href="{{ url_for('services_en') }}" class="btn btn-ghost">See services &amp; pricing</a>
+      </div>
+    </div>
+    <div class="path-card featured">
+      <div class="path-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="14" rx="1"/><path d="M7 9h4M7 12h7M3 18h18"/><circle cx="17" cy="9.5" r="1"/></svg></div>
+      <div class="path-tag">Stay in control</div>
+      <h3>Products — the Massey AI tools, self-service</h3>
+      <p class="desc">Prefer to run your own operations? Create an account and use the 5 Massey AI pillars directly.</p>
+      <ul>
+        <li>Free account with immediate basic access, no credit card</li>
+        <li>Premium: unlimited access to all 5 pillars and Massey Law Review</li>
+        <li>Legal research, clauses, tax tracking and compliance, self-service</li>
+      </ul>
+      <div class="ctas">
+        {% if current_user %}
+          <a href="{{ url_for('membership_en') }}" class="btn btn-primary">See plans</a>
+        {% else %}
+          <a href="{{ url_for('register', next=url_for('membership_en')) }}" class="btn btn-primary">Create a free account</a>
+        {% endif %}
+        <a href="{{ url_for('produits_en') }}" class="btn btn-ghost">Discover the products</a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="block">
   <div class="ai-band reveal">
     <div class="eyebrow">Massey AI</div>
     <h2>Legal AI in service of better decisions</h2>
-    <p class="lede">Research, drafting, risk analysis: AI with guardrails, always under human validation.</p>
+    <p class="lede">Research, drafting, risk analysis: AI with guardrails, always under human validation — whether used by our lawyers or directly by you.</p>
     <div class="capability-row">
       <div class="cap">Intelligent research</div>
       <div class="cap">Assisted drafting</div>
@@ -69,71 +88,18 @@
   <div class="block-head reveal">
     <div>
       <div class="eyebrow">Architecture</div>
-      <h2>The 5 pillars</h2>
+      <h2>The 5 Massey AI pillars</h2>
       <p>One platform, five complementary intelligences — from legal research to regulatory compliance.</p>
     </div>
+    <a href="{{ url_for('produits_en') }}" class="btn btn-ghost btn-sm">See all products</a>
   </div>
-  <div class="pillar-feature-grid reveal-stagger">
-    <div class="pillar-feature-card">
-      <span class="num">01 — Legal Intelligence</span>
-      <h3>Legal knowledge at your fingertips</h3>
-      <p class="tagline">Legislative research, case law and doctrine, with verifiable sources.</p>
-      <ul>
-        <li>Legislative and regulatory research</li>
-        <li>Case law and doctrine</li>
-        <li>Document analysis and synthesis</li>
-        <li>Natural-language search, sourced answers</li>
-      </ul>
-      <a href="{{ url_for('pillar_legal_intelligence_en') }}" class="pillar-link">Explore Legal Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-    </div>
-    <div class="pillar-feature-card">
-      <span class="num">02 — Contract Intelligence</span>
-      <h3>From template to execution, with confidence</h3>
-      <p class="tagline">Clause library, negotiation, e-signature and deadline tracking.</p>
-      <ul>
-        <li>Clause library and playbooks</li>
-        <li>Negotiation, redlining and version comparison</li>
-        <li>Deadlines and renewals</li>
-        <li>E-signature, archiving and tracking</li>
-      </ul>
-      <a href="{{ url_for('pillar_contract_intelligence_en') }}" class="pillar-link">Explore Contract Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-    </div>
-    <div class="pillar-feature-card">
-      <span class="num">03 — Transaction Intelligence</span>
-      <h3>From opportunity to closing</h3>
-      <p class="tagline">Structuring, due diligence and transactional workflow management.</p>
-      <ul>
-        <li>Transaction structuring, due diligence</li>
-        <li>Stakeholder management</li>
-        <li>Risk mapping, checklists and timelines</li>
-        <li>Post-closing and integration</li>
-      </ul>
-      <a href="{{ url_for('pillar_transaction_intelligence_en') }}" class="pillar-link">Explore Transaction Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-    </div>
-    <div class="pillar-feature-card">
-      <span class="num">04 — Tax Intelligence</span>
-      <h3>Tax under control, growth secured</h3>
-      <p class="tagline">Obligations, deadlines and tax structuring scenarios.</p>
-      <ul>
-        <li>Tax analysis of transactions</li>
-        <li>Tax obligations and deadlines</li>
-        <li>Structuring scenarios, tax optimization</li>
-        <li>Legal and regulatory sources</li>
-      </ul>
-      <a href="{{ url_for('pillar_tax_intelligence_en') }}" class="pillar-link">Explore Tax Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-    </div>
-    <div class="pillar-feature-card" style="grid-column:1 / -1;">
-      <span class="num">05 — Regulatory &amp; Compliance Intelligence</span>
-      <h3>Anticipate. Comply. Protect.</h3>
-      <p class="tagline">AML/KYC compliance, authorizations and regulatory tracking.</p>
-      <ul style="grid-template-columns:1fr 1fr;display:grid;">
-        <li>Sector-specific regulations</li>
-        <li>AML / KYC / sanctions compliance</li>
-        <li>Authorizations, licenses and alerts</li>
-        <li>Reporting and documentation</li>
-      </ul>
-      <a href="{{ url_for('pillar_regulatory_compliance_en') }}" class="pillar-link">Explore Regulatory &amp; Compliance <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-    </div>
+  <div class="source-strip reveal" style="gap:12px;">
+    <a href="{{ url_for('pillar_legal_intelligence_en') }}" class="product-chip"><span class="n">01</span> Legal Intelligence</a>
+    <a href="{{ url_for('pillar_contract_intelligence_en') }}" class="product-chip"><span class="n">02</span> Contract Intelligence</a>
+    <a href="{{ url_for('pillar_transaction_intelligence_en') }}" class="product-chip"><span class="n">03</span> Transaction Intelligence</a>
+    <a href="{{ url_for('pillar_tax_intelligence_en') }}" class="product-chip"><span class="n">04</span> Tax Intelligence</a>
+    <a href="{{ url_for('pillar_regulatory_compliance_en') }}" class="product-chip"><span class="n">05</span> Regulatory &amp; Compliance</a>
+    <a href="{{ url_for('revue_home') }}" class="product-chip"><span class="n">+</span> Massey Law Review</a>
   </div>
 </section>
 
@@ -211,11 +177,11 @@
   <div class="cta-banner reveal">
     <div>
       <h2>Law, technology, and your success.</h2>
-      <p>Massey Contracts &amp; Tax → Massey AI → Legal intelligence + Transactional workflow + Verifiable sources → Haitian legal foundation.</p>
+      <p>Hand us your file, or create a free account to try the Massey AI platform yourself.</p>
     </div>
     <div class="ctas">
       <a href="{{ url_for('intake') }}" class="btn btn-primary">Open a file</a>
-      <a href="{{ url_for('tarifs_en') }}" class="btn btn-ghost">See pricing</a>
+      <a href="{{ url_for('services_en') }}" class="btn btn-ghost">See services</a>
     </div>
   </div>
 </section>

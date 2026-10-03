@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Services — Massey Contracts & Tax{% endblock %}
+{% block meta_description %}Nos domaines d'expertise juridique et nos packs d'accompagnement — pour les clients qui préfèrent nous confier leurs opérations.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Services</div>
+  <h1>Confiez vos opérations à des avocats d'affaires</h1>
+  <p class="lede">Chaque dossier est traité comme un système à sécuriser — pas comme un document isolé. Notre équipe prend en charge votre opération de bout en bout, à travers l'espace client, avec l'appui de la plateforme Massey AI.</p>
+  <p class="helptext">Vous préférez garder la main sur vos outils ? Découvrez nos <a href="{{ url_for('produits') }}">produits en libre-service</a>.</p>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Expertise</div>
+      <h2>Quatre domaines d'expertise juridique</h2>
+      <p>Selon la nature de votre opération, un ou plusieurs domaines s'activent au sein d'un même mandat.</p>
+    </div>
+  </div>
+  <div class="grid-2 reveal-stagger">
+    <div class="pillar-card">
+      <span class="n">01</span>
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/><path d="M8 13h8M8 17h8"/></svg></div>
+      <h3>Ingénierie contractuelle</h3>
+      <p>Rédaction, révision, négociation, audit de portefeuille, standardisation documentaire, gestion des obligations, prévention des litiges.</p>
+    </div>
+    <div class="pillar-card">
+      <span class="n">02</span>
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/></svg></div>
+      <h3>Fiscalité des affaires</h3>
+      <p>Diagnostic fiscal précontractuel, revue fiscale de contrat, structuration fiscale licite, documentation, coordination professionnelle.</p>
+    </div>
+    <div class="pillar-card">
+      <span class="n">03</span>
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 4 6 4 9s-1.5 6.4-4 9c-2.5-2.6-4-6-4-9s1.5-6.4 4-9z"/></svg></div>
+      <h3>Transactions internationales</h3>
+      <p>Contrats bilingues, droit applicable, arbitrage, import-export, partenariats, investissements transfrontaliers.</p>
+    </div>
+    <div class="pillar-card">
+      <span class="n">04</span>
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="14" rx="1"/><path d="M7 9h4M7 12h7M3 18h18"/><circle cx="17" cy="9.5" r="1"/></svg></div>
+      <h3>Legal Technology &amp; AI</h3>
+      <p>Automatisation, analyse documentaire, comparaison contractuelle, organisation de l'information et outils d'intelligence artificielle au service du travail juridique.</p>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Tarifs</div>
+      <h2>Packs par clientèle</h2>
+      <p>Chaque pack est calibré sur la complexité réelle du dossier. Montant final confirmé par lettre de mission.</p>
+    </div>
+  </div>
+  <div class="grid-3 reveal-stagger">
+    <div class="pack">
+      <h3>Massey Start</h3>
+      <div class="price">Sur devis</div>
+      <p>Consultation de cadrage, contrat simple, une ronde de corrections.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Démarrer</a>
+    </div>
+    <div class="pack">
+      <h3>Massey Review</h3>
+      <div class="price">Sur devis</div>
+      <p>Analyse d'un contrat existant, tableau des risques, version annotée.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Démarrer</a>
+    </div>
+    <div class="pack featured">
+      <span class="badge">Le plus demandé</span>
+      <h3>Massey Business</h3>
+      <div class="price">Sur devis</div>
+      <p>Contrat sur mesure, analyse fiscale de base, négociation limitée.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-primary btn-sm">Démarrer</a>
+    </div>
+    <div class="pack">
+      <h3>Massey CrossBorder</h3>
+      <div class="price">Sur devis</div>
+      <p>Contrat bilingue, enjeux transfrontaliers, coordination d'experts.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Démarrer</a>
+    </div>
+    <div class="pack">
+      <h3>Massey Counsel</h3>
+      <div class="price">Abonnement mensuel</div>
+      <p>Consultations, révisions, suivi des échéances — accompagnement continu.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Démarrer</a>
+    </div>
+    <div class="pack">
+      <h3>Massey Due Diligence</h3>
+      <div class="price">Sur devis</div>
+      <p>Audit documentaire préalable à un investissement ou une acquisition.</p>
+      <a href="{{ url_for('intake') }}" class="btn btn-ghost btn-sm">Démarrer</a>
+    </div>
+  </div>
+
+  <div class="cta-banner reveal">
+    <div>
+      <h2>Un dossier, plusieurs expertises mobilisables</h2>
+      <p>Ouvrez un dossier pour démarrer — nous confirmons le pack adapté et le montant par lettre de mission.</p>
+    </div>
+    <div class="ctas">
+      <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
+      <a href="{{ url_for('produits') }}" class="btn btn-ghost">Découvrir les produits en libre-service</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

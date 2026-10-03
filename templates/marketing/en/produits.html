@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Products — Massey AI{% endblock %}
+{% block meta_description %}Massey AI products: five self-service intelligence pillars covering legal, contract, transaction, tax and regulatory work, plus Massey Law Review.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Products</div>
+  <h1>The Massey AI tools, self-service</h1>
+  <p class="lede">Five intelligence pillars cover the full legal, contractual, transactional, tax and regulatory lifecycle — accessible directly from your account, no intermediary required. Try them for free, upgrade to Premium for full access.</p>
+  <div class="ctas" style="margin-top:8px;">
+    <a href="{{ url_for('register', next=url_for('membership_en')) if not current_user else url_for('membership_en') }}" class="btn btn-primary">{% if current_user %}See Premium{% else %}Create a free account{% endif %}</a>
+    <a href="{{ url_for('services_en') }}" class="btn btn-ghost">Prefer to hand us the file? See our services</a>
+  </div>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="pillar-feature-grid reveal-stagger">
+    <div class="pillar-feature-card">
+      <span class="num">01 — Legal Intelligence</span>
+      <h3>Legal knowledge at your fingertips</h3>
+      <p class="tagline">Legislative research, case law and doctrine, with verifiable sources.</p>
+      <ul>
+        <li>Legislative and regulatory research</li>
+        <li>Case law and doctrine</li>
+        <li>Document analysis and synthesis</li>
+        <li>Natural-language search, sourced answers</li>
+      </ul>
+      <a href="{{ url_for('pillar_legal_intelligence_en') }}" class="pillar-link">Explore Legal Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="pillar-feature-card">
+      <span class="num">02 — Contract Intelligence</span>
+      <h3>From template to execution, with confidence</h3>
+      <p class="tagline">Clause library, negotiation, e-signature and deadline tracking.</p>
+      <ul>
+        <li>Clause library and playbooks</li>
+        <li>Negotiation, redlining and version comparison</li>
+        <li>Deadlines and renewals</li>
+        <li>E-signature, archiving and tracking</li>
+      </ul>
+      <a href="{{ url_for('pillar_contract_intelligence_en') }}" class="pillar-link">Explore Contract Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="pillar-feature-card">
+      <span class="num">03 — Transaction Intelligence</span>
+      <h3>From opportunity to closing</h3>
+      <p class="tagline">Structuring, due diligence and transactional workflow management.</p>
+      <ul>
+        <li>Transaction structuring, due diligence</li>
+        <li>Stakeholder management</li>
+        <li>Risk mapping, checklists and timelines</li>
+        <li>Post-closing and integration</li>
+      </ul>
+      <a href="{{ url_for('pillar_transaction_intelligence_en') }}" class="pillar-link">Explore Transaction Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="pillar-feature-card">
+      <span class="num">04 — Tax Intelligence</span>
+      <h3>Tax under control, growth secured</h3>
+      <p class="tagline">Obligations, deadlines and tax structuring scenarios.</p>
+      <ul>
+        <li>Tax analysis of transactions</li>
+        <li>Tax obligations and deadlines</li>
+        <li>Structuring scenarios, tax optimization</li>
+        <li>Legal and regulatory sources</li>
+      </ul>
+      <a href="{{ url_for('pillar_tax_intelligence_en') }}" class="pillar-link">Explore Tax Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="pillar-feature-card" style="grid-column:1 / -1;">
+      <span class="num">05 — Regulatory &amp; Compliance Intelligence</span>
+      <h3>Anticipate. Comply. Protect.</h3>
+      <p class="tagline">AML/KYC compliance, authorizations and regulatory tracking.</p>
+      <ul style="grid-template-columns:1fr 1fr;display:grid;">
+        <li>Sector-specific regulations</li>
+        <li>AML / KYC / sanctions compliance</li>
+        <li>Authorizations, licenses and alerts</li>
+        <li>Reporting and documentation</li>
+      </ul>
+      <a href="{{ url_for('pillar_regulatory_compliance_en') }}" class="pillar-link">Explore Regulatory &amp; Compliance <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Sixth product</div>
+      <h2>Massey Law Review</h2>
+      <p>Our online law review dedicated to Haitian business law — included in the Premium plan.</p>
+    </div>
+    <a href="{{ url_for('revue_home') }}" class="btn btn-ghost btn-sm">Discover the review</a>
+  </div>
+  <div class="callout reveal" style="max-width:74ch;">
+    Analyses, case studies and practice notes on contract law, business taxation and cross-border transactions. Summaries are open to everyone; the full text and PDF of each article are reserved for Premium subscribers (or the standalone Review subscription).
+  </div>
+</section>
+
+<section class="block" id="gouvernance">
+  <div class="cta-banner reveal">
+    <div>
+      <h2>Try it for free, no commitment</h2>
+      <p>A free account gives immediate basic access to every pillar. Upgrade to Premium when you're ready for full, unlimited access.</p>
+    </div>
+    <div class="ctas">
+      {% if current_user %}
+        <a href="{{ url_for('membership_en') }}" class="btn btn-primary">See plans</a>
+      {% else %}
+        <a href="{{ url_for('register', next=url_for('membership_en')) }}" class="btn btn-primary">Create a free account</a>
+      {% endif %}
+      <a href="{{ url_for('services_en') }}" class="btn btn-ghost">See our advisory services</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

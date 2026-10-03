@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Produits — Massey AI{% endblock %}
+{% block meta_description %}Les produits Massey AI : cinq piliers d'intelligence juridique, contractuelle, transactionnelle, fiscale et réglementaire, en libre-service, plus Massey Law Review.{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Produits</div>
+  <h1>Les outils Massey AI, en libre-service</h1>
+  <p class="lede">Cinq piliers d'intelligence couvrent l'ensemble du cycle de vie juridique, contractuel, transactionnel, fiscal et réglementaire — accessibles directement depuis votre compte, sans intermédiaire. Essayez-les gratuitement, passez à Premium pour un accès complet.</p>
+  <div class="ctas" style="margin-top:8px;">
+    <a href="{{ url_for('register', next=url_for('membership')) if not current_user else url_for('membership') }}" class="btn btn-primary">{% if current_user %}Voir Premium{% else %}Créer un compte gratuit{% endif %}</a>
+    <a href="{{ url_for('services') }}" class="btn btn-ghost">Vous préférez nous confier le dossier ? Voir nos services</a>
+  </div>
+</section>
+
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="pillar-feature-grid reveal-stagger">
+    <div class="pillar-feature-card">
+      <span class="num">01 — Legal Intelligence</span>
+      <h3>La connaissance juridique à portée de main</h3>
+      <p class="tagline">Recherche législative, jurisprudence et doctrine, avec sources vérifiables.</p>
+      <ul>
+        <li>Recherche législative et réglementaire</li>
+        <li>Jurisprudence et doctrine</li>
+        <li>Analyse et synthèse de documents</li>
+        <li>Recherche en langage naturel, réponses avec sources</li>
+      </ul>
+      <a href="{{ url_for('pillar_legal_intelligence') }}" class="pillar-link">Explorer Legal Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="pillar-feature-card">
+      <span class="num">02 — Contract Intelligence</span>
+      <h3>Du modèle à l'exécution, en toute confiance</h3>
+      <p class="tagline">Bibliothèque de clauses, négociation, signature et suivi des échéances.</p>
+      <ul>
+        <li>Bibliothèque de clauses et playbooks</li>
+        <li>Négociation, redlining et comparaison de versions</li>
+        <li>Dates d'échéance et renouvellements</li>
+        <li>Signature électronique, archivage et suivi</li>
+      </ul>
+      <a href="{{ url_for('pillar_contract_intelligence') }}" class="pillar-link">Explorer Contract Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="pillar-feature-card">
+      <span class="num">03 — Transaction Intelligence</span>
+      <h3>De l'opportunité à la clôture</h3>
+      <p class="tagline">Structuration, due diligence et pilotage du workflow transactionnel.</p>
+      <ul>
+        <li>Structuration des transactions, due diligence</li>
+        <li>Gestion des parties prenantes</li>
+        <li>Cartographie des risques, checklists et échéanciers</li>
+        <li>Post-closing et intégration</li>
+      </ul>
+      <a href="{{ url_for('pillar_transaction_intelligence') }}" class="pillar-link">Explorer Transaction Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="pillar-feature-card">
+      <span class="num">04 — Tax Intelligence</span>
+      <h3>Une fiscalité maîtrisée, une croissance sécurisée</h3>
+      <p class="tagline">Obligations, échéances et scénarios de structuration fiscale.</p>
+      <ul>
+        <li>Analyse fiscale des transactions</li>
+        <li>Obligations et échéances fiscales</li>
+        <li>Scénarios de structuration, optimisation fiscale</li>
+        <li>Sources légales et réglementaires</li>
+      </ul>
+      <a href="{{ url_for('pillar_tax_intelligence') }}" class="pillar-link">Explorer Tax Intelligence <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="pillar-feature-card" style="grid-column:1 / -1;">
+      <span class="num">05 — Regulatory &amp; Compliance Intelligence</span>
+      <h3>Anticiper. Se conformer. Protéger.</h3>
+      <p class="tagline">Conformité AML/KYC, autorisations et suivi réglementaire.</p>
+      <ul style="grid-template-columns:1fr 1fr;display:grid;">
+        <li>Réglementations sectorielles</li>
+        <li>Conformité AML / KYC / sanctions</li>
+        <li>Autorisations, licences et alertes</li>
+        <li>Reporting et documentation</li>
+      </ul>
+      <a href="{{ url_for('pillar_regulatory_compliance') }}" class="pillar-link">Explorer Regulatory &amp; Compliance <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Sixième produit</div>
+      <h2>Massey Law Review</h2>
+      <p>Notre revue juridique en ligne, consacrée au droit des affaires haïtien — incluse dans l'abonnement Premium.</p>
+    </div>
+    <a href="{{ url_for('revue_home') }}" class="btn btn-ghost btn-sm">Découvrir la revue</a>
+  </div>
+  <div class="callout reveal" style="max-width:74ch;">
+    Analyses, études de cas et notes pratiques sur le droit des contrats, la fiscalité des affaires et les transactions transfrontalières. Les résumés sont ouverts à tous ; le texte intégral et le PDF de chaque article sont réservés aux abonnés Premium (ou à l'abonnement Revue seule).
+  </div>
+</section>
+
+<section class="block" id="gouvernance">
+  <div class="cta-banner reveal">
+    <div>
+      <h2>Essayez gratuitement, sans engagement</h2>
+      <p>Un compte gratuit donne un accès de base immédiat à chaque pilier. Passez à Premium quand vous êtes prêt pour un accès complet et illimité.</p>
+    </div>
+    <div class="ctas">
+      {% if current_user %}
+        <a href="{{ url_for('membership') }}" class="btn btn-primary">Voir les formules</a>
+      {% else %}
+        <a href="{{ url_for('register', next=url_for('membership')) }}" class="btn btn-primary">Créer un compte gratuit</a>
+      {% endif %}
+      <a href="{{ url_for('services') }}" class="btn btn-ghost">Voir nos services d'accompagnement</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

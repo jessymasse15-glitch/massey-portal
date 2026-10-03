@@ -104,8 +104,8 @@ def _has_review_access(u):
 LANG_COUNTERPART = {
     "home": "home_en", "home_en": "home",
     "about": "about_en", "about_en": "about",
-    "expertise": "expertise_en", "expertise_en": "expertise",
-    "tarifs": "tarifs_en", "tarifs_en": "tarifs",
+    "produits": "produits_en", "produits_en": "produits",
+    "services": "services_en", "services_en": "services",
     "membership": "membership_en", "membership_en": "membership",
     "pillar_legal_intelligence": "pillar_legal_intelligence_en", "pillar_legal_intelligence_en": "pillar_legal_intelligence",
     "pillar_contract_intelligence": "pillar_contract_intelligence_en", "pillar_contract_intelligence_en": "pillar_contract_intelligence",
@@ -196,20 +196,12 @@ def can_view_dossier(user, dossier):
 
 @app.route("/")
 def home():
-    return render_template(
-        "marketing/home.html", corpus_source_types=dbm.CORPUS_SOURCE_TYPES,
-        plans=dbm.MEMBERSHIP_PLANS, features=dbm.MEMBERSHIP_FEATURES,
-        free_features=dbm.FREE_PLAN_FEATURES,
-    )
+    return render_template("marketing/home.html")
 
 
 @app.route("/en/")
 def home_en():
-    return render_template(
-        "marketing/en/home.html", corpus_source_types=dbm.CORPUS_SOURCE_TYPES_EN,
-        plans=dbm.MEMBERSHIP_PLANS_EN, features=dbm.MEMBERSHIP_FEATURES_EN,
-        free_features=dbm.FREE_PLAN_FEATURES_EN,
-    )
+    return render_template("marketing/en/home.html")
 
 
 @app.route("/a-propos")
@@ -222,24 +214,46 @@ def about_en():
     return render_template("marketing/en/about.html")
 
 
+@app.route("/produits")
+def produits():
+    return render_template("marketing/produits.html")
+
+
+@app.route("/en/products")
+def produits_en():
+    return render_template("marketing/en/produits.html")
+
+
+@app.route("/services")
+def services():
+    return render_template("marketing/services.html")
+
+
+@app.route("/en/services")
+def services_en():
+    return render_template("marketing/en/services.html")
+
+
+# Anciennes URLs « Expertise » et « Tarifs » — fusionnées dans /services.
+# Conservées comme redirections permanentes pour les liens déjà partagés / indexés.
 @app.route("/expertise")
 def expertise():
-    return render_template("marketing/expertise.html")
+    return redirect(url_for("services"), code=301)
 
 
 @app.route("/en/expertise")
 def expertise_en():
-    return render_template("marketing/en/expertise.html")
+    return redirect(url_for("services_en"), code=301)
 
 
 @app.route("/tarifs")
 def tarifs():
-    return render_template("marketing/tarifs.html")
+    return redirect(url_for("services"), code=301)
 
 
 @app.route("/en/pricing")
 def tarifs_en():
-    return render_template("marketing/en/tarifs.html")
+    return redirect(url_for("services_en"), code=301)
 
 
 @app.route("/espace-client")
