@@ -1,0 +1,69 @@
+{# Vérification d'identité en direct : pièce + selfie, caméra uniquement. Variables : idc, lang #}
+{% set en = (lang == 'en') %}
+<div class="card" id="idcap" style="max-width:720px;margin-top:28px;" data-url="{{ idc.submit_url }}" data-en="{{ '1' if en else '0' }}">
+  <h3 style="margin-top:0;">{{ 'Step 1 — Verify your identity' if en else 'Étape 1 — Vérifiez votre identité' }}</h3>
+  {% if idc.note %}<div class="callout" style="border-left-color:var(--warn);">{{ 'The sender could not confirm your identity:' if en else 'L\'expéditeur n\'a pas pu confirmer votre identité :' }} « {{ idc.note }} »</div>{% endif %}
+  <p>{{ 'The sender requires a valid ID document and a live selfie before you sign. Photos are taken with your camera now; uploading existing files is not possible.' if en else 'L\'expéditeur exige une pièce d\'identité valide et un selfie en direct avant que vous signiez. Les photos se prennent maintenant avec votre caméra ; l\'envoi de fichiers existants n\'est pas possible.' }}</p>
+  <div class="grid-2">
+    <div class="form-group"><label for="id-country">{{ 'Country where you live' if en else 'Pays où vous résidez' }}</label>
+      <select id="id-country">{% for code, o in idc.options.items() %}<option value="{{ code }}">{{ o.name }}</option>{% endfor %}</select></div>
+    <div class="form-group"><label for="id-type">{{ 'Document type' if en else 'Type de pièce' }}</label><select id="id-type"></select></div>
+    <div class="form-group"><label for="id-exp">{{ 'Expiry date shown on the document' if en else 'Date d\'expiration inscrite sur la pièce' }}</label><input type="date" id="id-exp"></div>
+  </div>
+  <p class="helptext">{{ 'Only a document in force for your country of residence is accepted (original, not a photocopy or a screen).' if en else 'Seule une pièce en cours de validité, acceptée pour votre pays de résidence, convient (original, pas une photocopie ni un écran).' }}</p>
+
+  <div class="idcap-steps">
+    <div class="idcap-step" data-k="doc"><strong>{{ '1. Photo of the document (photo side)' if en else '1. Photo de la pièce (côté photo)' }}</strong>
+      <div class="idcap-view"><video playsinline muted></video><img alt="" hidden></div>
+      <div class="idcap-btns"><button type="button" class="btn btn-ghost btn-sm" data-act="start">{{ 'Open camera' if en else 'Ouvrir la caméra' }}</button><button type="button" class="btn btn-primary btn-sm" data-act="snap" hidden>{{ 'Take the photo' if en else 'Prendre la photo' }}</button><button type="button" class="btn btn-ghost btn-sm" data-act="redo" hidden>{{ 'Retake' if en else 'Reprendre' }}</button></div></div>
+    <div class="idcap-step" data-k="selfie"><strong>{{ '2. Live selfie' if en else '2. Selfie en direct' }}</strong>
+      <div class="callout" style="margin:8px 0;">{{ 'Do this on the photo:' if en else 'À faire sur la photo :' }} <strong>{{ idc.gesture }}</strong></div>
+      <div class="idcap-view"><video playsinline muted></video><img alt="" hidden></div>
+      <div class="idcap-btns"><button type="button" class="btn btn-ghost btn-sm" data-act="start">{{ 'Open camera' if en else 'Ouvrir la caméra' }}</button><button type="button" class="btn btn-primary btn-sm" data-act="snap" hidden>{{ 'Take the selfie' if en else 'Prendre le selfie' }}</button><button type="button" class="btn btn-ghost btn-sm" data-act="redo" hidden>{{ 'Retake' if en else 'Reprendre' }}</button></div></div>
+  </div>
+
+  <label style="display:flex;gap:10px;align-items:flex-start;font-weight:400;margin:14px 0;"><input type="checkbox" id="id-consent" style="width:auto;margin-top:4px;"><span>{{ 'I consent to the sender seeing my ID document and selfie for the sole purpose of confirming my identity for this contract. They are stored encrypted and permanently deleted %d days after the request closes.' % idc.retention if en else 'Je consens à ce que l\'expéditeur voie ma pièce d\'identité et mon selfie dans le seul but de confirmer mon identité pour ce contrat. Ils sont conservés chiffrés et supprimés définitivement %d jours après la clôture de la demande.' % idc.retention }}</span></label>
+  <div id="id-err" class="callout" style="border-left-color:var(--danger);" hidden></div>
+  <button type="button" class="btn btn-primary" id="id-send" disabled>{{ 'Send and continue' if en else 'Envoyer et continuer' }}</button>
+  <p class="helptext">{{ 'No automatic face recognition: a person compares the photos. If your browser cannot open the camera, use a phone with an up-to-date browser.' if en else 'Pas de reconnaissance faciale automatique : une personne compare les photos. Si votre navigateur ne peut pas ouvrir la caméra, utilisez un téléphone avec un navigateur à jour.' }}</p>
+</div>
+<script>
+(function(){
+  var box=document.getElementById('idcap'); if(!box) return;
+  var en=box.getAttribute('data-en')==='1', OPT={{ idc.options|tojson }}, NONCE={{ idc.nonce|tojson }};
+  var cs=document.getElementById('id-country'), ty=document.getElementById('id-type');
+  function fill(){ty.innerHTML='';OPT[cs.value].types.forEach(function(t){var o=document.createElement('option');o.value=t[0];o.textContent=t[1];ty.appendChild(o);});}
+  cs.addEventListener('change',fill); fill();
+  var blobs={doc:null,selfie:null}, streams={};
+  function T(fr,e){return en?e:fr;}
+  function sync(){document.getElementById('id-send').disabled=!(blobs.doc&&blobs.selfie&&document.getElementById('id-consent').checked&&document.getElementById('id-exp').value);}
+  document.getElementById('id-consent').addEventListener('change',sync); document.getElementById('id-exp').addEventListener('input',sync);
+  function err(t){var e=document.getElementById('id-err'); e.textContent=t; e.hidden=!t;}
+  box.querySelectorAll('.idcap-step').forEach(function(st){
+    var k=st.getAttribute('data-k'), v=st.querySelector('video'), im=st.querySelector('img');
+    var b={start:st.querySelector('[data-act=start]'),snap:st.querySelector('[data-act=snap]'),redo:st.querySelector('[data-act=redo]')};
+    function stop(){if(streams[k]){streams[k].getTracks().forEach(function(t){t.stop();});streams[k]=null;}}
+    b.start.addEventListener('click',function(){
+      err(''); if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){err(T('Caméra indisponible sur ce navigateur ou cette connexion.','Camera unavailable on this browser or connection.'));return;}
+      navigator.mediaDevices.getUserMedia({video:{facingMode:k==='doc'?{ideal:'environment'}:'user',width:{ideal:1280},height:{ideal:960}},audio:false}).then(function(s){
+        streams[k]=s; v.srcObject=s; v.hidden=false; im.hidden=true; v.play(); b.start.hidden=true; b.snap.hidden=false;
+      }).catch(function(){err(T('Accès à la caméra refusé. Autorisez la caméra dans votre navigateur puis réessayez.','Camera access denied. Allow the camera in your browser, then retry.'));});
+    });
+    b.snap.addEventListener('click',function(){
+      var w=v.videoWidth,h=v.videoHeight; if(!w||!h){return;}
+      var sc=Math.min(1,1280/w), c=document.createElement('canvas'); c.width=Math.round(w*sc); c.height=Math.round(h*sc);
+      c.getContext('2d').drawImage(v,0,0,c.width,c.height);
+      c.toBlob(function(bl){blobs[k]=bl; im.src=URL.createObjectURL(bl); im.hidden=false; v.hidden=true; stop(); b.snap.hidden=true; b.redo.hidden=false; sync();},'image/jpeg',0.85);
+    });
+    b.redo.addEventListener('click',function(){blobs[k]=null; b.redo.hidden=true; b.start.hidden=false; im.hidden=true; sync();});
+  });
+  document.getElementById('id-send').addEventListener('click',function(){
+    var btn=this; btn.disabled=true; err('');
+    var fd=new FormData(); fd.append('challenge',NONCE); fd.append('country',cs.value); fd.append('doc_type',ty.value); fd.append('expiry',document.getElementById('id-exp').value); fd.append('consent','1');
+    fd.append('doc_image',blobs.doc,'doc.jpg'); fd.append('selfie_image',blobs.selfie,'selfie.jpg');
+    fetch(box.getAttribute('data-url'),{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json();}).then(function(d){
+      if(d.ok){location.reload();} else {err(d.error||T('Échec de l\'envoi.','Upload failed.')); btn.disabled=false; if(/recharg|reload/i.test(d.error||'')) setTimeout(function(){location.reload();},3500);}
+    }).catch(function(){err(T('Échec de l\'envoi.','Upload failed.')); btn.disabled=false;});
+  });
+})();
+</script>

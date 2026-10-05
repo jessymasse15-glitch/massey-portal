@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "contract/_macros.html" import reader with context %}
 {% block title %}{{ approval['title'] }} — {{ 'Approval' if lang == 'en' else 'Approbation' }}{% endblock %}
 {% block content %}
 <section class="page-hero reveal">
@@ -25,6 +26,6 @@
     </div>
   {% endif %}
   <h3 style="margin-top:32px;">{{ 'Contract text submitted' if lang == 'en' else 'Texte soumis' }}</h3>
-  <div class="diff-view"><pre style="white-space:pre-wrap;font-family:inherit;margin:0;font-size:0.9rem;">{{ approval['body_snapshot'] }}</pre></div>
+  {{ reader(approval['body_snapshot'], open=False) }}
 </section>
 {% endblock %}

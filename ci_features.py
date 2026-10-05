@@ -48,6 +48,10 @@ def init(app_module):
     ci_teams.init(m, sys.modules[__name__])
     import ci_tools
     ci_tools.init(m, sys.modules[__name__])
+    import ci_mobile
+    ci_mobile.init(m, sys.modules[__name__])
+    import ci_idcheck
+    ci_idcheck.init(m, sys.modules[__name__], sys.modules["ci_extras"])
     _start_reminder_thread()
 
 
@@ -156,6 +160,16 @@ def _register_reminders():
             abort(404)
         summary = ci_reminders.run(m.app.config["SECRET_KEY"])
         try:
+            import ci_mobile
+            summary["mobile"] = ci_mobile.run_messages()
+        except Exception as exc:  # noqa: BLE001
+            summary["mobile"] = "error: %s" % str(exc)[:80]
+        try:
+            import ci_idcheck
+            summary["id_images_purged"] = ci_idcheck.purge_due()
+        except Exception as exc:  # noqa: BLE001
+            summary["id_images_purged"] = "error: %s" % str(exc)[:80]
+        try:
             import ci_extras
             summary["signatures_polled"] = ci_extras.poll_certified()
         except Exception as exc:  # noqa: BLE001
@@ -174,6 +188,10 @@ def _start_reminder_thread():
             try:
                 if 7 <= ci_reminders.local_hour() <= 20:
                     ci_reminders.run(secret_getter())
+                    import ci_mobile
+                    ci_mobile.run_messages()
+                import ci_idcheck
+                ci_idcheck.purge_due()
                 import ci_extras
                 ci_extras.poll_certified()
             except Exception as exc:  # noqa: BLE001 — la tâche de fond ne doit jamais s'arrêter

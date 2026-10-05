@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "contract/_macros.html" import reader with context %}
 {% block title %}Demandes de relecture — Administration{% endblock %}
 {% block content %}
 {% if detail %}
@@ -19,7 +20,7 @@
     {% if r['status'] == 'accepted' %}<form method="POST" style="margin-top:10px;"><input type="hidden" name="action" value="done"><button class="btn btn-ghost btn-sm" type="submit">Marquer la relecture comme terminée</button></form>{% endif %}
   </div>
   <h3>Texte du contrat</h3>
-  <div class="diff-view"><pre style="white-space:pre-wrap;font-family:inherit;margin:0;font-size:.9rem;">{{ text }}</pre></div>
+  {{ reader(text, open=True) }}
 {% else %}
   <h1>Demandes de relecture</h1>
   {% for r in reviews %}

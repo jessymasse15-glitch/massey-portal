@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "contract/_macros.html" import reader with context %}
 {% block title %}{{ 'Approval requested' if lang == 'en' else 'Approbation demandée' }} — {{ approval['title'] }}{% endblock %}
 {% block content %}
 <section class="page-hero reveal">
@@ -24,7 +25,7 @@
     <div class="finding info"><div class="head"><h4>{{ s['approver_name'] or s['approver_email'] }}</h4><span class="status-pill">{{ step_labels[s['status']] }}</span></div><blockquote>{{ s['comment'] }}</blockquote></div>
   {% endfor %}
   <h3>{{ 'Contract text' if lang == 'en' else 'Texte du contrat' }}</h3>
-  <div class="diff-view"><pre style="white-space:pre-wrap;font-family:inherit;margin:0;font-size:0.9rem;">{{ approval['body_snapshot'] }}</pre></div>
+  {{ reader(approval['body_snapshot'], open=True) }}
   <p class="helptext" style="margin-top:16px;">{{ 'This page is private: do not share the link.' if lang == 'en' else 'Cette page est privée : ne partagez pas le lien.' }}</p>
 </section>
 {% endblock %}

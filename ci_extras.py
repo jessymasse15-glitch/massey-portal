@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from flask import abort, flash, g, redirect, render_template, request, send_file, Response, url_for
 
 import ci_crypto
+import ci_idcheck
 import ci_esign
 import ci_legal
 import ci_pdf
@@ -73,13 +74,15 @@ def _register_report():
         row, _role = ci_review.analysis_access(conn, u, aid, "viewer")
         conn.close()
         result = json.loads(row["result_json"])
+        m.contract_engine.upgrade_excerpts(row["text_content"], result.get("findings", []))
         lang = "en" if g.lang == "en" else "fr"
         flat = m.contract_engine.extract_party_obligations(row["text_content"], result["language"])
         obligations = m.contract_engine.extract_obligations(row["text_content"], result["language"], None)
         data = ci_pdf.analysis_report(row["title"], result, lang, m.contract_engine.party_groups(flat), obligations,
                                       row["created_at"], m.contract_engine.LEVEL_LABELS[lang])
         name = "rapport-analyse-%d.pdf" % aid if lang == "fr" else "analysis-report-%d.pdf" % aid
-        return Response(data, mimetype="application/pdf", headers={"Content-Disposition": 'attachment; filename="%s"' % name})
+        return Response(data, mimetype="application/pdf", headers={"Content-Disposition": '%s; filename="%s"' % ("inline" if request.args.get("inline") else "attachment", name),
+                                                                  "Cache-Control": "private, no-store"})
 
 
 # ---------------------------------------------------------------------------
@@ -347,7 +350,8 @@ def _complete(conn, req):
         return False
     req = conn.execute("SELECT * FROM ci_signature_requests WHERE id=?", (req["id"],)).fetchone()
     _log_sig(conn, req, "sig_completed")
-    signers = [{"name": s["signer_name"], "email": s["signer_email"], "signed_name": s["signed_name"], "signed_at": s["signed_at"], "ip": s["ip_address"]}
+    signers = [{"name": s["signer_name"], "email": s["signer_email"], "signed_name": s["signed_name"], "signed_at": s["signed_at"], "ip": s["ip_address"],
+                "identity": ci_idcheck.identity_summary(s)}
                for s in conn.execute("SELECT * FROM ci_signers WHERE request_id=? ORDER BY id", (req["id"],)).fetchall()]
     try:
         data = ci_pdf.signed_contract(req["title"], req["body_snapshot"], req["lang"], req["body_sha256"], signers, "SIG-%d" % req["id"], req["completed_at"], _verify_url(req))
@@ -474,6 +478,7 @@ def _register_signatures():
         method = "certified" if request.form.get("method") == "certified" else "simple"
         stakes = request.form.get("stakes") if request.form.get("stakes") in ("courant", "important", "forme") else "courant"
         certified_ok = ci_esign.is_configured()
+        id_check = 1 if (method == "simple" and request.form.get("id_check")) else 0
         err = None
         if not text:
             err = m._T("Aucun texte à signer : rattachez d'abord une analyse ou un brouillon à cette fiche.", "No text to sign: attach an analysis or a draft to this record first.")
@@ -517,8 +522,8 @@ def _register_signatures():
                 return redirect(back)
         now = _now()
         cur = conn.execute(
-            "INSERT INTO ci_signature_requests (owner_id, registry_id, title, body_snapshot, body_sha256, source_label, lang, message, status, created_at, method, provider_ref, stakes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (u["id"], rid, entry["title"], text, sha, source, g.lang, message, "pending", now, method, provider_ref, stakes))
+            "INSERT INTO ci_signature_requests (owner_id, registry_id, title, body_snapshot, body_sha256, source_label, lang, message, status, created_at, method, provider_ref, stakes, id_check) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (u["id"], rid, entry["title"], text, sha, source, g.lang, message, "pending", now, method, provider_ref, stakes, id_check))
         sid = cur.lastrowid
         for name, email in people:
             conn.execute("INSERT INTO ci_signers (request_id, signer_name, signer_email, token, status, notified_at) VALUES (?,?,?,?,?,?)",
@@ -732,14 +737,20 @@ def _register_signatures():
                     return redirect(url_for("ci_signature_public", token=token))
             elif action == "sign":
                 typed = (request.form.get("full_legal_name") or "").strip()[:120]
-                if len(typed) < 3 or not request.form.get("consent_read") or not request.form.get("consent_binding"):
+                if ci_idcheck.request_needs_id(req) and ci_idcheck.id_state(signer) not in ("captured", "approved"):
+                    flash(m._T("Vérifiez d'abord votre identité (pièce et selfie).", "Verify your identity first (document and selfie)."), "error")
+                elif len(typed) < 3 or not request.form.get("consent_read") or not request.form.get("consent_binding"):
                     flash(m._T("Le nom légal complet et les deux cases de consentement sont requis.", "Your full legal name and both consent boxes are required."), "error")
                 else:
                     conn.execute("UPDATE ci_signers SET status='signed', signed_name=?, ip_address=?, user_agent=?, signed_at=? WHERE id=? AND status='pending'",
                                  (typed, request.remote_addr, request.headers.get("User-Agent", "")[:300], _now(), signer["id"]))
                     conn.commit()
                     pending = conn.execute("SELECT COUNT(*) AS c FROM ci_signers WHERE request_id=? AND status<>'signed'", (req["id"],)).fetchone()["c"]
-                    if pending == 0:
+                    if pending == 0 and ci_idcheck.request_needs_id(req) and not ci_idcheck.all_identities_ok(conn, req):
+                        F._notify(owner["email"], ("Identity review needed: " if en else "Vérification d'identité à confirmer : ") + req["title"],
+                                  ("All signatories signed \"%s\". Review their ID document and selfie to finalise:\n" if en else "Tous les signataires ont signé « %s ». Contrôlez leur pièce d'identité et leur selfie pour finaliser :\n") % req["title"]
+                                  + "\n" + F._site_link("/contract-intelligence/signatures/%d" % req["id"]))
+                    elif pending == 0:
                         _complete(conn, req)
                     else:
                         F._notify(owner["email"], ("Signature received: " if en else "Signature reçue : ") + req["title"],
@@ -748,8 +759,15 @@ def _register_signatures():
                     conn.close()
                     return redirect(url_for("ci_signature_public", token=token))
         signers = conn.execute("SELECT * FROM ci_signers WHERE request_id=? ORDER BY id", (req["id"],)).fetchall()
+        idc = None
+        if can_sign and ci_idcheck.request_needs_id(req):
+            signer = conn.execute("SELECT * FROM ci_signers WHERE id=?", (signer["id"],)).fetchone()
+            idc = {"state": ci_idcheck.id_state(signer), "options": ci_idcheck.doc_options(lang), "note": signer["id_note"], "retention": ci_idcheck.retention_days(),
+                   "submit_url": url_for("ci_idcheck_submit", token=token)}
+            if idc["state"] not in ("captured", "approved"):
+                idc["nonce"], idc["gesture"] = ci_idcheck.issue_challenge(conn, signer, lang)
         conn.close()
-        return render_template("contract/signature_public.html", req=req, signer=signer, signers=signers, owner=owner, lang=lang,
+        return render_template("contract/signature_public.html", req=req, signer=signer, signers=signers, owner=owner, lang=lang, idc=idc,
                                can_sign=can_sign, expired=expired, certified=certified, consent=CONSENT[lang], status_labels=SIG_STATUS[lang],
                                signer_labels=SIGNER_STATUS[lang], ci_active="", level_labels={}, link_days=SIGNATURE_LINK_DAYS)
 

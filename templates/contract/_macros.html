@@ -77,3 +77,11 @@
   </form>
 </details>
 {% endmacro %}
+
+{% macro reader(text, label=None, open=False, sha=None) %}
+<details class="rd" {{ 'open' if open }}>
+  <summary>{{ label or ('Contract text' if lang == 'en' else 'Texte du contrat') }} <span class="helptext">· {{ text|word_count }} {{ 'words' if lang == 'en' else 'mots' }}{% if not open %} — {{ 'click to read' if lang == 'en' else 'cliquer pour lire' }}{% endif %}</span></summary>
+  {% if sha %}<p class="helptext" style="margin:8px 0 0;">SHA-256 <code style="word-break:break-all;">{{ sha }}</code></p>{% endif %}
+  <div class="rd-body" tabindex="0">{{ text|contract_html }}</div>
+</details>
+{% endmacro %}

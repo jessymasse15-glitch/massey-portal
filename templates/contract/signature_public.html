@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "contract/_macros.html" import reader with context %}
 {% block title %}{{ 'Signature requested' if lang == 'en' else 'Signature demandée' }} — {{ req['title'] }}{% endblock %}
 {% block content %}
 <section class="page-hero reveal">
@@ -23,11 +24,12 @@
     <div class="callout" style="border-left-color:var(--warn);">{{ 'This link has expired. Ask the sender to send a reminder.' if lang == 'en' else 'Ce lien a expiré. Demandez à l\'expéditeur de vous envoyer un rappel.' }}</div>
   {% endif %}
 
-  <h3>{{ 'Contract text' if lang == 'en' else 'Texte du contrat' }}</h3>
-  <p class="helptext">SHA-256 <code style="word-break:break-all;">{{ req['body_sha256'] }}</code></p>
-  <div class="diff-view" style="max-height:480px;overflow:auto;"><pre style="white-space:pre-wrap;font-family:inherit;margin:0;font-size:0.9rem;">{{ req['body_snapshot'] }}</pre></div>
+{{ reader(req['body_snapshot'], open=True, sha=req['body_sha256']) }}
 
-  {% if can_sign %}
+  {% if can_sign and idc and idc.state not in ('captured','approved') %}
+    {% include "contract/_idcapture.html" %}
+  {% elif can_sign %}
+    {% if idc %}<div class="callout" style="max-width:720px;margin-top:28px;">✓ {{ 'Identity photos received. Now sign below; the sender will confirm your identity before the contract is finalised.' if lang == 'en' else 'Photos d\'identité reçues. Signez maintenant ci-dessous ; l\'expéditeur confirmera votre identité avant la finalisation du contrat.' }}</div>{% endif %}
     <form method="POST" class="card" style="max-width:720px;margin-top:28px;">
       <input type="hidden" name="action" value="sign">
       <h3 style="margin-top:0;">{{ 'Sign' if lang == 'en' else 'Signer' }}</h3>

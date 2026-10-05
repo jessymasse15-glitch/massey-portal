@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "contract/_macros.html" import reader with context %}
 {% block title %}{{ req['title'] }} — {{ 'Signature' }}{% endblock %}
 {% block content %}
 <section class="page-hero reveal">
@@ -14,6 +15,36 @@
       <div class="head"><h4>{{ s['signer_name'] or s['signer_email'] }}</h4><span class="status-pill {{ 'done' if s['status']=='signed' else ('urgent' if s['status']=='declined' else '') }}">{{ signer_labels[s['status']] }}</span></div>
       <div class="where">{{ s['signer_email'] }}{% if s['signed_at'] %} · {{ s['signed_at'][:16]|replace('T',' ') }} UTC{% endif %}{% if s['signed_name'] %} · « {{ s['signed_name'] }} »{% endif %}</div>
       {% if s['decline_reason'] %}<blockquote>{{ s['decline_reason'] }}</blockquote>{% endif %}
+      {% if req['id_check'] %}
+        <div class="idrev" style="margin-top:10px;">
+          <strong>{{ 'Identity check' if lang == 'en' else 'Vérification d\'identité' }} :</strong>
+          {% set st = s['id_status'] or '' %}
+          {% if st == 'approved' %}<span class="status-pill done">{{ 'Confirmed' if lang == 'en' else 'Confirmée' }}</span> {{ s['id_doc_type'] }} · {{ s['id_country'] }} · {{ 'expires' if lang == 'en' else 'expire' }} {{ s['id_doc_expiry'] }}
+          {% elif st == 'captured' %}<span class="status-pill">{{ 'To review' if lang == 'en' else 'À contrôler' }}</span>
+          {% elif st == 'rejected' %}<span class="status-pill urgent">{{ 'Rejected — waiting for a new attempt' if lang == 'en' else 'Rejetée — nouvelle tentative attendue' }}</span>
+          {% else %}<span class="helptext">{{ 'Not yet captured' if lang == 'en' else 'Pas encore reçue' }}</span>{% endif %}
+          {% if s['id_doc_path'] %}
+            <div class="idrev-imgs" style="display:flex;gap:12px;flex-wrap:wrap;margin:10px 0;">
+              <figure style="margin:0;"><img src="{{ ci_url('idcheck_image', sid=req['id'], signer_id=s['id'], kind='piece') }}" alt="{{ 'ID document' if lang == 'en' else 'Pièce d\'identité' }}" style="max-width:300px;border-radius:8px;border:1px solid var(--line);"><figcaption class="helptext">{{ s['id_doc_type'] }} · {{ s['id_country'] }} · {{ 'expires' if lang == 'en' else 'expire' }} {{ s['id_doc_expiry'] }}</figcaption></figure>
+              <figure style="margin:0;"><img src="{{ ci_url('idcheck_image', sid=req['id'], signer_id=s['id'], kind='selfie') }}" alt="Selfie" style="max-width:300px;border-radius:8px;border:1px solid var(--line);"><figcaption class="helptext">{{ 'Live selfie' if lang == 'en' else 'Selfie en direct' }} · {{ s['id_captured_at'][:16]|replace('T',' ') }} UTC</figcaption></figure>
+            </div>
+          {% endif %}
+          {% if st == 'captured' and req['status'] == 'pending' %}
+            <form method="POST" action="{{ ci_url('idcheck_decide', sid=req['id'], signer_id=s['id']) }}" style="margin-top:6px;">
+              <input type="hidden" name="action" value="approve">
+              <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;"><input type="checkbox" name="checked" value="1" style="width:auto;margin-top:4px;" required> <span>{{ 'I compared the document, the selfie and the name given by the signatory (%s), and the document looks valid and unaltered.' % (s['signed_name'] or s['signer_name'] or s['signer_email']) if lang == 'en' else 'J\'ai comparé la pièce, le selfie et le nom donné par le signataire (%s) ; la pièce me paraît valide et non altérée.' % (s['signed_name'] or s['signer_name'] or s['signer_email']) }}</span></label>
+              <button class="btn btn-primary btn-sm" type="submit" style="margin-top:8px;">{{ 'Confirm identity' if lang == 'en' else 'Confirmer l\'identité' }}</button>
+            </form>
+            <form method="POST" action="{{ ci_url('idcheck_decide', sid=req['id'], signer_id=s['id']) }}" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+              <input type="hidden" name="action" value="reject">
+              <input name="reason" maxlength="300" placeholder="{{ 'Reason (sent to the signatory)' if lang == 'en' else 'Motif (transmis au signataire)' }}" style="max-width:340px;" required>
+              <button class="btn btn-danger btn-sm" type="submit">{{ 'Reject and ask to redo' if lang == 'en' else 'Rejeter et demander de refaire' }}</button>
+            </form>
+          {% elif s['id_doc_path'] and st != 'captured' %}
+            <form method="POST" action="{{ ci_url('idcheck_decide', sid=req['id'], signer_id=s['id']) }}" style="margin-top:6px;"><input type="hidden" name="action" value="purge"><button class="btn btn-ghost btn-sm" type="submit">{{ 'Delete the images now' if lang == 'en' else 'Supprimer les images maintenant' }}</button></form>
+          {% elif s['id_purged_at'] %}<span class="helptext">{{ 'Images deleted on' if lang == 'en' else 'Images supprimées le' }} {{ s['id_purged_at'][:10] }}</span>{% endif %}
+        </div>
+      {% endif %}
       {% if s['status'] == 'pending' and req['status'] == 'pending' and req['method'] != 'certified' %}
         <p class="helptext">{{ 'If the email did not arrive, share this private link yourself:' if lang == 'en' else 'Si le courriel n\'est pas arrivé, transmettez vous-même ce lien privé :' }}<br><code style="word-break:break-all;">{{ links[s['id']] }}</code></p>
       {% endif %}
@@ -36,6 +67,6 @@
   </div>
   <h3 style="margin-top:32px;">{{ 'Text being signed' if lang == 'en' else 'Texte soumis à signature' }}</h3>
   <p class="helptext">{{ 'Source:' if lang == 'en' else 'Source :' }} {{ req['source_label'] }} · SHA-256 <code style="word-break:break-all;">{{ req['body_sha256'] }}</code></p>
-  <div class="diff-view"><pre style="white-space:pre-wrap;font-family:inherit;margin:0;font-size:0.9rem;">{{ req['body_snapshot'] }}</pre></div>
+  {{ reader(req['body_snapshot']) }}
 </section>
 {% endblock %}

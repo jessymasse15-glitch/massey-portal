@@ -443,6 +443,29 @@ def _contract_intelligence_context():
     )
 
 
+@app.template_filter("contract_html")
+def _contract_html(text):
+    """Texte de contrat -> HTML sûr, paragraphes reflués (phrases entières), articles en gras."""
+    from markupsafe import Markup, escape
+    out = []
+    for b in contract_engine.render_blocks(text):
+        if b[0] == "blank":
+            continue
+        if b[0] == "title":
+            out.append('<h4 class="rd-title">%s</h4>' % escape(b[1]))
+        elif b[0] == "head":
+            head = ('<strong>%s.</strong> ' % escape(b[1])) + (('<strong>%s.</strong> ' % escape(b[2])) if b[2] else "")
+            out.append('<p class="rd-art">%s%s</p>' % (head, escape(b[3])))
+        else:
+            out.append("<p>%s</p>" % escape(b[1]))
+    return Markup("".join(out))
+
+
+@app.template_filter("word_count")
+def _word_count(text):
+    return len((text or "").split())
+
+
 @app.route("/contract-intelligence")
 def pillar_contract_intelligence():
     return render_template("marketing/pillar_contract.html", **_contract_intelligence_context())
@@ -668,6 +691,7 @@ def ci_analysis(aid):
     owner = conn.execute("SELECT full_name, email FROM users WHERE id=?", (row["user_id"],)).fetchone()
     conn.close()
     result = json.loads(row["result_json"])
+    contract_engine.upgrade_excerpts(row["text_content"], result.get("findings", []))
     clauses, unplaced = ci_review.annotate(row["text_content"], result.get("findings", []))
     effective = _ci_iso_date(request.args.get("effective"))
     eff_date = datetime.strptime(effective, "%Y-%m-%d").date() if effective else None
@@ -1054,8 +1078,11 @@ def ci_deadlines():
     prefs = ci_reminders.get_prefs(conn, u["id"])
     import ci_extras
     cal = ci_extras.calendar_context(conn, u)
+    import ci_mobile
+    mobile = ci_mobile.get_mobile(conn, u["id"])
+    mobile["masked"] = ci_mobile.mask(mobile["phone"])
     conn.close()
-    return _ci_page("deadlines", **_ci_ctx("deadlines", cal=cal, groups=groups, kind_labels=kind_labels,
+    return _ci_page("deadlines", **_ci_ctx("deadlines", cal=cal, mobile=mobile, mobile_channels=ci_mobile.channels_available(), groups=groups, kind_labels=kind_labels,
                                            total=len(rows), cap=cap, today=today.isoformat(),
                                            reminder_prefs=prefs, smtp_ok=notifications.is_configured(),
                                            offset_choices=ci_reminders.ALLOWED_OFFSETS))

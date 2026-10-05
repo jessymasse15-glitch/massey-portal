@@ -122,19 +122,69 @@ def detect_language(text):
     return "en" if en > fr else "fr"
 
 
-_SENT_END = ".;\n"
+_ABBR = {"art", "arts", "al", "n", "no", "nos", "nº", "p", "pp", "cf", "ex", "env", "etc", "vs", "m", "mm", "mme", "mmes", "mlle", "me", "mes",
+         "dr", "pr", "st", "ste", "sec", "ch", "chap", "para", "resp", "ed", "éd", "vol", "inc", "ltd", "co", "corp", "ss", "tel", "tél", "fig", "approx"}
+_SENT_RX = re.compile(
+    r"[.!?]+[\"'»”)]*[ \t]*\n?[ \t]*(?=[A-ZÀ-ÝÇ0-9«\"“(])"                       # fin de phrase avant une majuscule / un chiffre
+    r"|\n[ \t]*\n"                                                     # saut de paragraphe
+    r"|:[ \t]*\n"                                                       # annonce d'une liste
+    r"|\n(?=[ \t]*(?:[a-z]\)|\(?[ivxlc]+\)|\d{1,2}[.)]\s|[-•–]\s))"    # puce ou numéro en début de ligne
+)
 
 
-def _sentence_around(text, start, end, radius=260):
-    lo = start
-    while lo > 0 and start - lo < radius and text[lo - 1] not in _SENT_END:
-        lo -= 1
-    hi = end
-    while hi < len(text) and hi - end < radius and text[hi] not in _SENT_END:
-        hi += 1
-    if hi < len(text) and text[hi] == ".":
-        hi += 1
-    return re.sub(r"\s+", " ", text[lo:hi]).strip()
+def _sentence_bounds(text, start, end, radius):
+    lo_w, hi_w = max(0, start - radius), min(len(text), end + radius)
+    win = text[lo_w:hi_w]
+    cuts = []
+    for mt in _SENT_RX.finditer(win):
+        if mt.group(0)[0] in ".!?":
+            before = win[:mt.start()]
+            tok = re.search(r"([^\W\d_]+)$", before)
+            if tok and (tok.group(1).lower() in _ABBR or (len(tok.group(1)) == 1 and tok.group(1).isupper())):
+                continue
+            if re.search(r"\d$", before) and re.match(r"\.\s*\d", mt.group(0) + win[mt.end():mt.end() + 1]):
+                continue
+        cuts.append((lo_w + mt.start(), lo_w + mt.end(), mt.group(0)))
+    lo, hi = None, None
+    for a, b, g in cuts:
+        if b <= start:
+            lo = b
+        elif a >= end and hi is None:
+            hi = a + len(g.rstrip()) if g[0] in ".!?" else a
+    return (lo if lo is not None else lo_w), (hi if hi is not None else hi_w)
+
+
+def _clip(text, n=1000):
+    if len(text) <= n:
+        return text
+    cut = text[:n].rsplit(" ", 1)[0].rstrip(",;:")
+    return cut + "…"
+
+
+def _sentence_around(text, start, end, radius=700):
+    """Phrase complète autour d'une correspondance : coupures sur . ! ? (hors abréviations, décimales), paragraphes et puces ;
+    les retours à la ligne internes (texte extrait d'un PDF) ne coupent pas la phrase."""
+    lo, hi = _sentence_bounds(text, start, end, radius)
+    return _clip(re.sub(r"\s+", " ", text[lo:hi]).strip())
+
+
+def upgrade_excerpts(text, findings):
+    """Ré-étend les extraits d'analyses déjà enregistrées (coupés par l'ancienne méthode) à la phrase complète."""
+    if not text:
+        return findings
+    for f in findings or []:
+        old = (f.get("excerpt") or "").strip().rstrip("….")
+        if len(old) < 12:
+            continue
+        probe = old[:60]
+        rx = re.compile(r"\s+".join(re.escape(w) for w in probe.split()))
+        mt = rx.search(text)
+        if not mt:
+            continue
+        new = _sentence_around(text, mt.start(), mt.end())
+        if len(new) > len(old) or new != old:
+            f["excerpt"] = new
+    return findings
 
 
 # ---------------------------------------------------------------------------
@@ -574,7 +624,7 @@ def analyze_contract(text, lang=None, custom_rules=(), sources=()):
                         "why": why, "fix": fix,
                         "clause_index": clause["index"], "clause_number": clause["number"],
                         "clause_title": clause["title"],
-                        "excerpt": _sentence_around(original, m.start(), m.end())[:420],
+                        "excerpt": _sentence_around(original, m.start(), m.end()),
                     })
                     break
                 if (rule["id"], clause["index"]) in seen:
@@ -738,7 +788,7 @@ def extract_obligations(text, lang=None, effective_date=None):
             else:
                 k = "date"
             push({"kind": k, "label": sentence[:160], "due_date": d.isoformat(), "delay_days": None,
-                  "delay_text": None, "estimated": False, "excerpt": sentence[:420]})
+                  "delay_text": None, "estimated": False, "excerpt": sentence})
 
     # 2) Délais relatifs
     def handle_duration(m, number, unit, qualif):
@@ -765,7 +815,7 @@ def extract_obligations(text, lang=None, effective_date=None):
                    else effective_date + datetime.timedelta(days=days)).isoformat()
             estimated = True
         push({"kind": kind, "label": sentence[:160], "due_date": due, "delay_days": days,
-              "delay_text": delay_text, "estimated": estimated, "excerpt": sentence[:420]})
+              "delay_text": delay_text, "estimated": estimated, "excerpt": sentence})
 
     for m in _DURATION_DIGITS.finditer(folded):
         number = int(m.group(1) or m.group(2))
@@ -866,11 +916,35 @@ _NUM_RX = re.compile(r"^(\d{1,2}(?:\.\d{1,2})*)[.)]\s+(.*)$")
 _NUMHEAD_RX = re.compile(r"^([^.:;]{2,70}\.)\s+(\S.*)$")
 
 
+def reflow_text(text):
+    """Recolle les lignes coupées en plein milieu d'une phrase (texte extrait d'un PDF) :
+    une ligne est la suite de la précédente si celle-ci ne se termine pas par une ponctuation de fin
+    et que la suivante n'est ni un titre, ni une puce, ni une ligne numérotée."""
+    out, buf = [], ""
+    item_rx = re.compile(r"^(?:[a-z]\)|\(?[ivxlc]+\)|\d{1,2}(?:\.\d{1,2})*[.)]\s|[-•–]\s|(?:article|art\.|clause|section)\s)", re.I)
+    for raw in (text or "").replace("\r", "").split("\n"):
+        line = raw.strip()
+        if not line:
+            if buf:
+                out.append(buf); buf = ""
+            out.append("")
+            continue
+        if buf and not re.search(r"[.;:!?»”)]$", buf) and not item_rx.match(line) and not line.isupper() and not buf.isupper() and len(buf) > 40:
+            buf += " " + line
+        else:
+            if buf:
+                out.append(buf)
+            buf = line
+    if buf:
+        out.append(buf)
+    return "\n".join(out)
+
+
 def render_blocks(text):
     """Découpe un contrat en blocs de mise en page : ('blank',), ('title', ligne),
     ('head', numéro, intitulé, suite), ('para', ligne). Sert au Word et au PDF."""
     blocks = []
-    for raw in (text or "").replace("\r", "").split("\n"):
+    for raw in reflow_text(text).split("\n"):
         line = raw.strip()
         if not line:
             if blocks and blocks[-1][0] != "blank":

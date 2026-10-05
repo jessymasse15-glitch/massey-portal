@@ -143,3 +143,13 @@ Le suivi est aussi fait toutes les heures par la tâche de fond et à chaque app
 - **Relecture par un avocat** : demandes dans `/admin/relectures` (rôle expert/admin) ; le devis est saisi manuellement.
 - **Équipes** : création réservée au plan Premium (3 équipes, 15 membres) ; rôles admin/juriste/approbateur/lecteur.
 - **Recherche globale** `/recherche`, **import en lot** (20 fichiers, 5 Mo) depuis le registre, page publique `/methode`.
+
+## Rappels SMS / WhatsApp (Twilio)
+
+Facultatif. Variables : `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_SMS_FROM` (numéro SMS) et/ou `TWILIO_WHATSAPP_FROM` (ex. `whatsapp:+14155238886` en bac à sable). Sans ces variables, la carte « Rappels par SMS / WhatsApp » de la page Échéances indique que la fonction n'est pas activée. Le numéro est vérifié par code (10 min, 5 essais) ; chaque rappel n'est envoyé qu'une fois par canal. Envoi déclenché par la même tâche que les courriels (ou `/contract-intelligence/rappels/executer?token=CRON_TOKEN`). WhatsApp en production exige un expéditeur approuvé et, hors fenêtre de 24 h, un modèle de message approuvé par Meta/Twilio. Les SMS vers Haïti dépendent de la couverture Twilio et de ses tarifs : testez avec un vrai numéro avant d'annoncer la fonction.
+
+## Signature simple avec vérification d'identité (pièce + selfie en direct)
+
+Option cochée par l'expéditeur sur la fiche du contrat (signature simple uniquement). Le signataire choisit son pays de résidence et un type de pièce accepté pour ce pays, déclare une date d'expiration future, puis photographie sa pièce et prend un selfie **avec la caméra du navigateur** (pas d'envoi de fichier ; geste aléatoire demandé, défi à usage unique, délai minimal). Les images sont chiffrées (`CI_FILE_KEY`), visibles seulement par l'expéditeur, qui confirme ou rejette chaque identité ; la signature n'est finalisée qu'après confirmation. Les images sont supprimées automatiquement `IDCHECK_RETENTION_DAYS` jours (30 par défaut) après la clôture, ou sur demande ; le certificat PDF ne garde que type de pièce, pays et date de contrôle.
+
+Limites : pas de reconnaissance faciale ni de contrôle automatique d'authenticité (décision humaine) ; le « direct » est imposé par l'interface mais un utilisateur très technique peut contourner un navigateur. Ce niveau reste une attestation interne, pas une signature certifiée. Pour un contrôle d'identité automatisé (authenticité du document, correspondance du visage, détection de vivacité), il faudrait un fournisseur spécialisé (Onfido, Veriff, Stripe Identity, etc.). Les lois sur les données personnelles (ex. Loi 25 au Québec) peuvent s'appliquer : informez les signataires et conservez le minimum.

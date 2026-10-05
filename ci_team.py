@@ -31,6 +31,10 @@ ACTIONS = {
     "sig_requested": ("Signature demandée", "Signature requested"),
     "sig_completed": ("Signature terminée", "Signature completed"),
     "sig_declined": ("Signature refusée", "Signature declined"),
+    "id_captured": ("Pièce d'identité et selfie reçus", "ID document and selfie received"),
+    "id_approved": ("Identité confirmée", "Identity confirmed"),
+    "id_rejected": ("Identité rejetée", "Identity rejected"),
+    "id_viewed": ("Pièce d'identité consultée", "ID document viewed"),
     "rendered": ("Document généré", "Document generated"),
     "viewed": ("A consulté la fiche", "Viewed the record"),
     "approval_started": ("Approbation lancée auprès de", "Approval started with"),
@@ -353,7 +357,7 @@ def _counts(conn, u):
             "playbooks": q("SELECT COUNT(*) FROM ci_playbooks WHERE user_id=?")}
 
 
-_HIDE = {"file_path", "cert_path", "token", "password_hash"}
+_HIDE = {"file_path", "cert_path", "token", "password_hash", "id_doc_path", "id_selfie_path", "id_challenge", "id_capture_ip"}
 
 
 def _rows(rows):
@@ -385,6 +389,12 @@ def _delete_all(conn, u):
     for r in regs:
         if r["file_path"] and os.path.exists(r["file_path"]):
             ci_crypto.erase(r["file_path"])
+    try:
+        import ci_idcheck
+        ci_idcheck.purge_images(conn, [r["id"] for r in conn.execute(
+            "SELECT s.id FROM ci_signers s JOIN ci_signature_requests q ON q.id=s.request_id WHERE q.owner_id=?", (uid,)).fetchall()])
+    except Exception:  # noqa: BLE001
+        pass
     sigs = conn.execute("SELECT cert_path FROM ci_signature_requests WHERE owner_id=?", (uid,)).fetchall()
     for s in sigs:
         if s["cert_path"] and os.path.exists(s["cert_path"]):

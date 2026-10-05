@@ -435,6 +435,28 @@ CREATE TABLE IF NOT EXISTS ci_reminder_log (
     UNIQUE(obligation_id, kind)
 );
 
+CREATE TABLE IF NOT EXISTS ci_mobile_prefs (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id),
+    phone TEXT,
+    channel TEXT NOT NULL DEFAULT 'sms',
+    verified INTEGER NOT NULL DEFAULT 0,
+    enabled INTEGER NOT NULL DEFAULT 0,
+    code_hash TEXT,
+    code_exp TEXT,
+    code_tries INTEGER NOT NULL DEFAULT 0,
+    code_sent_at TEXT,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ci_reminder_log_msg (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    obligation_id INTEGER NOT NULL,
+    kind TEXT NOT NULL,
+    channel TEXT NOT NULL,
+    sent_at TEXT NOT NULL,
+    UNIQUE(obligation_id, kind, channel)
+);
+
 CREATE TABLE IF NOT EXISTS ci_approvals (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     owner_id INTEGER NOT NULL REFERENCES users(id),
@@ -1095,6 +1117,13 @@ def init_db():
         ("final_sha256", "TEXT"),
         ("cert_path", "TEXT"),
         ("cert_sha256", "TEXT"),
+        ("id_check", "INTEGER NOT NULL DEFAULT 0"),
+    ])
+    _ensure_columns(conn, "ci_signers", [
+        ("id_status", "TEXT"), ("id_country", "TEXT"), ("id_doc_type", "TEXT"), ("id_doc_expiry", "TEXT"),
+        ("id_doc_path", "TEXT"), ("id_selfie_path", "TEXT"), ("id_captured_at", "TEXT"), ("id_capture_ip", "TEXT"),
+        ("id_challenge", "TEXT"), ("id_challenge_at", "TEXT"), ("id_gesture", "TEXT"), ("id_attempts", "INTEGER NOT NULL DEFAULT 0"),
+        ("id_reviewed_at", "TEXT"), ("id_note", "TEXT"), ("id_purged_at", "TEXT"),
     ])
     conn.execute("CREATE INDEX IF NOT EXISTS idx_ci_sig_final ON ci_signature_requests(final_sha256)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_ci_sig_body ON ci_signature_requests(body_sha256)")

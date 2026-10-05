@@ -59,6 +59,35 @@
       <button class="btn btn-ghost btn-sm" type="submit">{{ 'Send me a test email' if lang == 'en' else 'M\'envoyer un courriel de test' }}</button>
     </form>
   </div>
+  <div class="card" style="margin-bottom:24px;" id="mobile">
+    <h3 style="margin-top:0;">{{ 'SMS / WhatsApp reminders' if lang == 'en' else 'Rappels par SMS / WhatsApp' }}</h3>
+    {% if not mobile_channels %}
+      <div class="callout" style="border-left-color:var(--warn);">{{ 'SMS / WhatsApp reminders are not enabled on this site yet.' if lang == 'en' else 'Les rappels par SMS / WhatsApp ne sont pas encore activés sur ce site.' }}</div>
+    {% elif mobile.verified %}
+      <p>✓ {{ mobile.masked }} · {{ 'WhatsApp' if mobile.channel == 'whatsapp' else 'SMS' }} — {{ ('on' if mobile.enabled else 'paused') if lang == 'en' else ('activés' if mobile.enabled else 'en pause') }}</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <form method="POST" action="{{ ci_url('mobile_toggle') }}"><input type="hidden" name="action" value="{{ 'off' if mobile.enabled else 'on' }}"><button class="btn btn-ghost btn-sm" type="submit">{{ ('Pause' if mobile.enabled else 'Resume') if lang == 'en' else ('Mettre en pause' if mobile.enabled else 'Réactiver') }}</button></form>
+        <form method="POST" action="{{ ci_url('mobile_toggle') }}"><input type="hidden" name="action" value="remove"><button class="btn btn-danger btn-sm" type="submit">{{ 'Remove my number' if lang == 'en' else 'Supprimer mon numéro' }}</button></form>
+      </div>
+      <p class="helptext">{{ 'Same days as the email reminders; one short message per run, each reminder sent once.' if lang == 'en' else 'Mêmes jours que les rappels par courriel ; un seul message court par passage, chaque rappel envoyé une seule fois.' }}</p>
+    {% else %}
+      <form method="POST" action="{{ ci_url('mobile_start') }}" data-busy>
+        <div class="grid-2">
+          <div class="form-group"><label for="phone">{{ 'Mobile number (international format)' if lang == 'en' else 'Numéro mobile (format international)' }}</label><input id="phone" name="phone" type="tel" placeholder="+509 3712 3456" value="{{ mobile.phone }}" required></div>
+          <div class="form-group"><label for="channel">{{ 'Channel' if lang == 'en' else 'Canal' }}</label>
+            <select id="channel" name="channel">{% for c in mobile_channels %}<option value="{{ c }}" {{ 'selected' if mobile.channel == c }}>{{ 'WhatsApp' if c == 'whatsapp' else 'SMS' }}</option>{% endfor %}</select></div>
+        </div>
+        <button class="btn btn-primary btn-sm" type="submit">{{ 'Send me a verification code' if lang == 'en' else 'M\'envoyer un code de vérification' }}</button>
+      </form>
+      {% if mobile.pending %}
+      <form method="POST" action="{{ ci_url('mobile_verify') }}" style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
+        <div class="form-group" style="margin:0;"><label for="code">{{ 'Code received' if lang == 'en' else 'Code reçu' }}</label><input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></div>
+        <button class="btn btn-primary btn-sm" type="submit">{{ 'Verify' if lang == 'en' else 'Vérifier' }}</button>
+      </form>
+      {% endif %}
+      <p class="helptext">{{ 'We verify your number before any reminder. Standard carrier fees may apply; reply STOP to opt out.' if lang == 'en' else 'Nous vérifions votre numéro avant tout rappel. Les frais habituels de votre opérateur peuvent s\'appliquer ; répondez STOP pour vous désabonner.' }}</p>
+    {% endif %}
+  </div>
   <form method="POST" action="{{ ci_url('deadline_add') }}" class="card" style="margin-bottom:32px;">
     <h3 style="margin-top:0;">{{ 'Add a deadline' if lang == 'en' else 'Ajouter une échéance' }}</h3>
     <div class="grid-2">

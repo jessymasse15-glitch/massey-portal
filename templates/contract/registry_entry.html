@@ -68,6 +68,7 @@
           <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;{{ 'opacity:.55;' if not certified_available }}"><input type="radio" name="method" value="certified" style="width:auto;margin-top:4px;" {{ 'checked' if certified_available }} {{ 'disabled' if not certified_available }}> <span><strong>{{ 'Certified (DocuSign)' if lang == 'en' else 'Certifiée (DocuSign)' }}</strong> — {{ 'sealed document, certificate of completion, provider-side audit trail.' if lang == 'en' else 'document scellé, certificat de réalisation et piste d\'audit tenue par le fournisseur.' }}{% if not certified_available %} <em>{{ '(not enabled on this site)' if lang == 'en' else '(non activée sur ce site)' }}</em>{% endif %}</span></label>
         </div>
 
+        <label id="idcheck_row" style="display:flex;gap:8px;align-items:flex-start;font-weight:400;margin-bottom:12px;"><input type="checkbox" name="id_check" value="1" style="width:auto;margin-top:4px;"> <span><strong>{{ 'Require a live ID photo and selfie' if lang == 'en' else 'Exiger une photo en direct de la pièce d\'identité et un selfie' }}</strong> — {{ 'simple signature only. Each signatory photographs a valid ID document for their country of residence and takes a live selfie; you compare them and confirm before the contract is finalised. Images are encrypted and deleted automatically.' if lang == 'en' else 'signature simple uniquement. Chaque signataire photographie une pièce valide pour son pays de résidence et prend un selfie en direct ; vous les comparez et confirmez avant la finalisation. Images chiffrées et supprimées automatiquement.' }}</span></label>
         <div class="form-group"><label>{{ 'Signatories (one per line: Name <email>)' if lang == 'en' else 'Signataires (un par ligne : Nom <courriel>)' }}</label>
           <textarea name="signers" rows="3" placeholder="Marie Jean <marie@exemple.com>&#10;paul@exemple.com"></textarea></div>
         <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-bottom:12px;"><input type="checkbox" name="include_me" value="1" style="width:auto;"> {{ 'I sign too' if lang == 'en' else 'Je signe aussi' }}</label>
@@ -89,6 +90,7 @@
           advice.forEach(function(a){a.style.display=(a.getAttribute('data-stakes')===v)?'':'none';});
           rf.style.display=(v==='forme')?'flex':'none';
           rr.style.display=(v==='important'&&m==='simple')?'flex':'none';
+          var ir=document.getElementById('idcheck_row'); if(ir){ir.style.display=(m==='certified')?'none':'flex'; if(m==='certified'){var cb=ir.querySelector('input'); if(cb) cb.checked=false;}}
         }
         st.addEventListener('change',sync);
         f.querySelectorAll('input[name=method]').forEach(function(r){r.addEventListener('change',sync);});

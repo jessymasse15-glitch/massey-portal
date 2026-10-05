@@ -46,6 +46,16 @@ OVERALL_LABELS = {
 }
 
 
+def _reflow(text):
+    import contract_engine
+    return contract_engine.reflow_text(text or "")
+
+
+def _short(text, n=90):
+    text = " ".join((text or "").split())
+    return text if len(text) <= n else text[:n].rsplit(" ", 1)[0].rstrip(",;:.") + "…"
+
+
 def _styles():
     ss = getSampleStyleSheet()
     base = ParagraphStyle("base", parent=ss["Normal"], fontName="Helvetica", fontSize=9.5, leading=13.5, textColor=INK, alignment=TA_LEFT)
@@ -118,11 +128,11 @@ def analysis_report(title, result, lang, party_groups, obligations, created_at, 
         parts = [Paragraph("<b>%s</b>" % _c(f.get("topic", "")), S["base"])]
         where = ""
         if not missing:
-            where = ("Section " if en else "Clause ") + str(f.get("clause_number", "")) + (" - " + f.get("clause_title", "")[:70] if f.get("clause_title") else "")
+            where = ("Section " if en else "Clause ") + str(f.get("clause_number", "")) + (" - " + _short(f.get("clause_title", "")) if f.get("clause_title") else "")
         if where:
             parts.append(Paragraph(_c(where), S["small"]))
         if f.get("excerpt"):
-            parts.append(Paragraph("&laquo; %s &raquo;" % _c(f["excerpt"][:420]), S["quote"]))
+            parts.append(Paragraph("&laquo; %s &raquo;" % _c(f["excerpt"]), S["quote"]))
         parts.append(Paragraph("<b>%s</b> %s" % (_c("Why it matters:" if en else "Pourquoi c'est important :"), _c(f.get("why", ""))), S["base"]))
         parts.append(Paragraph("<b>%s</b> %s" % (_c("Suggested fix:" if en else "Piste de correction :"), _c(f.get("fix", ""))), S["base"]))
         lvl = f.get("level", "info")
@@ -162,13 +172,13 @@ def analysis_report(title, result, lang, party_groups, obligations, created_at, 
         for party, items in party_groups:
             story.append(Paragraph(_c((party if party != "—" else ("Unassigned" if en else "Non attribué")) + " (%d)" % len(items)), S["h3"]))
             for o in items[:25]:
-                story.append(Paragraph("- " + _c(o["action"][:260]) + _c("  [%s %s]" % ("Section" if en else "Clause", o["clause_number"])), S["base"]))
+                story.append(Paragraph("- " + _c(o["action"]) + _c("  [%s %s]" % ("Section" if en else "Clause", o["clause_number"])), S["base"]))
 
     if obligations:
         story.append(Paragraph(_c("Dates and deadlines spotted" if en else "Dates et délais repérés"), S["h2"]))
         rows = [[_c("Type"), _c("Passage"), _c("Delay" if en else "Délai"), _c("Date")]]
         for o in obligations[:30]:
-            rows.append([Paragraph(_c(o.get("label") or o.get("kind", "")), S["small"]), Paragraph(_c((o.get("excerpt") or "")[:200]), S["small"]),
+            rows.append([Paragraph(_c(o.get("label") or o.get("kind", "")), S["small"]), Paragraph(_c(o.get("excerpt") or ""), S["small"]),
                          Paragraph(_c(o.get("delay_text") or ""), S["small"]), Paragraph(_c(o.get("due_date") or ""), S["small"])])
         t = Table(rows, colWidths=[24 * mm, 94 * mm, 28 * mm, 26 * mm], repeatRows=1)
         t.setStyle(TableStyle([("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"), ("FONTSIZE", (0, 0), (-1, 0), 8), ("LINEBELOW", (0, 0), (-1, -1), 0.3, LINE),
@@ -189,7 +199,7 @@ def signed_contract(title, body, lang, body_sha, signers, request_ref, completed
     buf = io.BytesIO()
     doc, deco = _doc(buf, title, "%s - %s %s" % (title, "signature ref." if en else "réf. signature", request_ref))
     story = [Paragraph(_c(title), S["h1"]), Spacer(1, 6)]
-    for raw in (body or "").replace("\r", "").split("\n"):
+    for raw in _reflow(body).split("\n"):
         line = raw.strip()
         if not line:
             story.append(Spacer(1, 5))
@@ -214,6 +224,13 @@ def signed_contract(title, body, lang, body_sha, signers, request_ref, completed
     t.setStyle(TableStyle([("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"), ("FONTSIZE", (0, 0), (-1, 0), 8), ("LINEBELOW", (0, 0), (-1, -1), 0.3, LINE), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
     cert.append(t)
     cert.append(Spacer(1, 10))
+    ids = [s for s in signers if s.get("identity")]
+    if ids:
+        cert.append(Paragraph("<b>%s</b>" % _c("Identity check (live ID photo + selfie, reviewed by the sender)" if en else "Vérification d'identité (photo en direct de la pièce + selfie, contrôlés par l'expéditeur)"), S["small"]))
+        for s_ in ids:
+            cert.append(Paragraph(_c("%s : %s" % (s_["email"], s_["identity"])), S["small"]))
+        cert.append(Paragraph(_c("The images are not part of this document and are deleted after the retention period." if en else "Les images ne figurent pas dans ce document et sont supprimées après la durée de conservation."), S["small"]))
+        cert.append(Spacer(1, 8))
     if verify_url:
         try:
             import qrcode
@@ -253,7 +270,7 @@ def contract_for_signature(title, body, lang, body_sha, signers):
     buf = io.BytesIO()
     doc, deco = _doc(buf, title, "%s - SHA-256 %s" % (title, body_sha[:16]))
     story = [Paragraph(_c(title), S["h1"]), Spacer(1, 6)]
-    for raw in (body or "").replace("\r", "").split("\n"):
+    for raw in _reflow(body).split("\n"):
         line = raw.strip()
         if not line:
             story.append(Spacer(1, 5))
