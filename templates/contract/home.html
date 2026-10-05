@@ -5,6 +5,7 @@
   <div class="eyebrow">Massey AI — Contract Intelligence</div>
   <h1>{{ 'My workspace' if lang == 'en' else 'Mon espace' }}</h1>
   <p class="lede">{{ 'What needs your attention today, and where each contract stands.' if lang == 'en' else 'Ce qui demande votre attention aujourd\'hui, et où en est chaque contrat.' }}</p>
+  <p class="helptext" style="margin-top:8px;">{{ 'This is where you handle your contracts yourself, with the Massey AI tools (Products). Prefer to hand a case over to our team?' if lang == 'en' else 'C\'est ici que vous traitez vous-même vos contrats, avec les outils Massey AI (Produits). Vous préférez confier un dossier à notre équipe ?' }} <a href="{{ url_for('portal_dashboard') }}">{{ 'Go to the Client area →' if lang == 'en' else 'Aller à l\'Espace client →' }}</a></p>
 </section>
 {% include "contract/_subnav.html" %}
 <section class="block" style="border-top:none;padding-top:0;">

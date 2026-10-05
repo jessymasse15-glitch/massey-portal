@@ -10,6 +10,7 @@
     <a href="{{ url_for('register', next=url_for('membership_en')) if not current_user else url_for('membership_en') }}" class="btn btn-primary">{% if current_user %}See Premium{% else %}Create a free account{% endif %}</a>
     <a href="{{ url_for('services_en') }}" class="btn btn-ghost">Prefer to hand us the file? See our services</a>
   </div>
+  <p class="helptext" style="margin-top:10px;">The products are used from <strong>My workspace</strong>: you handle your contracts yourself. {% if current_user %}<a href="{{ ci_url('home') }}">Open My workspace →</a>{% endif %}</p>
 </section>
 
 <section class="block" style="border-top:none;padding-top:0;">

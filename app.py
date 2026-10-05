@@ -1903,17 +1903,37 @@ def login():
                 # Deuxième facteur requis avant d'ouvrir une session complète.
                 session.clear()
                 session["mfa_pending_user_id"] = user["id"]
-                session["mfa_next"] = request.args.get("next") or url_for("portal_dashboard")
+                session["mfa_next"] = request.args.get("next") or _default_landing(user)
                 return redirect(url_for("mfa_verify"))
             session.clear()
             session["user_id"] = user["id"]
             dbm.log_activity(user["id"], "login", "")
             if user["role"] in ("expert", "admin"):
                 return redirect(url_for("mfa_setup_prompt"))
-            nxt = request.args.get("next") or url_for("portal_dashboard")
+            nxt = request.args.get("next") or _default_landing(user)
             return redirect(nxt)
         flash("Courriel ou mot de passe invalide.", "error")
     return render_template("auth/login.html")
+
+
+def _default_landing(user):
+    """Où atterrit un utilisateur sans destination demandée : Mon espace (outils) s'il n'a que des travaux
+    Contract Intelligence et aucun dossier confié à l'équipe ; sinon l'Espace client."""
+    try:
+        if user["role"] in ("expert", "admin"):
+            return url_for("portal_dashboard")
+        conn = dbm.get_db()
+        try:
+            dossiers = conn.execute("SELECT COUNT(*) AS c FROM dossiers WHERE client_id=?", (user["id"],)).fetchone()["c"]
+            tools = sum(conn.execute("SELECT COUNT(*) AS c FROM %s WHERE %s=?" % (t, col), (user["id"],)).fetchone()["c"]
+                        for t, col in (("contract_analyses", "user_id"), ("contract_drafts", "user_id"), ("ci_registry", "user_id")))
+        finally:
+            conn.close()
+        if tools and not dossiers:
+            return ci_url("home")
+    except Exception:  # noqa: BLE001 — la redirection ne doit jamais casser la connexion
+        pass
+    return url_for("portal_dashboard")
 
 
 @app.route("/connexion/verification", methods=["GET", "POST"])

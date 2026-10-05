@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Espace client — Massey Contracts & Tax{% endblock %}
 {% block content %}
+{% if current_user['role'] not in ('expert','admin') %}
+<div class="callout" style="margin-bottom:18px;"><strong>Espace client</strong> — vos dossiers confiés à notre équipe (Services). Vous préférez traiter vous-même vos contrats avec les outils Massey AI ? <a href="{{ ci_url('home') }}">Aller à Mon espace →</a></div>
+{% endif %}
 <div style="display:flex;justify-content:space-between;align-items:center;">
   <h1>{% if current_user['role'] in ('expert','admin') %}Tous les dossiers{% else %}Mes dossiers{% endif %}</h1>
   <a href="{{ url_for('portal_new_dossier') }}" class="btn btn-primary">Nouveau dossier</a>

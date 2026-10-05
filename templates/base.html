@@ -41,7 +41,8 @@
     </a>
     <div class="header-actions">
       {% if current_user %}
-        <a href="{{ url_for('portal_dashboard') }}">{% if lang=='en' %}Client area{% else %}Espace client{% endif %}</a>
+        <a href="{{ ci_url('home') }}" title="{% if lang=='en' %}Do it yourself: your contract tools (Massey AI){% else %}Vous traitez vous-même : vos outils Massey AI{% endif %}">{% if lang=='en' %}My workspace{% else %}Mon espace{% endif %}</a>
+        <a href="{{ url_for('portal_dashboard') }}" title="{% if lang=='en' %}We handle it: the cases you entrusted to our team{% else %}Nous nous en chargeons : vos dossiers confiés à notre équipe{% endif %}">{% if lang=='en' %}Client area{% else %}Espace client{% endif %}</a>
         <a href="{{ url_for('logout') }}">{% if lang=='en' %}Log out{% else %}Déconnexion{% endif %}</a>
       {% else %}
         <a href="{{ url_for('espace_client_marketing') }}">{% if lang=='en' %}Client area{% else %}Espace client{% endif %}</a>
