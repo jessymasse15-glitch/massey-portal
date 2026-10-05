@@ -780,3 +780,11 @@ details.sec>summary::-webkit-details-marker{display:none;}
 details.sec>summary::before{content:"▸";color:var(--burgundy,#8b1e2d);font-size:1rem;}
 details.sec[open]>summary::before{content:"▾";}
 details.sec>summary h2{margin:0;}
+
+/* Recherche dans l'en-tête */
+.hdr-search{display:flex;align-items:center;border:1px solid rgba(255,255,255,.28);border-radius:99px;overflow:hidden;background:rgba(255,255,255,.06);}
+.hdr-search input{width:0;padding:0;border:0;background:transparent;color:#fff;font:inherit;font-size:.82rem;transition:width .2s,padding .2s;outline:none;}
+.hdr-search input::placeholder{color:rgba(255,255,255,.6);}
+.hdr-search.open input,.hdr-search:focus-within input{width:150px;padding:6px 4px 6px 12px;}
+.hdr-search button{border:0;background:transparent;color:#fff;padding:7px 10px;cursor:pointer;display:flex;}
+@media (max-width:760px){.hdr-search.open input,.hdr-search:focus-within input{width:120px;}}

@@ -40,18 +40,18 @@
       </span>
     </a>
     <div class="header-actions">
+      <form class="hdr-search" action="{{ url_for('site_search_en' if lang=='en' else 'site_search') }}" method="GET" role="search">
+        <input type="search" name="q" id="hdr-q" placeholder="{% if lang=='en' %}Search…{% else %}Rechercher…{% endif %}" aria-label="{% if lang=='en' %}Search the site{% else %}Rechercher sur le site{% endif %}" autocomplete="off">
+        <button type="submit" id="hdr-sb" aria-label="{% if lang=='en' %}Search{% else %}Rechercher{% endif %}" title="{% if lang=='en' %}Search{% else %}Rechercher{% endif %}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
+      </form>
+      <a href="{{ ci_url('home') }}" title="{% if lang=='en' %}Do it yourself: your contract tools (Massey AI){% else %}Vous traitez vous-même : vos outils Massey AI{% endif %}">{% if lang=='en' %}My workspace{% else %}Mon espace{% endif %}</a>
+      <a href="{{ url_for('portal_dashboard') if current_user else url_for('espace_client_marketing') }}" title="{% if lang=='en' %}We handle it: the cases you entrusted to our team{% else %}Nous nous en chargeons : vos dossiers confiés à notre équipe{% endif %}">{% if lang=='en' %}Client area{% else %}Espace client{% endif %}</a>
       {% if current_user %}
-        <a href="{{ ci_url('home') }}" title="{% if lang=='en' %}Do it yourself: your contract tools (Massey AI){% else %}Vous traitez vous-même : vos outils Massey AI{% endif %}">{% if lang=='en' %}My workspace{% else %}Mon espace{% endif %}</a>
-        <a href="{{ url_for('portal_dashboard') }}" title="{% if lang=='en' %}We handle it: the cases you entrusted to our team{% else %}Nous nous en chargeons : vos dossiers confiés à notre équipe{% endif %}">{% if lang=='en' %}Client area{% else %}Espace client{% endif %}</a>
         <a href="{{ url_for('logout') }}">{% if lang=='en' %}Log out{% else %}Déconnexion{% endif %}</a>
       {% else %}
-        <a href="{{ url_for('espace_client_marketing') }}">{% if lang=='en' %}Client area{% else %}Espace client{% endif %}</a>
         <a href="{{ url_for('login') }}">{% if lang=='en' %}Sign in{% else %}Connexion{% endif %}</a>
       {% endif %}
       {% if lang_switch_url %}<a href="{{ lang_switch_url }}" class="lang-switch">{% if lang=='en' %}FR{% else %}EN{% endif %}</a>{% endif %}
-      {% if not current_user %}
-        <a href="{{ url_for('intake') }}" class="btn btn-primary btn-sm">{% if lang=='en' %}Open a file{% else %}Ouvrir un dossier{% endif %}</a>
-      {% endif %}
     </div>
   </div>
   <div class="site-nav">
@@ -161,6 +161,7 @@
       </div>
       <div>
         <h4>{% if lang=='en' %}Access{% else %}Accès{% endif %}</h4>
+        <a href="{{ ci_url('home') }}">{% if lang=='en' %}My workspace{% else %}Mon espace{% endif %}</a>
         <a href="{{ url_for('espace_client_marketing') }}">{% if lang=='en' %}Client area{% else %}Espace client{% endif %}</a>
         <a href="{{ url_for('intake') }}">{% if lang=='en' %}Open a file{% else %}Ouvrir un dossier{% endif %}</a>
         <a href="{{ url_for('login') }}">{% if lang=='en' %}Sign in{% else %}Connexion{% endif %}</a>
@@ -181,5 +182,11 @@
   </div>
 </footer>
 <script src="{{ url_for('static', filename='js/site.js') }}"></script>
+<script>
+(function(){var f=document.querySelector('.hdr-search'); if(!f) return; var i=f.querySelector('input');
+  f.addEventListener('submit',function(e){ if(!i.value.trim()){ e.preventDefault(); f.classList.add('open'); i.focus(); } });
+  document.addEventListener('click',function(e){ if(!f.contains(e.target) && !i.value.trim()) f.classList.remove('open'); });
+})();
+</script>
 </body>
 </html>

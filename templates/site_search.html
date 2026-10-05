@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Search' if lang == 'en' else 'Recherche' }} — Massey Contracts &amp; Tax{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">{{ 'Search' if lang == 'en' else 'Recherche' }}</div>
+  <h1>{{ 'Search the site' if lang == 'en' else 'Rechercher sur le site' }}</h1>
+  <form method="GET" action="{{ url_for('site_search_en' if lang == 'en' else 'site_search') }}" role="search" class="inline-form" style="margin-top:14px;">
+    <input type="search" name="q" value="{{ q }}" placeholder="{{ 'A topic, a tool, an article…' if lang == 'en' else 'Un sujet, un outil, un article…' }}" autofocus style="max-width:420px;" aria-label="{{ 'Search' if lang == 'en' else 'Rechercher' }}">
+    <button class="btn btn-primary" type="submit">{{ 'Search' if lang == 'en' else 'Rechercher' }}</button>
+  </form>
+</section>
+<section class="block" style="border-top:none;padding-top:0;">
+  {% if q %}
+    {% for r in results %}
+      <a class="doc-row" href="{{ r.url }}" style="text-decoration:none;color:inherit;">
+        <span><strong>{{ r.title }}</strong><br><span class="helptext">{{ r.desc }}</span></span>
+        <span class="status-pill">{{ r.kind }}</span>
+      </a>
+    {% else %}
+      <div class="card"><strong>{{ 'No result for' if lang == 'en' else 'Aucun résultat pour' }} « {{ q }} »</strong><p class="helptext" style="margin:6px 0 0;">{{ 'Try another word, or browse Services and Products.' if lang == 'en' else 'Essayez un autre mot, ou parcourez Services et Produits.' }}</p></div>
+    {% endfor %}
+    <p class="helptext" style="margin-top:22px;">
+      {% if logged %}<a href="{{ ci_url('search') }}?q={{ q|urlencode }}">{{ 'Search inside my contracts →' if lang == 'en' else 'Rechercher dans mes contrats →' }}</a>
+      {% else %}{{ 'To search inside your own contracts, sign in to' if lang == 'en' else 'Pour chercher dans vos propres contrats, connectez-vous à' }} <a href="{{ ci_url('home') }}">{{ 'My workspace' if lang == 'en' else 'Mon espace' }}</a>.{% endif %}
+    </p>
+  {% else %}
+    <p class="helptext">{{ 'Type a word to find pages, tools and Massey Law Review articles.' if lang == 'en' else 'Saisissez un mot pour trouver des pages, des outils et des articles de la Massey Law Review.' }}</p>
+  {% endif %}
+</section>
+{% endblock %}
