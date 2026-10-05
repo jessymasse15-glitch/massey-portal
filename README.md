@@ -113,3 +113,24 @@ massey-portal/
   requirements.txt
   Procfile             pour Render/Railway/Heroku-like
 ```
+
+## Signature certifiée (DocuSign) — configuration
+
+La signature « certifiée » est désactivée tant que les variables suivantes ne sont pas définies sur Render :
+
+| Variable | Rôle |
+|---|---|
+| `DOCUSIGN_INTEGRATION_KEY` | Clé d'intégration (Apps and Keys) |
+| `DOCUSIGN_USER_ID` | GUID de l'utilisateur DocuSign qui envoie les enveloppes |
+| `DOCUSIGN_ACCOUNT_ID` | API Account ID |
+| `DOCUSIGN_PRIVATE_KEY` | Clé privée RSA générée dans l'application DocuSign (PEM, `\n` littéraux acceptés) |
+| `DOCUSIGN_ENV` | `demo` (défaut, bac à sable) ou `production` |
+| `DOCUSIGN_BASE_URI` | Facultatif (ex. `https://na3.docusign.net`) ; sinon lu automatiquement |
+| `DOCUSIGN_CONNECT_HMAC_KEY` | Facultatif : clé HMAC de Connect, active le webhook (sinon le suivi se fait par interrogation) |
+| `SITE_URL` | URL publique du site (nécessaire au webhook) |
+
+Étapes : (1) créer un compte développeur DocuSign et une application avec authentification JWT ; (2) ouvrir **une fois**
+l'URL de consentement (`https://account-d.docusign.com/oauth/auth?response_type=code&scope=signature%20impersonation&client_id=<CLÉ>&redirect_uri=<URL>`)
+connecté avec l'utilisateur DocuSign ; (3) tester en `demo` ; (4) passer la revue « go-live » DocuSign puis `DOCUSIGN_ENV=production`.
+Webhook Connect (facultatif) : `POST https://<site>/contract-intelligence/signature/webhook/docusign`, HMAC activé.
+Le suivi est aussi fait toutes les heures par la tâche de fond et à chaque appel de `/contract-intelligence/rappels/executer`.

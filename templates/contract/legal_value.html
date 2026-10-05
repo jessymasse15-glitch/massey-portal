@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Legal value of electronic signatures in Haiti' if lang == 'en' else 'Valeur juridique de la signature électronique en Haïti' }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'Legal value of electronic signatures in Haiti' if lang == 'en' else 'Valeur juridique de la signature électronique en Haïti' }}</h1>
+  <p class="lede">{{ 'What the law says, what our two signature methods are worth, and when you need a notary.' if lang == 'en' else 'Ce que dit la loi, ce que valent nos deux méthodes de signature, et quand un notaire est nécessaire.' }}</p>
+</section>
+<section class="block" style="border-top:none;padding-top:0;max-width:860px;">
+  <div class="callout" style="border-left-color:var(--warn);">
+    {% if lang == 'en' %}This page is general information compiled from public sources (checked on 5 October 2026). It is not legal advice and has not been reviewed by a lawyer. Sources do not always agree on dates: check the texts in <em>Le Moniteur</em> and ask a Haitian lawyer before relying on it for an important contract.
+    {% else %}Cette page est une information générale, compilée à partir de sources publiques (vérifiées le 5 octobre 2026). Elle ne constitue pas un avis juridique et n'a pas été relue par un avocat. Les sources ne s'accordent pas toujours sur les dates : vérifiez les textes dans <em>Le Moniteur</em> et consultez un juriste haïtien avant de vous y fier pour un contrat important.{% endif %}
+  </div>
+
+  <h2>{{ 'What Haitian law provides' if lang == 'en' else 'Ce que prévoit le droit haïtien' }}</h2>
+  <ul class="legal-list">
+    {% if lang == 'en' %}
+    <li><strong>Decree of 9 December 2015</strong> (published in <em>Le Moniteur</em> on 29 January 2016): amends the Civil Code so that an electronic writing is admitted as evidence like a paper one. An electronic signature is a reliable identification process linked to the act; reliability is presumed when the signature is created, the signer's identity is ensured and the act's integrity is guaranteed. An authentic deed may be drawn up electronically under conditions set by a presidential order.</li>
+    <li><strong>Law of 14 February 2017</strong> (one law firm gives 17 March 2017): recognises electronic signatures and electronic contractual consent: an offer and its acceptance may be expressed by a data message, unless the parties agree otherwise.</li>
+    <li><strong>Decree of 20 August 2025 and order of 18 September 2025</strong> (<em>Moniteur spécial</em> of 19 September 2025): CONATEL becomes the national authority that accredits and supervises trust service providers, and three levels of signature are defined: simple, advanced and qualified.</li>
+    {% else %}
+    <li><strong>Décret du 9 décembre 2015</strong> (publié au <em>Moniteur</em> le 29 janvier 2016) : modifie le Code civil pour que l'écrit électronique soit admis en preuve comme l'écrit papier. La signature électronique est un procédé fiable d'identification garantissant son lien avec l'acte ; la fiabilité est présumée quand la signature est créée, l'identité du signataire assurée et l'intégrité de l'acte garantie. L'acte authentique peut être dressé sur support électronique dans des conditions fixées par arrêté présidentiel.</li>
+    <li><strong>Loi du 14 février 2017</strong> (un cabinet d'avocats indique le 17 mars 2017) : consacre la signature électronique et le consentement contractuel dématérialisé : une offre et son acceptation peuvent être exprimées par un message de données, sauf convention contraire.</li>
+    <li><strong>Décret du 20 août 2025 et arrêté du 18 septembre 2025</strong> (<em>Moniteur spécial</em> du 19 septembre 2025) : le CONATEL devient l'autorité nationale d'accréditation et de contrôle des prestataires de services de confiance, et trois niveaux de signature sont définis : simple, avancée et qualifiée.</li>
+    {% endif %}
+  </ul>
+
+  <h2>{{ 'The three levels and our methods' if lang == 'en' else 'Les trois niveaux et nos méthodes' }}</h2>
+  <div class="grid-2">
+    <div class="card"><h4 style="margin-top:0;">{{ 'Simple' }}</h4>
+      <p style="font-size:0.92rem;">{{ 'Ticking a box, typing a name, clicking “accept”. Weak guarantee of identity and integrity: fine for low-stakes documents.' if lang == 'en' else 'Case cochée, nom saisi, clic sur « accepter ». Faible garantie d\'identité et d\'intégrité : convient aux documents à faible enjeu.' }}</p>
+      <p class="helptext"><strong>{{ 'Our “simple” method:' if lang == 'en' else 'Notre méthode « simple » :' }}</strong> {{ 'private email link, typed legal name, two consent boxes, time/IP/browser logged, text fingerprint (SHA-256), PDF with certificate. It corresponds to this level.' if lang == 'en' else 'lien privé par courriel, nom légal saisi, deux cases de consentement, heure/IP/navigateur enregistrés, empreinte du texte (SHA-256), PDF avec certificat. Elle correspond à ce niveau.' }}</p></div>
+    <div class="card"><h4 style="margin-top:0;">{{ 'Advanced' if lang == 'en' else 'Avancée' }}</h4>
+      <p style="font-size:0.92rem;">{{ 'An electronic certificate uniquely linked to the signer, with cryptographic protection: guarantees the document\'s integrity and the author\'s identity.' if lang == 'en' else 'Certificat électronique lié de façon unique au signataire, avec protection cryptographique : garantit l\'intégrité du document et l\'identité de l\'auteur.' }}</p>
+      <p class="helptext"><strong>{{ 'Our “certified” method (DocuSign):' if lang == 'en' else 'Notre méthode « certifiée » (DocuSign) :' }}</strong> {{ 'sealed document, certificate of completion and audit trail kept by an independent provider. Depending on the identity checks used, it may or may not meet the Haitian “advanced” definition: do not assume it does, ask a lawyer. It is clearly stronger evidence than the simple method.' if lang == 'en' else 'document scellé, certificat de réalisation et piste d\'audit tenus par un fournisseur indépendant. Selon les vérifications d\'identité utilisées, elle peut ou non répondre à la définition haïtienne de la signature « avancée » : ne le présumez pas, demandez à un juriste. C\'est une preuve nettement plus solide que la méthode simple.' }}</p></div>
+    <div class="card" style="grid-column:1/-1;"><h4 style="margin-top:0;">{{ 'Qualified' if lang == 'en' else 'Qualifiée' }}</h4>
+      <p style="font-size:0.92rem;">{{ 'Created with a secure device and a qualified certificate issued by an accredited trust service provider, after strict identity verification. Described as equivalent to a handwritten signature.' if lang == 'en' else 'Créée avec un dispositif sécurisé et un certificat qualifié délivré par un prestataire de services de confiance accrédité, après vérification d\'identité rigoureuse. Décrite comme équivalente à la signature manuscrite.' }}</p>
+      <p class="helptext"><strong>{{ 'Our position:' if lang == 'en' else 'Notre position :' }}</strong> {{ 'in the sources we found, no provider accredited by CONATEL was reported yet. We therefore do not offer, and do not claim, a qualified signature in the Haitian sense.' if lang == 'en' else 'dans les sources consultées, aucun prestataire accrédité par le CONATEL n\'était signalé. Nous ne proposons donc pas, et ne prétendons pas offrir, une signature qualifiée au sens haïtien.' }}</p></div>
+  </div>
+
+  <h2>{{ 'What an electronic signature does not replace' if lang == 'en' else 'Ce qu\'une signature électronique ne remplace pas' }}</h2>
+  <p>{% if lang == 'en' %}Acts that the law requires in a particular form, typically a notarial (authentic) deed: sale of real estate, mortgages and other security interests, marriage contracts, wills and gifts, and certain company deeds. One legal analysis notes that the electronic signature law does not override these mandatory forms. For these acts, go to a notary.
+  {% else %}Les actes que la loi soumet à une forme particulière, typiquement l'acte notarié (authentique) : vente d'immeuble, hypothèque et autres sûretés, contrat de mariage, testament et donation, certains actes de société. Une analyse juridique relève que la loi sur la signature électronique ne déroge pas à ces formes obligatoires. Pour ces actes, adressez-vous à un notaire.{% endif %}</p>
+
+  <h2>{{ 'Practical guidance' if lang == 'en' else 'Conseils pratiques' }}</h2>
+  <ul class="legal-list">
+    {% if lang == 'en' %}
+    <li><strong>Everyday contracts</strong> (NDAs, quotes, routine services): the simple signature is usually enough.</li>
+    <li><strong>Important contracts</strong> (loans, guarantees, share transfers, long or exclusive commitments, high amounts): use the certified signature, and keep the signed PDF, its certificate and the SHA-256 fingerprint.</li>
+    <li><strong>Formal acts</strong>: notary.</li>
+    <li>Add an evidence clause in the contract: the parties agree that electronic signatures and records are valid evidence between them.</li>
+    <li>If the counterparty is abroad, check which law governs and whether it asks for more.</li>
+    {% else %}
+    <li><strong>Contrats courants</strong> (NDA, devis, services courants) : la signature simple suffit en général.</li>
+    <li><strong>Contrats importants</strong> (prêts, garanties, cessions de parts, engagements longs ou exclusifs, montants élevés) : utilisez la signature certifiée et conservez le PDF signé, son certificat et l'empreinte SHA-256.</li>
+    <li><strong>Actes à forme imposée</strong> : notaire.</li>
+    <li>Ajoutez au contrat une clause de preuve : les parties conviennent que les signatures et écrits électroniques valent preuve entre elles.</li>
+    <li>Si la contrepartie est à l'étranger, vérifiez quelle loi s'applique et si elle exige davantage.</li>
+    {% endif %}
+  </ul>
+
+  <h2>{{ 'Sources' }}</h2>
+  <ul class="legal-list">{% for label, url in sources %}<li><a href="{{ url }}" rel="noopener" target="_blank">{{ label }}</a></li>{% endfor %}</ul>
+  <p class="helptext">{{ 'Press and law-firm articles are secondary sources; the official texts prevail.' if lang == 'en' else 'Les articles de presse et de cabinets sont des sources secondaires ; les textes officiels prévalent.' }}</p>
+</section>
+{% endblock %}

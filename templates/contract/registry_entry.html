@@ -40,15 +40,46 @@
       <a class="btn btn-ghost btn-sm" href="{{ ci_url('signature', sid=sig_req['id']) }}">{{ 'Follow the signatures' if lang == 'en' else 'Suivre les signatures' }}</a>
       {% if sig_req['status'] == 'completed' %}<a class="btn btn-primary btn-sm" href="{{ ci_url('signature_pdf', sid=sig_req['id']) }}">{{ 'Signed PDF' if lang == 'en' else 'PDF signé' }}</a>{% endif %}
     {% elif sig_has_text %}
-      <form method="POST" action="{{ ci_url('signature_new', rid=e['id']) }}">
+      <form method="POST" action="{{ ci_url('signature_new', rid=e['id']) }}" id="sigform">
         <p class="helptext">{{ 'Text that will be signed:' if lang == 'en' else 'Texte qui sera signé :' }} <strong>{{ sig_source }}</strong>. {{ 'It is frozen when you send the request.' if lang == 'en' else 'Il est figé à l\'envoi de la demande.' }}</p>
+
+        <div class="form-group"><label for="stakes">{{ 'Stakes of this contract' if lang == 'en' else 'Enjeu de ce contrat' }}</label>
+          <select id="stakes" name="stakes" style="width:auto;">{% for k, lab in stakes_labels.items() %}<option value="{{ k }}" {{ 'selected' if stakes == k }}>{{ lab }}</option>{% endfor %}</select>
+          {% if stakes_reasons %}<div class="helptext">{{ 'Suggested because:' if lang == 'en' else 'Suggéré car :' }} {{ stakes_reasons|join(' · ') }}</div>{% endif %}</div>
+        {% for k, txt in stakes_advice.items() %}<div class="callout stakes-advice" data-stakes="{{ k }}" style="{{ '' if stakes == k else 'display:none;' }}{{ 'border-left-color:var(--danger);' if k == 'forme' else ('border-left-color:var(--warn);' if k == 'important' else '') }}">{{ txt }}</div>{% endfor %}
+
+        <div class="form-group"><label>{{ 'Signature method' if lang == 'en' else 'Méthode de signature' }}</label>
+          <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;margin-bottom:6px;"><input type="radio" name="method" value="simple" style="width:auto;margin-top:4px;" {{ 'checked' if not certified_available }}> <span><strong>{{ 'Simple' }}</strong> — {{ 'private email link, typed name, audit trail. Free, internal attestation.' if lang == 'en' else 'lien privé par courriel, nom saisi, piste d\'audit. Attestation interne.' }}</span></label>
+          <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;{{ 'opacity:.55;' if not certified_available }}"><input type="radio" name="method" value="certified" style="width:auto;margin-top:4px;" {{ 'checked' if certified_available }} {{ 'disabled' if not certified_available }}> <span><strong>{{ 'Certified (DocuSign)' if lang == 'en' else 'Certifiée (DocuSign)' }}</strong> — {{ 'sealed document, certificate of completion, provider-side audit trail.' if lang == 'en' else 'document scellé, certificat de réalisation et piste d\'audit tenue par le fournisseur.' }}{% if not certified_available %} <em>{{ '(not enabled on this site)' if lang == 'en' else '(non activée sur ce site)' }}</em>{% endif %}</span></label>
+        </div>
+
         <div class="form-group"><label>{{ 'Signatories (one per line: Name <email>)' if lang == 'en' else 'Signataires (un par ligne : Nom <courriel>)' }}</label>
           <textarea name="signers" rows="3" placeholder="Marie Jean <marie@exemple.com>&#10;paul@exemple.com"></textarea></div>
         <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-bottom:12px;"><input type="checkbox" name="include_me" value="1" style="width:auto;"> {{ 'I sign too' if lang == 'en' else 'Je signe aussi' }}</label>
         <div class="form-group"><label>{{ 'Message (optional)' if lang == 'en' else 'Message (optionnel)' }}</label><input name="message" maxlength="500"></div>
+
+        <label id="ack_form_row" style="display:none;gap:8px;align-items:flex-start;font-weight:400;margin-bottom:10px;"><input type="checkbox" name="ack_form" value="1" style="width:auto;margin-top:4px;"> <span>{{ 'I understand this act normally requires a notarial deed; I am only sending a working copy.' if lang == 'en' else 'Je comprends que cet acte exige en principe un acte notarié ; je n\'envoie qu\'une version de travail.' }}</span></label>
+        <label id="ack_risk_row" style="display:none;gap:8px;align-items:flex-start;font-weight:400;margin-bottom:10px;"><input type="checkbox" name="ack_risk" value="1" style="width:auto;margin-top:4px;"> <span>{{ 'I understand the simple signature leaves a weaker proof for a high-stakes contract.' if lang == 'en' else 'Je comprends que la signature simple laisse une preuve plus faible pour un contrat à enjeu important.' }}</span></label>
+
         <button class="btn btn-primary btn-sm" type="submit" {{ 'disabled' if not sig_allowed }}>{{ 'Send for signature' if lang == 'en' else 'Envoyer pour signature' }}</button>
-        <p class="helptext">{{ 'Each signatory gets a private email link and signs by typing their full legal name. When everyone has signed, the PDF with a signature certificate is archived here. Internal attestation with audit trail, not a certified e-signature.' if lang == 'en' else 'Chaque signataire reçoit un lien privé par courriel et signe en saisissant son nom légal complet. Quand tout le monde a signé, le PDF avec certificat de signature est archivé ici. Attestation interne avec piste d\'audit, et non signature électronique certifiée.' }}</p>
+        <p class="helptext">{{ 'Not legal advice.' if lang == 'en' else 'Ne constitue pas un avis juridique.' }} <a href="{{ legal_url }}">{{ 'Legal value of electronic signatures in Haiti' if lang == 'en' else 'Valeur juridique de la signature électronique en Haïti' }}</a></p>
       </form>
+      <script>
+      (function(){
+        var f=document.getElementById('sigform'); if(!f) return;
+        var st=f.querySelector('#stakes'), advice=f.querySelectorAll('.stakes-advice'),
+            rf=document.getElementById('ack_form_row'), rr=document.getElementById('ack_risk_row');
+        function sync(){
+          var v=st.value, m=(f.querySelector('input[name=method]:checked')||{}).value;
+          advice.forEach(function(a){a.style.display=(a.getAttribute('data-stakes')===v)?'':'none';});
+          rf.style.display=(v==='forme')?'flex':'none';
+          rr.style.display=(v==='important'&&m==='simple')?'flex':'none';
+        }
+        st.addEventListener('change',sync);
+        f.querySelectorAll('input[name=method]').forEach(function(r){r.addEventListener('change',sync);});
+        sync();
+      })();
+      </script>
     {% else %}
       <p class="helptext">{{ 'Attach an analysis or a draft to this record (from its page, "Add to the contract registry") to be able to send it for signature.' if lang == 'en' else 'Rattachez une analyse ou un brouillon à cette fiche (depuis sa page, « Ajouter au registre des contrats ») pour pouvoir l\'envoyer en signature.' }}</p>
     {% endif %}

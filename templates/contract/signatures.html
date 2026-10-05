@@ -9,6 +9,7 @@
 {% include "contract/_subnav.html" %}
 <section class="block" style="border-top:none;padding-top:0;">
   <div class="callout">{{ 'Start a signature from a contract record in the registry ("Electronic signature" box).' if lang == 'en' else 'Lancez une signature depuis la fiche d\'un contrat du registre (encadré « Signature électronique »).' }}</div>
+  <p class="helptext"><a href="{{ ci_url('legal') }}">{{ 'Legal value of electronic signatures in Haiti' if lang == 'en' else 'Valeur juridique de la signature électronique en Haïti' }}</a></p>
   {% for r in requests %}
     <a class="doc-row" href="{{ ci_url('signature', sid=r['id']) }}" style="text-decoration:none;color:inherit;">
       <span><strong>{{ r['title'] }}</strong><br><span class="helptext">{{ r['created_at'][:10] }} · {{ r['signed'] }}/{{ r['total'] }} {{ 'signed' if lang == 'en' else 'signature(s)' }}</span></span>

@@ -144,6 +144,11 @@ def _register_reminders():
         if not expected or not hmac.compare_digest(expected.encode(), given.encode()):
             abort(404)
         summary = ci_reminders.run(m.app.config["SECRET_KEY"])
+        try:
+            import ci_extras
+            summary["signatures_polled"] = ci_extras.poll_certified()
+        except Exception as exc:  # noqa: BLE001
+            summary["signatures_polled"] = "error: %s" % str(exc)[:80]
         return jsonify(summary)
 
 
@@ -158,6 +163,8 @@ def _start_reminder_thread():
             try:
                 if 7 <= ci_reminders.local_hour() <= 20:
                     ci_reminders.run(secret_getter())
+                import ci_extras
+                ci_extras.poll_certified()
             except Exception as exc:  # noqa: BLE001 — la tâche de fond ne doit jamais s'arrêter
                 try:
                     m.dbm.log_activity(None, "ci_reminder_loop_error", str(exc)[:200])

@@ -623,3 +623,5 @@ footer.site{border-top:1px solid var(--line);padding:56px 0 28px;background:var(
 }
 
 .ci-stages li.skipped { opacity: .55; text-decoration: line-through; }
+.legal-list { display: grid; gap: 10px; padding-left: 20px; }
+.legal-list li { line-height: 1.55; }

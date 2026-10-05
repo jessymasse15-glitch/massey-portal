@@ -214,3 +214,36 @@ def signed_contract(title, body, lang, body_sha, signers, request_ref, completed
     story.append(KeepTogether(cert))
     doc.build(story, onFirstPage=deco, onLaterPages=deco)
     return buf.getvalue()
+
+
+def contract_for_signature(title, body, lang, body_sha, signers):
+    """PDF envoyé au fournisseur de signature certifiée : texte du contrat puis page de signatures
+    avec des ancres invisibles (/sigN/, /datN/) où le fournisseur pose les zones de signature."""
+    en = lang == "en"
+    S = _styles()
+    buf = io.BytesIO()
+    doc, deco = _doc(buf, title, "%s - SHA-256 %s" % (title, body_sha[:16]))
+    story = [Paragraph(_c(title), S["h1"]), Spacer(1, 6)]
+    for raw in (body or "").replace("\r", "").split("\n"):
+        line = raw.strip()
+        if not line:
+            story.append(Spacer(1, 5))
+        elif line.lower().startswith(("article ", "clause ", "section ")) and len(line) < 120:
+            story.append(Paragraph(_c(line), S["art"]))
+        else:
+            story.append(Paragraph(_c(line), S["body"]))
+    from reportlab.platypus import PageBreak
+    story += [PageBreak(), Paragraph(_c("Signatures"), S["h2"]),
+              Paragraph(_c(("Text fingerprint (SHA-256): " if en else "Empreinte du texte (SHA-256) : ") + body_sha), S["mono"]), Spacer(1, 14)]
+    white = ParagraphStyle("anchor", fontName="Helvetica", fontSize=6, leading=7, textColor=colors.white)
+    for i, sg in enumerate(signers, start=1):
+        label = "%s <%s>" % (sg.get("name") or "", sg["email"]) if sg.get("name") else sg["email"]
+        story.append(KeepTogether([
+            Paragraph("<b>%s</b>" % _c(label), S["base"]),
+            Spacer(1, 22), Paragraph("/sig%d/" % i, white),
+            HRFlowable(width="60%", thickness=0.6, color=INK, hAlign="LEFT"),
+            Paragraph(_c("Signature"), S["small"]), Spacer(1, 10),
+            Paragraph("/dat%d/" % i, white), HRFlowable(width="30%", thickness=0.6, color=INK, hAlign="LEFT"),
+            Paragraph(_c("Date"), S["small"]), Spacer(1, 18)]))
+    doc.build(story, onFirstPage=deco, onLaterPages=deco)
+    return buf.getvalue()

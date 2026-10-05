@@ -13,6 +13,8 @@
       {% else %}{{ 'Waiting for the other signatories.' if lang == 'en' else 'En attente des autres signataires.' }}{% endif %}</div>
   {% elif signer['status'] == 'declined' %}
     <div class="callout">{{ 'You declined to sign.' if lang == 'en' else 'Vous avez refusé de signer.' }}</div>
+  {% elif certified and req['status'] == 'pending' %}
+    <div class="callout">{{ 'This contract is signed through our certified signature provider (DocuSign). Open the email you received from DocuSign to sign. Nothing to do on this page.' if lang == 'en' else 'Ce contrat se signe via notre fournisseur de signature certifiée (DocuSign). Ouvrez le courriel que DocuSign vous a envoyé pour signer. Il n\'y a rien à faire sur cette page.' }}</div>
   {% elif req['status'] == 'cancelled' %}
     <div class="callout">{{ 'This request was cancelled by the sender.' if lang == 'en' else 'Cette demande a été annulée par l\'expéditeur.' }}</div>
   {% elif req['status'] == 'declined' %}

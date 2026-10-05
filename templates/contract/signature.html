@@ -4,7 +4,8 @@
 <section class="page-hero reveal">
   <div class="eyebrow">{{ 'Signature request' if lang == 'en' else 'Demande de signature' }} · {{ req['created_at'][:10] }}</div>
   <h1>{{ req['title'] }}</h1>
-  <p class="lede"><span class="status-pill {{ 'done' if req['status']=='completed' else ('urgent' if req['status']=='declined' else 'pending') }}">{{ status_labels[req['status']] }}</span></p>
+  <p class="lede"><span class="status-pill {{ 'done' if req['status']=='completed' else ('urgent' if req['status']=='declined' else 'pending') }}">{{ status_labels[req['status']] }}</span>
+    <span class="helptext" style="margin-left:10px;">{{ ('Certified signature (DocuSign)' if lang == 'en' else 'Signature certifiée (DocuSign)') if req['method'] == 'certified' else ('Simple signature' if lang == 'en' else 'Signature simple') }}</span></p>
 </section>
 {% include "contract/_subnav.html" %}
 <section class="block" style="border-top:none;padding-top:0;">
@@ -13,7 +14,7 @@
       <div class="head"><h4>{{ s['signer_name'] or s['signer_email'] }}</h4><span class="status-pill {{ 'done' if s['status']=='signed' else ('urgent' if s['status']=='declined' else '') }}">{{ signer_labels[s['status']] }}</span></div>
       <div class="where">{{ s['signer_email'] }}{% if s['signed_at'] %} · {{ s['signed_at'][:16]|replace('T',' ') }} UTC{% endif %}{% if s['signed_name'] %} · « {{ s['signed_name'] }} »{% endif %}</div>
       {% if s['decline_reason'] %}<blockquote>{{ s['decline_reason'] }}</blockquote>{% endif %}
-      {% if s['status'] == 'pending' and req['status'] == 'pending' %}
+      {% if s['status'] == 'pending' and req['status'] == 'pending' and req['method'] != 'certified' %}
         <p class="helptext">{{ 'If the email did not arrive, share this private link yourself:' if lang == 'en' else 'Si le courriel n\'est pas arrivé, transmettez vous-même ce lien privé :' }}<br><code style="word-break:break-all;">{{ links[s['id']] }}</code></p>
       {% endif %}
     </div>
@@ -22,6 +23,9 @@
     {% if req['status'] == 'completed' %}
       <a class="btn btn-primary btn-sm" href="{{ ci_url('signature_pdf', sid=req['id']) }}">{{ 'Download the signed PDF' if lang == 'en' else 'Télécharger le PDF signé' }}</a>
       <a class="btn btn-ghost btn-sm" href="{{ ci_url('registry_entry', rid=req['registry_id']) }}">{{ 'Open the contract record' if lang == 'en' else 'Ouvrir la fiche du contrat' }}</a>
+    {% endif %}
+    {% if req['method'] == 'certified' and req['status'] in ('pending', 'completed') %}
+      <form method="POST" action="{{ ci_url('signature_refresh', sid=req['id']) }}"><button class="btn btn-ghost btn-sm" type="submit">{{ 'Refresh status' if lang == 'en' else 'Actualiser le statut' }}</button></form>
     {% endif %}
     {% if req['status'] == 'pending' %}
       <form method="POST" action="{{ ci_url('signature_remind', sid=req['id']) }}"><button class="btn btn-ghost btn-sm" type="submit">{{ 'Remind pending signatories' if lang == 'en' else 'Relancer les signataires en attente' }}</button></form>

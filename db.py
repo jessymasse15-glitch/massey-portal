@@ -984,6 +984,11 @@ def init_db():
         ("ai_json", "TEXT"),
         ("ai_created_at", "TEXT"),
     ])
+    _ensure_columns(conn, "ci_signature_requests", [
+        ("method", "TEXT NOT NULL DEFAULT 'simple'"),
+        ("provider_ref", "TEXT"),
+        ("stakes", "TEXT"),
+    ])
     _ensure_columns(conn, "ci_negotiations", [
         ("ref_type", "TEXT"),
         ("ref_id", "INTEGER"),
