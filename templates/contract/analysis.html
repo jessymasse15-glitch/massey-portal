@@ -154,6 +154,7 @@
   </div>
 
   <div class="ci-pane" data-pane="points">
+  <details class="sec" id="sec-points" open><summary><h2 style="display:inline;">{{ 'Points to review' if lang == 'en' else 'Points à examiner' }} ({{ result.findings|length }})</h2></summary>
   <div class="ci-filters" id="ci-filters">
     <button type="button" class="on" data-lv="all">{{ 'All' if lang == 'en' else 'Tous' }}</button>
     <button type="button" data-lv="eleve">{{ 'High' if lang == 'en' else 'Élevé' }} ({{ result.summary.counts.eleve }})</button>
@@ -162,7 +163,6 @@
     <button type="button" data-expand="1">{{ 'Expand all' if lang == 'en' else 'Tout déplier' }}</button>
     <button type="button" data-expand="0">{{ 'Collapse all' if lang == 'en' else 'Tout replier' }}</button>
   </div>
-  <h2>{{ 'Points to review' if lang == 'en' else 'Points à examiner' }} ({{ result.findings|length }})</h2>
   {% if not result.findings %}
     <p class="helptext">{{ 'No risky wording pattern detected. This does not mean the contract is balanced.' if lang == 'en' else 'Aucune formulation à risque détectée. Cela ne signifie pas que le contrat soit équilibré.' }}</p>
   {% endif %}
@@ -177,6 +177,7 @@
     </details>
   {% endfor %}
 
+  </details>
   <details class="sec" style="margin-top:28px;"><summary><h2 style="display:inline;">{{ 'Possibly missing clauses' if lang == 'en' else 'Clauses possiblement absentes' }} ({{ result.missing|length }})</h2></summary>
   {% if not result.missing %}
     <p class="helptext">{{ 'All the usual clause topics appear to be covered.' if lang == 'en' else 'Les sujets de clauses habituels semblent tous couverts.' }}</p>
@@ -206,17 +207,50 @@
   {% if party_obligations %}
   <form method="POST" action="{{ ci_url('analysis_parties', aid=analysis['id']) }}">
     {% for party, items in party_obligations %}
-      <h4>{{ party if party != '—' else ('Unassigned' if lang == 'en' else 'Non attribué') }} ({{ items|length }})</h4>
-      {% for o in items %}
-        <label class="doc-row" style="font-weight:400;cursor:pointer;">
-          <span style="display:flex;gap:10px;align-items:flex-start;"><input type="checkbox" name="pick" value="{{ party_index[(o.party, o.action)] }}" style="width:auto;margin-top:4px;">
-            <span>{% if o.kind == 'interdiction' %}<span class="risk-badge moyen" style="margin-right:6px;">{{ 'prohibition' if lang == 'en' else 'interdiction' }}</span>{% endif %}{{ o.action }}<br><span class="helptext">{{ 'Section' }} {{ o.clause_number }}{% if o.delay_text %} · {{ o.delay_text }}{% endif %}</span></span></span>
-        </label>
-      {% endfor %}
+    <details class="ob-party" {{ 'open' if loop.first }}>
+      <summary><strong>{{ party if party != '—' else ('Unassigned' if lang == 'en' else 'Non attribué') }}</strong> <span class="ci-count">{{ items|length }}</span></summary>
+      <ul class="ob-list">
+        {% for o in items %}
+        <li class="ob-item" {{ 'hidden' if loop.index > 5 }} data-extra="{{ '1' if loop.index > 5 }}">
+          <label><input type="checkbox" name="pick" value="{{ party_index[(o.party, o.action)] }}">
+            <span class="ob-main">
+              <span class="ob-tags">{% if o.kind == 'interdiction' %}<span class="risk-badge moyen">{{ 'prohibition' if lang == 'en' else 'interdiction' }}</span>{% endif %}{% if o.delay_text %}<span class="ob-chip">⏱ {{ o.delay_text }}</span>{% endif %}<span class="ob-chip soft">{{ 'Section' }} {{ o.clause_number }}</span></span>
+              <span class="ob-text">{{ o.action }}</span>
+            </span></label>
+        </li>
+        {% endfor %}
+      </ul>
+      {% if items|length > 5 %}<button type="button" class="btn btn-ghost btn-sm ob-more" data-more="{{ items|length - 5 }}">{{ 'Show %d more' % (items|length - 5) if lang == 'en' else 'Afficher les %d autres' % (items|length - 5) }}</button>{% endif %}
+    </details>
     {% endfor %}
     <button class="btn btn-ghost btn-sm" type="submit" style="margin-top:12px;">{{ 'Add selected to my tracker' if lang == 'en' else 'Ajouter la sélection à mon suivi' }}</button>
   </form>
   {% else %}
+    <p class="helptext">{{ 'No obligation wording detected.' if lang == 'en' else 'Aucune formulation d\'obligation détectée.' }}</p>
+  {% endif %}
+
+  <h2 style="margin-top:40px;" id="deadlines">{{ 'Dates and deadlines found' if lang == 'en' else 'Dates et délais repérés' }} ({{ obligations|length }})</h2>
+  <form method="GET" class="inline-form" style="margin-bottom:14px;">
+    <label for="effective" class="helptext" style="margin:0 8px 0 0;">{{ 'Effective date (to estimate relative deadlines)' if lang == 'en' else 'Date d\'effet (pour estimer les délais relatifs)' }}</label>
+    <input type="date" id="effective" name="effective" value="{{ effective or '' }}" style="width:auto;">
+    <button class="btn btn-ghost btn-sm" type="submit">{{ 'Recompute' if lang == 'en' else 'Recalculer' }}</button>
+  </form>
+  {% if obligations %}
+  <form method="POST" action="{{ ci_url('analysis_obligations', aid=analysis['id']) }}">
+    <input type="hidden" name="effective" value="{{ effective or '' }}">
+    <ul class="dl-list">
+      {% for o in obligations %}
+      <li class="dl-item" {{ 'hidden' if loop.index > 8 }} data-extra="{{ '1' if loop.index > 8 }}">
+        <input type="checkbox" name="pick" value="{{ loop.index0 }}" {{ 'checked' if o.due_date }} aria-label="{{ 'Add to my tracker' if lang == 'en' else 'Ajouter à mon suivi' }}">
+        <div class="dl-body">
+          <div class="ob-tags"><span class="ob-chip kind">{{ kind_labels.get(o.kind, o.kind) }}</span>{% if o.delay_text %}<span class="ob-chip">⏱ {{ o.delay_text }}</span>{% endif %}</div>
+          <div class="ob-text">{{ o.excerpt }}</div>
+        </div>
+        <div class="dl-date"><input type="date" name="due_{{ loop.index0 }}" value="{{ o.due_date or '' }}" style="width:auto;" aria-label="{{ 'Due date' if lang == 'en' else 'Échéance' }}">{% if o.estimated %}<div class="helptext">{{ 'estimated' if lang == 'en' else 'estimée' }}</div>{% endif %}</div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% if obligations|length > 8 %}<button type="button" class="btn btn-ghost btn-sm ob-more" data-more="{{ obligations|length - 8 }}">{{ 'Show %d more' % (obligations|length - 8) if lang == 'en' else 'Afficher les %d autres' % (obligations|length - 8) }}</button>{% endif %}
     <p class="helptext">{{ 'No obligation wording detected.' if lang == 'en' else 'Aucune formulation d\'obligation détectée.' }}</p>
   {% endif %}
 
@@ -275,7 +309,7 @@
   tabs.addEventListener('click',function(e){var b=e.target.closest('button'); if(b) show(b.getAttribute('data-tab'));});
   function fromHash(){
     var h=(location.hash||'').slice(1);
-    if(/^f\d+$/.test(h)){show('points'); var el=document.getElementById(h); if(el){el.open=true; el.scrollIntoView();} return;}
+    if(/^f\d+$/.test(h)){show('points'); var el=document.getElementById(h); if(el){var sp=document.getElementById('sec-points'); if(sp) sp.open=true; el.open=true; el.scrollIntoView();} return;}
     var map={contrat:'rapport',notes:'rapport',partage:'partage',ia:'ia',playbook:'ia',parties:'suivi',deadlines:'suivi'};
     show(map[h]||h||'rapport');
   }
@@ -287,6 +321,16 @@
     f.querySelectorAll('button[data-lv]').forEach(function(x){x.classList.toggle('on',x===b);});
     var lv=b.getAttribute('data-lv');
     document.querySelectorAll('details.fd').forEach(function(d){d.hidden=(lv!=='all'&&d.getAttribute('data-lv')!==lv);});
+  });
+})();
+(function(){
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.ob-more'); if(b){
+      var scope=b.previousElementSibling&&(b.previousElementSibling.matches('ul')?b.previousElementSibling:null)||b.parentNode.querySelector('ul');
+      if(scope) scope.querySelectorAll('[data-extra="1"]').forEach(function(li){li.hidden=false;});
+      b.remove(); return;
+    }
+    var t=e.target.closest('.ob-text'); if(t&&!e.target.closest('a')) t.classList.toggle('open');
   });
 })();
 </script>

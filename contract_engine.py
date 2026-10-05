@@ -132,6 +132,18 @@ _SENT_RX = re.compile(
 )
 
 
+def _heading_cuts(win):
+    """Un retour à la ligne après une courte ligne sans ponctuation finale (intitulé) coupe avant une ligne à majuscule."""
+    cuts = []
+    for mt in re.finditer(r"\n", win):
+        ls = win.rfind("\n", 0, mt.start()) + 1
+        prev = win[ls:mt.start()].strip()
+        nxt = win[mt.end():mt.end() + 1]
+        if prev and len(prev) <= 60 and not re.search(r"[.;:,!?»”)]$", prev) and (nxt.isupper() or nxt in "«\"“("):
+            cuts.append((mt.start(), mt.end(), mt.group(0)))
+    return cuts
+
+
 def _sentence_bounds(text, start, end, radius):
     lo_w, hi_w = max(0, start - radius), min(len(text), end + radius)
     win = text[lo_w:hi_w]
@@ -145,6 +157,8 @@ def _sentence_bounds(text, start, end, radius):
             if re.search(r"\d$", before) and re.match(r"\.\s*\d", mt.group(0) + win[mt.end():mt.end() + 1]):
                 continue
         cuts.append((lo_w + mt.start(), lo_w + mt.end(), mt.group(0)))
+    cuts += [(lo_w + a, lo_w + b, g) for a, b, g in _heading_cuts(win)]
+    cuts.sort()
     lo, hi = None, None
     for a, b, g in cuts:
         if b <= start:
@@ -929,7 +943,7 @@ def reflow_text(text):
                 out.append(buf); buf = ""
             out.append("")
             continue
-        if buf and not re.search(r"[.;:!?»”)]$", buf) and not item_rx.match(line) and not line.isupper() and not buf.isupper() and len(buf) > 40:
+        if buf and not re.search(r"[.;:!?»”)]$", buf) and not item_rx.match(line) and not line.isupper() and not buf.isupper() and (len(buf) > 60 or line[0].islower()):
             buf += " " + line
         else:
             if buf:
@@ -1259,14 +1273,26 @@ _PARTY_STOP = {"article", "clause", "section", "il", "elle", "ils", "elles", "ce
 
 
 def _split_sentences(text):
-    out, start = [], 0
-    for m in re.finditer(r"[.;\n]+", text):
-        seg = text[start:m.end()]
-        if seg.strip():
-            out.append(seg)
-        start = m.end()
-    if text[start:].strip():
-        out.append(text[start:])
+    """Phrases complètes : lignes recollées (texte de PDF), coupure sur . ! ? hors abréviations et décimales,
+    sur les paragraphes et les puces ; le point-virgule ne coupe pas."""
+    out = []
+    for para in reflow_text(text).split("\n"):
+        para = para.strip()
+        if not para:
+            continue
+        lo = 0
+        for mt in _SENT_RX.finditer(para):
+            if mt.group(0)[0] in ".!?":
+                before = para[:mt.start()]
+                tok = re.search(r"([^\W\d_]+)$", before)
+                if tok and (tok.group(1).lower() in _ABBR or (len(tok.group(1)) == 1 and tok.group(1).isupper())):
+                    continue
+            seg = para[lo:mt.end()]
+            if seg.strip():
+                out.append(seg)
+            lo = mt.end()
+        if para[lo:].strip():
+            out.append(para[lo:])
     return out
 
 
@@ -1316,7 +1342,7 @@ def extract_party_obligations(text, lang=None):
                 n = int(dm.group(1) or dm.group(2))
                 delay = "%d %s" % (n, dm.group(3))
             results.append({
-                "party": party or "—", "action": action[:320], "kind": "interdiction" if prohibition else "obligation",
+                "party": party or "—", "action": _clip(action, 420), "kind": "interdiction" if prohibition else "obligation",
                 "clause_number": clause["number"], "clause_title": clause["title"], "delay_text": delay,
             })
             if len(results) >= 80:
