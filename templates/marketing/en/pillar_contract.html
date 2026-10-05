@@ -34,6 +34,7 @@
       <div class="eyebrow">Tools</div>
       <h2>Work on your contracts in Massey AI</h2>
       <p>A free account is enough to start (monthly quotas); Premium lifts them. Rule-based automated analysis: it guides review, it does not replace a lawyer.</p>
+      <p style="margin-top:14px;"><a class="btn btn-primary" href="{{ url_for('ci_home_en') }}">Open my workspace</a></p>
     </div>
   </div>
   <div class="grid-2 reveal">
@@ -55,6 +56,31 @@
     <a class="card tool-card" href="{{ url_for('ci_deadlines_en') }}">
       <h3 style="margin-top:0;">Deadlines</h3>
       <p style="color:var(--ink-soft);font-size:0.9rem;">Notice periods, renewals, payments: one tracker, fed by your analyses.</p>
+      <span class="btn btn-primary btn-sm">Open</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_negotiations_en') }}">
+      <h3 style="margin-top:0;">Negotiate</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Send a text to the counterparty by private link, exchange versions and see every change highlighted.</p>
+      <span class="btn btn-primary btn-sm">Open</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_approvals_en') }}">
+      <h3 style="margin-top:0;">Approvals</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">An internal sign-off flow: each approver gets an email link, no account needed.</p>
+      <span class="btn btn-primary btn-sm">Open</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_registry_en') }}">
+      <h3 style="margin-top:0;">Registry</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">All your contracts in one place: status, parties, dates and the signed file archived with its fingerprint.</p>
+      <span class="btn btn-primary btn-sm">Open</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_signatures_en') }}">
+      <h3 style="margin-top:0;">Signatures</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Get the final contract signed by private link: signed PDF with certificate, archived automatically in the registry.</p>
+      <span class="btn btn-primary btn-sm">Open</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_playbooks_en') }}">
+      <h3 style="margin-top:0;">Playbooks</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Your negotiation positions, applied automatically to every analysis.</p>
       <span class="btn btn-primary btn-sm">Open</span>
     </a>
   </div>

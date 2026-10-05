@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Signature requested' if lang == 'en' else 'Signature demandée' }} — {{ req['title'] }}{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">{{ 'Signature requested' if lang == 'en' else 'Signature demandée' }}</div>
+  <h1>{{ req['title'] }}</h1>
+  <p class="lede">{{ owner['full_name'] }} {{ 'asks you to sign this contract.' if lang == 'en' else 'vous demande de signer ce contrat.' }}{% if req['message'] %} « {{ req['message'] }} »{% endif %}</p>
+</section>
+<section class="block" style="border-top:none;padding-top:0;">
+  {% if signer['status'] == 'signed' %}
+    <div class="callout">✓ {{ 'You signed this contract on' if lang == 'en' else 'Vous avez signé ce contrat le' }} {{ signer['signed_at'][:16]|replace('T',' ') }} UTC.
+      {% if req['status'] == 'completed' %}{{ 'Everyone has signed.' if lang == 'en' else 'Tout le monde a signé.' }} <a href="{{ url_for('ci_signature_public_pdf', token=signer['token']) }}">{{ 'Download the signed PDF' if lang == 'en' else 'Télécharger le PDF signé' }}</a>
+      {% else %}{{ 'Waiting for the other signatories.' if lang == 'en' else 'En attente des autres signataires.' }}{% endif %}</div>
+  {% elif signer['status'] == 'declined' %}
+    <div class="callout">{{ 'You declined to sign.' if lang == 'en' else 'Vous avez refusé de signer.' }}</div>
+  {% elif req['status'] == 'cancelled' %}
+    <div class="callout">{{ 'This request was cancelled by the sender.' if lang == 'en' else 'Cette demande a été annulée par l\'expéditeur.' }}</div>
+  {% elif req['status'] == 'declined' %}
+    <div class="callout">{{ 'Another signatory declined: this request is closed.' if lang == 'en' else 'Un autre signataire a refusé : cette demande est close.' }}</div>
+  {% elif expired %}
+    <div class="callout" style="border-left-color:var(--warn);">{{ 'This link has expired. Ask the sender to send a reminder.' if lang == 'en' else 'Ce lien a expiré. Demandez à l\'expéditeur de vous envoyer un rappel.' }}</div>
+  {% endif %}
+
+  <h3>{{ 'Contract text' if lang == 'en' else 'Texte du contrat' }}</h3>
+  <p class="helptext">SHA-256 <code style="word-break:break-all;">{{ req['body_sha256'] }}</code></p>
+  <div class="diff-view" style="max-height:480px;overflow:auto;"><pre style="white-space:pre-wrap;font-family:inherit;margin:0;font-size:0.9rem;">{{ req['body_snapshot'] }}</pre></div>
+
+  {% if can_sign %}
+    <form method="POST" class="card" style="max-width:720px;margin-top:28px;">
+      <input type="hidden" name="action" value="sign">
+      <h3 style="margin-top:0;">{{ 'Sign' if lang == 'en' else 'Signer' }}</h3>
+      <div class="form-group"><label for="fln">{{ 'Your full legal name' if lang == 'en' else 'Votre nom légal complet' }}</label><input id="fln" name="full_legal_name" maxlength="120" required autocomplete="name" value=""></div>
+      <label style="display:flex;gap:10px;align-items:flex-start;font-weight:400;margin-bottom:10px;"><input type="checkbox" name="consent_read" value="1" style="width:auto;margin-top:4px;" required><span>{{ consent[0] }}</span></label>
+      <label style="display:flex;gap:10px;align-items:flex-start;font-weight:400;margin-bottom:14px;"><input type="checkbox" name="consent_binding" value="1" style="width:auto;margin-top:4px;" required><span>{{ consent[1] }}</span></label>
+      <button class="btn btn-primary" type="submit">{{ 'Sign the contract' if lang == 'en' else 'Signer le contrat' }}</button>
+      <p class="helptext">{{ 'We record the time, your IP address and your browser. This is an internal attestation with an audit trail, not a certified electronic signature.' if lang == 'en' else 'Nous enregistrons l\'heure, votre adresse IP et votre navigateur. Il s\'agit d\'une attestation interne avec piste d\'audit, et non d\'une signature électronique certifiée.' }}</p>
+    </form>
+    <form method="POST" class="card" style="max-width:720px;margin-top:16px;">
+      <input type="hidden" name="action" value="decline">
+      <div class="form-group"><label for="rs">{{ 'Decline to sign (reason required)' if lang == 'en' else 'Refuser de signer (motif obligatoire)' }}</label><textarea id="rs" name="reason" rows="2" maxlength="500"></textarea></div>
+      <button class="btn btn-danger btn-sm" type="submit">{{ 'Decline' if lang == 'en' else 'Refuser' }}</button>
+    </form>
+  {% endif %}
+  <h3 style="margin-top:32px;">{{ 'Signatories' if lang == 'en' else 'Signataires' }}</h3>
+  {% for s in signers %}<div class="doc-row"><span>{{ s['signer_name'] or s['signer_email'] }}</span><span class="status-pill {{ 'done' if s['status']=='signed' else '' }}">{{ signer_labels[s['status']] }}</span></div>{% endfor %}
+  <p class="helptext" style="margin-top:16px;">{{ 'This page is private: do not share the link.' if lang == 'en' else 'Cette page est privée : ne partagez pas le lien.' }}</p>
+</section>
+{% endblock %}

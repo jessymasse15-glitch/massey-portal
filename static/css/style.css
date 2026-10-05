@@ -585,3 +585,41 @@ footer.site{border-top:1px solid var(--line);padding:56px 0 28px;background:var(
 .ai-box h2{margin-top:0;}
 .ai-tag{font-family:var(--mono);font-size:0.66rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);border:1px solid var(--gold);border-radius:20px;padding:2px 9px;margin-left:8px;vertical-align:middle;}
 .ai-rewrite{white-space:pre-wrap;background:var(--surface-2);border-left:3px solid var(--gold);padding:10px 14px;font-size:0.86rem;border-radius:var(--radius-sm);margin:8px 0;}
+
+/* ---- Contract Intelligence : espace de travail et dossier contrat ---- */
+.ci-welcome { max-width: 820px; }
+.ci-steps { list-style: none; counter-reset: s; padding: 0; margin: 18px 0 22px; display: grid; gap: 14px; }
+.ci-steps li { counter-increment: s; display: grid; grid-template-columns: 34px 1fr; column-gap: 12px; align-items: start; }
+.ci-steps li::before { content: counter(s); grid-row: span 2; width: 30px; height: 30px; border-radius: 50%; background: var(--gold); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem; }
+.ci-steps li span { color: var(--ink-soft); font-size: 0.92rem; }
+.ci-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.ci-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.ci-kpi { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; background: #fff; border: 1px solid var(--line); border-radius: 10px; text-decoration: none; color: inherit; transition: border-color .15s, transform .15s; }
+.ci-kpi:hover { border-color: var(--gold); transform: translateY(-1px); }
+.ci-kpi .n { font-family: var(--serif, Georgia, serif); font-size: 1.9rem; line-height: 1; }
+.ci-kpi .n small { font-size: 0.95rem; color: var(--ink-soft); }
+.ci-kpi .l { font-size: 0.82rem; color: var(--ink-soft); }
+.ci-kpi.warn { border-color: #c0392b66; }
+.ci-todo { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ci-todo li { display: grid; grid-template-columns: 12px 1fr auto; gap: 14px; align-items: center; padding: 12px 16px; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+.ci-todo .dot { width: 10px; height: 10px; border-radius: 50%; background: #9aa5a0; }
+.ci-todo li.late .dot { background: #c0392b; }
+.ci-todo li.soon .dot { background: #d68910; }
+.ci-recent { display: grid; gap: 0; }
+.ci-recent .doc-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; }
+.ci-stages { list-style: none; padding: 0; margin: 0 0 22px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; counter-reset: st; }
+.ci-stages li { counter-increment: st; position: relative; padding: 10px 10px 10px 12px; border-top: 4px solid var(--line); font-size: 0.82rem; color: var(--ink-soft); background: #fff; border-radius: 0 0 8px 8px; }
+.ci-stages li.done { border-top-color: #2e7d5b; color: var(--ink); }
+.ci-stages li.current { border-top-color: var(--gold); color: var(--ink); font-weight: 600; }
+.ci-stages li::before { content: counter(st) ". "; }
+.ci-stages li.done::after { content: " ✓"; color: #2e7d5b; }
+.ci-next { border-left: 4px solid var(--gold); background: #fff; padding: 14px 18px; border-radius: 8px; margin-bottom: 22px; }
+.ci-linked { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 14px 0 26px; }
+.ci-linked .card { padding: 14px 16px; }
+@media (max-width: 720px) {
+  .ci-stages { grid-template-columns: 1fr 1fr; }
+  .ci-todo li { grid-template-columns: 12px 1fr; }
+  .ci-todo li .btn { grid-column: 2; justify-self: start; }
+}
+
+.ci-stages li.skipped { opacity: .55; text-decoration: line-through; }

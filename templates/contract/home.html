@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ 'My workspace' if lang == 'en' else 'Mon espace' }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'My workspace' if lang == 'en' else 'Mon espace' }}</h1>
+  <p class="lede">{{ 'What needs your attention today, and where each contract stands.' if lang == 'en' else 'Ce qui demande votre attention aujourd\'hui, et où en est chaque contrat.' }}</p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+
+{% if empty %}
+  <div class="card ci-welcome">
+    <h2 style="margin-top:0;">{{ 'Start in two minutes' if lang == 'en' else 'Démarrez en deux minutes' }}</h2>
+    <ol class="ci-steps">
+      <li><strong>{{ 'See an analysis' if lang == 'en' else 'Voyez une analyse' }}</strong><span>{{ 'We run a sample contract so you can see risks, missing clauses and deadlines.' if lang == 'en' else 'Nous analysons un contrat d\'exemple : risques, clauses absentes, délais.' }}</span></li>
+      <li><strong>{{ 'Try your own' if lang == 'en' else 'Essayez le vôtre' }}</strong><span>{{ 'Paste or upload a contract (Word, PDF or text).' if lang == 'en' else 'Collez ou téléversez un contrat (Word, PDF ou texte).' }}</span></li>
+      <li><strong>{{ 'Follow it through' if lang == 'en' else 'Suivez-le jusqu\'au bout' }}</strong><span>{{ 'Negotiate, get approvals, archive the signed copy and receive deadline reminders by email.' if lang == 'en' else 'Négociez, faites approuver, archivez la copie signée et recevez les rappels d\'échéance par courriel.' }}</span></li>
+    </ol>
+    <div class="ci-actions">
+      <form method="POST" action="{{ ci_url('sample') }}"><button class="btn btn-primary" type="submit">{{ 'Analyse a sample contract' if lang == 'en' else 'Analyser un contrat d\'exemple' }}</button></form>
+      <a class="btn btn-ghost" href="{{ ci_url('analyze') }}">{{ 'Analyse my contract' if lang == 'en' else 'Analyser mon contrat' }}</a>
+      <a class="btn btn-ghost" href="{{ ci_url('generate') }}">{{ 'Draft a contract' if lang == 'en' else 'Rédiger un contrat' }}</a>
+    </div>
+  </div>
+{% else %}
+  <div class="ci-kpis">
+    <a class="ci-kpi" href="{{ ci_url('deadlines') }}"><span class="n">{{ kpi.due30 }}</span><span class="l">{{ 'deadlines in 30 days' if lang == 'en' else 'échéances à 30 jours' }}</span></a>
+    <a class="ci-kpi" href="{{ ci_url('approvals') }}"><span class="n">{{ kpi.approvals }}</span><span class="l">{{ 'approvals pending' if lang == 'en' else 'approbations en cours' }}</span></a>
+    <a class="ci-kpi" href="{{ ci_url('negotiations') }}"><span class="n">{{ kpi.negotiations }}</span><span class="l">{{ 'open negotiations' if lang == 'en' else 'négociations ouvertes' }}</span></a>
+    <a class="ci-kpi" href="{{ ci_url('registry') }}"><span class="n">{{ kpi.active }}</span><span class="l">{{ 'active contracts' if lang == 'en' else 'contrats actifs' }}</span></a>
+    <a class="ci-kpi {{ 'warn' if kpi.high }}" href="{{ ci_url('analyze') }}"><span class="n">{{ kpi.high }}<small>/{{ kpi.analyses }}</small></span><span class="l">{{ 'analyses with high risk' if lang == 'en' else 'analyses à risque élevé' }}</span></a>
+  </div>
+
+  <div class="ci-actions" style="margin:22px 0;">
+    <a class="btn btn-primary btn-sm" href="{{ ci_url('analyze') }}">{{ 'Analyse a contract' if lang == 'en' else 'Analyser un contrat' }}</a>
+    <a class="btn btn-ghost btn-sm" href="{{ ci_url('generate') }}">{{ 'Draft a contract' if lang == 'en' else 'Rédiger un contrat' }}</a>
+    <a class="btn btn-ghost btn-sm" href="{{ ci_url('compare') }}">{{ 'Compare versions' if lang == 'en' else 'Comparer deux versions' }}</a>
+    <a class="btn btn-ghost btn-sm" href="{{ ci_url('registry') }}">{{ 'Open the registry' if lang == 'en' else 'Ouvrir le registre' }}</a>
+  </div>
+
+  <h2>{{ 'To handle' if lang == 'en' else 'À traiter' }}</h2>
+  {% if todo %}
+    <ul class="ci-todo">
+      {% for t in todo %}
+        <li class="{{ t.tone }}">
+          <span class="dot" aria-hidden="true"></span>
+          <div><strong>{{ t.title }}</strong><div class="helptext">{{ t.meta }}</div></div>
+          <a class="btn btn-ghost btn-sm" href="{{ t.url }}">{{ t.cta }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+    {% if todo_more %}<p class="helptext">+ {{ todo_more }} {{ 'more' if lang == 'en' else 'autres' }}</p>{% endif %}
+  {% else %}
+    <div class="card" style="color:var(--ink-soft);">{{ 'Nothing urgent: no deadline in the next 14 days and no flow waiting on you.' if lang == 'en' else 'Rien d\'urgent : aucune échéance dans les 14 prochains jours et aucun circuit qui attend votre action.' }}</div>
+  {% endif %}
+
+  <p class="helptext" style="margin-top:14px;">
+    {% if reminders_on %}✓ {{ 'Email reminders are on.' if lang == 'en' else 'Les rappels par courriel sont activés.' }}{% else %}{{ 'Email reminders are off.' if lang == 'en' else 'Les rappels par courriel sont désactivés.' }}{% endif %}
+    <a href="{{ ci_url('deadlines') }}">{{ 'Change' if lang == 'en' else 'Modifier' }}</a>
+  </p>
+
+  {% if recent %}
+  <h2 style="margin-top:36px;">{{ 'Recent work' if lang == 'en' else 'Travaux récents' }}</h2>
+  <div class="ci-recent">
+    {% for r in recent %}
+      <a class="doc-row" href="{{ r.url }}"><span><strong>{{ r.title }}</strong><br><span class="helptext">{{ r.kind }} · {{ r.date }}</span></span>
+        {% if r.level %}<span class="risk-badge {{ r.level }}">{{ level_labels[r.level] if r.level in level_labels else r.level }}</span>{% endif %}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endif %}
+</section>
+{% endblock %}

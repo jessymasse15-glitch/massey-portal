@@ -10,6 +10,7 @@ import json
 import os
 import re
 import secrets
+import sys
 import threading
 import time
 from datetime import datetime, timedelta
@@ -33,6 +34,9 @@ def init(app_module):
     _register_registry()
     _register_ai_draft()
     _register_party_obligations()
+    _register_dashboard()
+    import ci_extras
+    ci_extras.init(m, sys.modules[__name__])
     _start_reminder_thread()
 
 
@@ -500,8 +504,8 @@ def _register_negotiations():
             return redirect(back)
         now = m.dbm.now()
         cur = conn.execute(
-            "INSERT INTO ci_negotiations (owner_id, title, counterparty_name, counterparty_email, counterparty_token, lang, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)",
-            (u["id"], title, (request.form.get("counterparty_name") or "").strip()[:80], email, _fresh_token(), g.lang, "open", now, now))
+            "INSERT INTO ci_negotiations (owner_id, title, counterparty_name, counterparty_email, counterparty_token, lang, status, created_at, updated_at, ref_type, ref_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            (u["id"], title, (request.form.get("counterparty_name") or "").strip()[:80], email, _fresh_token(), g.lang, "open", now, now, ref_type, ref_id))
         nid = cur.lastrowid
         conn.execute("INSERT INTO ci_neg_versions (negotiation_id, version_no, author, body_text, note, created_at) VALUES (?,?,?,?,?,?)",
                      (nid, 1, "owner", text, (request.form.get("note") or "").strip()[:500], now))
@@ -943,8 +947,15 @@ def _register_registry():
             links["analysis"] = m.ci_url("analysis", aid=row["analysis_id"])
         if row["draft_id"]:
             links["draft"] = m.ci_url("draft", did=row["draft_id"])
+        import ci_extras
+        sigctx = ci_extras.registry_signature_context(conn, u, row)
+        flow = _stage_state(conn, u, row)
+        ref = ("analysis", row["analysis_id"]) if row["analysis_id"] else (("draft", row["draft_id"]) if row["draft_id"] else None)
         conn.close()
-        return m._ci_page("registry_entry", **m._ci_ctx("registry", e=row, status_labels=statuses(), links=links))
+        return m._ci_page("registry_entry", **m._ci_ctx("registry", e=row, status_labels=statuses(), links=links, flow=flow, ref=ref,
+                                                        neg_status=NEG_STATUS[g.lang], **sigctx,
+                                                        appr_status={"pending": m._T("en cours", "in progress"), "approved": m._T("approuvée", "approved"),
+                                                                     "rejected": m._T("refusée", "rejected"), "cancelled": m._T("annulée", "cancelled")}))
 
     @m.ci_route("registry_file", "/registre/<int:rid>/fichier", "/registry/<int:rid>/file")
     def ci_registry_file(rid):
@@ -1089,3 +1100,197 @@ def _register_party_obligations():
         if blocked:
             flash(m._T("Limite du compte gratuit atteinte (%d). Le plan Premium la lève." % cap, "Free account limit reached (%d). Premium lifts it." % cap), "error")
         return m._ci_redirect("deadlines")
+
+
+# ---------------------------------------------------------------------------
+# Tableau de bord « Mon espace » et dossier contrat
+# ---------------------------------------------------------------------------
+
+SAMPLE_CONTRACT_FR = """CONTRAT DE PRESTATION DE SERVICES (EXEMPLE)
+1. Objet. Le Prestataire s'engage à fournir au Client des services de maintenance informatique.
+2. Paiement. Le Client doit payer chaque facture dans un délai de 90 jours suivant réception. Des intérêts de retard de 5 % par mois s'appliquent.
+3. Durée. Le contrat est conclu pour un an et se renouvelle automatiquement par tacite reconduction.
+4. Résiliation. Le Prestataire peut résilier à tout moment avec un préavis de 5 jours. Le Client ne peut pas résilier avant le terme.
+5. Responsabilité. La responsabilité du Client est illimitée pour tout dommage direct ou indirect.
+6. Confidentialité. Le Prestataire ne doit pas divulguer les informations confidentielles du Client.
+7. Modification. Le Prestataire peut modifier unilatéralement les tarifs en cours de contrat.
+"""
+SAMPLE_CONTRACT_EN = """SERVICES AGREEMENT (SAMPLE)
+1. Purpose. The Supplier shall provide IT maintenance services to the Customer.
+2. Payment. The Customer must pay each invoice within 90 days of receipt. Late interest of 5% per month applies.
+3. Term. The agreement runs for one year and renews automatically by tacit renewal.
+4. Termination. The Supplier may terminate at any time on 5 days' notice. The Customer may not terminate before the end of the term.
+5. Liability. The Customer's liability is unlimited for any direct or indirect damage.
+6. Confidentiality. The Supplier shall not disclose the Customer's confidential information.
+7. Amendment. The Supplier may unilaterally change prices during the term.
+"""
+
+
+def _days_until(iso, today):
+    try:
+        return (datetime.strptime(iso[:10], "%Y-%m-%d").date() - today).days
+    except (ValueError, TypeError):
+        return None
+
+
+def _stage_state(conn, u, entry):
+    """Étapes du parcours d'un contrat du registre, et prochaine action recommandée."""
+    refs = []
+    if entry["analysis_id"]:
+        refs.append(("analysis", entry["analysis_id"]))
+    if entry["draft_id"]:
+        refs.append(("draft", entry["draft_id"]))
+    negs, approvals = [], []
+    for rt, rid in refs:
+        negs += conn.execute("SELECT * FROM ci_negotiations WHERE owner_id=? AND ref_type=? AND ref_id=? ORDER BY id DESC", (u["id"], rt, rid)).fetchall()
+        approvals += conn.execute("SELECT * FROM ci_approvals WHERE owner_id=? AND ref_type=? AND ref_id=? ORDER BY id DESC", (u["id"], rt, rid)).fetchall()
+    if entry["negotiation_id"]:
+        extra = conn.execute("SELECT * FROM ci_negotiations WHERE id=? AND owner_id=?", (entry["negotiation_id"], u["id"])).fetchone()
+        if extra and extra["id"] not in [n["id"] for n in negs]:
+            negs.append(extra)
+    deadlines = []
+    if entry["analysis_id"]:
+        deadlines = conn.execute("SELECT * FROM contract_obligations WHERE user_id=? AND analysis_id=? ORDER BY due_date IS NULL, due_date LIMIT 20",
+                                 (u["id"], entry["analysis_id"])).fetchall()
+    has_doc = bool(refs)
+    neg_state = "todo" if not negs else ("done" if any(n["status"] == "agreed" for n in negs) else "current")
+    appr_state = "todo" if not approvals else ("done" if any(a["status"] == "approved" for a in approvals) else ("current" if any(a["status"] == "pending" for a in approvals) else "todo"))
+    signed = bool(entry["file_path"])
+    stages = [
+        ("draft", m._T("Rédaction / analyse", "Drafting / analysis"), "done" if has_doc else "current"),
+        ("negotiation", m._T("Négociation", "Negotiation"), neg_state),
+        ("approval", m._T("Approbation", "Approval"), appr_state),
+        ("signature", m._T("Signature et archivage", "Signature and archive"), "done" if signed else "todo"),
+        ("active", m._T("Suivi des échéances", "Deadline tracking"), "done" if entry["status"] == "actif" and entry["end_date"] else "todo"),
+    ]
+    # première étape non terminée = étape courante ; les suivantes restent « à venir »
+    marked = False
+    out = []
+    for key, label, st in stages:
+        if signed and key in ("negotiation", "approval") and st != "done":
+            st = "skipped"   # contrat déjà signé : étape non utilisée
+        elif st != "done":
+            st = "todo" if marked else "current"
+            marked = True
+        out.append({"key": key, "label": label, "state": st})
+    nxt = None
+    if signed:
+        if not entry["end_date"]:
+            nxt = ("dates", m._T("Renseignez la date de fin et cochez « ajouter à mes échéances » pour recevoir des rappels.", "Enter the end date and tick “add to my deadlines” to get reminders."))
+    elif not has_doc:
+        nxt = ("analyze", m._T("Analysez ou rédigez le contrat, puis rattachez-le à cette fiche depuis la page de l'analyse.", "Analyse or draft the contract, then attach it to this record from the analysis page."))
+    elif not negs and not approvals and not signed:
+        nxt = ("negotiate", m._T("Envoyez le texte à la contrepartie pour négocier, ou lancez directement une approbation interne.", "Send the text to the counterparty to negotiate, or start an internal approval right away."))
+    elif any(n["status"] == "open" for n in negs):
+        nxt = ("negotiation_open", m._T("Une négociation est en cours : suivez les versions et acceptez la dernière quand vous êtes d'accord.", "A negotiation is in progress: follow the versions and accept the latest when you agree."))
+    elif not any(a["status"] == "approved" for a in approvals) and not any(a["status"] == "pending" for a in approvals):
+        nxt = ("approve", m._T("Faites valider le texte final par vos approbateurs avant signature.", "Have your approvers sign off on the final text before signing."))
+    elif any(a["status"] == "pending" for a in approvals):
+        nxt = ("approval_pending", m._T("Une approbation est en cours : relancez l'approbateur si besoin.", "An approval is in progress: remind the approver if needed."))
+    elif not signed:
+        nxt = ("sign", m._T("Envoyez le contrat final en signature (encadré « Signature électronique » ci-dessous) ou téléversez le fichier déjà signé.", "Send the final contract for signature (“Electronic signature” box below) or upload the already signed file."))
+    elif not entry["end_date"]:
+        nxt = ("dates", m._T("Renseignez la date de fin et cochez « ajouter à mes échéances » pour recevoir des rappels.", "Enter the end date and tick “add to my deadlines” to get reminders."))
+    return {"stages": out, "negotiations": negs, "approvals": approvals, "deadlines": deadlines, "next": nxt, "has_doc": has_doc}
+
+
+def _register_dashboard():
+    @m.ci_route("home", "/espace", "/home")
+    def ci_home():
+        u = m._ci_user()
+        if not u:
+            return m._ci_need_login()
+        conn = m.dbm.get_db()
+        today = ci_reminders.local_today()
+        lang = g.lang
+        todo = []
+
+        # Échéances : en retard ou dans les 14 jours
+        for o in conn.execute("SELECT * FROM contract_obligations WHERE user_id=? AND status='a_faire' AND due_date IS NOT NULL AND due_date<>'' ORDER BY due_date LIMIT 60", (u["id"],)).fetchall():
+            d = _days_until(o["due_date"], today)
+            if d is None or d > 14:
+                continue
+            todo.append({"rank": d, "tone": "late" if d < 0 else ("soon" if d <= 3 else "info"),
+                         "title": o["label"],
+                         "meta": (m._T("En retard de %d j" % -d, "%d d overdue" % -d) if d < 0 else (m._T("Aujourd'hui", "Today") if d == 0 else m._T("Dans %d j" % d, "In %d d" % d))) + " · " + o["due_date"],
+                         "url": m.ci_url("deadlines"), "cta": m._T("Voir", "Open")})
+        # Approbations en cours
+        for a in conn.execute("SELECT * FROM ci_approvals WHERE owner_id=? AND status='pending' ORDER BY id DESC LIMIT 20", (u["id"],)).fetchall():
+            st = conn.execute("SELECT approver_name, approver_email, notified_at FROM ci_approval_steps WHERE approval_id=? AND status='pending' ORDER BY step_order LIMIT 1", (a["id"],)).fetchone()
+            who = (st["approver_name"] or st["approver_email"]) if st else "—"
+            days = _days_until((st["notified_at"] or a["created_at"]) if st else a["created_at"], today)
+            waited = -days if days is not None else 0
+            todo.append({"rank": 5 - min(waited, 5), "tone": "soon" if waited >= 3 else "info",
+                         "title": m._T("En attente de %s : %s" % (who, a["title"]), "Waiting for %s: %s" % (who, a["title"])),
+                         "meta": m._T("Approbation · depuis %d j" % waited, "Approval · for %d d" % waited),
+                         "url": m.ci_url("approval", aid=a["id"]), "cta": m._T("Relancer", "Remind")})
+        # Signatures en cours
+        for sr in conn.execute("SELECT r.*, (SELECT COUNT(*) FROM ci_signers s WHERE s.request_id=r.id) AS total, (SELECT COUNT(*) FROM ci_signers s WHERE s.request_id=r.id AND s.status='signed') AS signed FROM ci_signature_requests r WHERE owner_id=? AND status='pending' ORDER BY id DESC LIMIT 20", (u["id"],)).fetchall():
+            waited = -(_days_until(sr["created_at"], today) or 0)
+            todo.append({"rank": 4 - min(waited, 4), "tone": "soon" if waited >= 3 else "info", "title": sr["title"],
+                         "meta": m._T("Signature · %d/%d signé(s) · depuis %d j" % (sr["signed"], sr["total"], waited), "Signature · %d/%d signed · for %d d" % (sr["signed"], sr["total"], waited)),
+                         "url": m.ci_url("signature", sid=sr["id"]), "cta": m._T("Relancer", "Remind")})
+        # Négociations où la balle est dans mon camp
+        for n in conn.execute("SELECT * FROM ci_negotiations WHERE owner_id=? AND status='open' ORDER BY updated_at DESC LIMIT 20", (u["id"],)).fetchall():
+            last = conn.execute("SELECT author FROM ci_neg_versions WHERE negotiation_id=? ORDER BY version_no DESC LIMIT 1", (n["id"],)).fetchone()
+            mine = bool(last) and last["author"] == "counterparty"
+            todo.append({"rank": 2 if mine else 9, "tone": "soon" if mine else "info",
+                         "title": n["title"],
+                         "meta": m._T("Négociation · la contrepartie a répondu : à vous", "Negotiation · the counterparty replied: your turn") if mine else m._T("Négociation · en attente de la contrepartie", "Negotiation · waiting for the counterparty"),
+                         "url": m.ci_url("negotiation", nid=n["id"]), "cta": m._T("Répondre", "Reply") if mine else m._T("Ouvrir", "Open")})
+        # Contrats du registre qui se terminent bientôt
+        reg = conn.execute("SELECT * FROM ci_registry WHERE user_id=? AND archived=0 ORDER BY updated_at DESC", (u["id"],)).fetchall()
+        for r in reg:
+            if r["end_date"] and r["status"] == "actif":
+                d = _days_until(r["end_date"], today)
+                if d is not None and d <= 90:
+                    todo.append({"rank": d if d >= 0 else -1, "tone": "late" if d < 0 else ("soon" if d <= 30 else "info"),
+                                 "title": r["title"], "meta": (m._T("Se termine dans %d j" % d, "Ends in %d d" % d) if d >= 0 else m._T("Terme dépassé", "Past its end date")) + " · " + r["end_date"],
+                                 "url": m.ci_url("registry_entry", rid=r["id"]), "cta": m._T("Décider : renouveler ?", "Decide: renew?")})
+        todo.sort(key=lambda t: t["rank"])
+
+        analyses = conn.execute("SELECT id, title, overall, created_at, result_json FROM contract_analyses WHERE user_id=? ORDER BY id DESC", (u["id"],)).fetchall()
+        high = sum(1 for a in analyses if a["overall"] == "eleve")
+        active = [r for r in reg if r["status"] == "actif"]
+        due30 = sum(1 for o in conn.execute("SELECT due_date FROM contract_obligations WHERE user_id=? AND status='a_faire' AND due_date IS NOT NULL AND due_date<>''", (u["id"],)).fetchall()
+                    if (_days_until(o["due_date"], today) is not None and _days_until(o["due_date"], today) <= 30))
+        pending_appr = conn.execute("SELECT COUNT(*) AS c FROM ci_approvals WHERE owner_id=? AND status='pending'", (u["id"],)).fetchone()["c"]
+        open_neg = conn.execute("SELECT COUNT(*) AS c FROM ci_negotiations WHERE owner_id=? AND status='open'", (u["id"],)).fetchone()["c"]
+        drafts = conn.execute("SELECT id, title, created_at FROM contract_drafts WHERE user_id=? ORDER BY id DESC LIMIT 3", (u["id"],)).fetchall()
+        pref = ci_reminders.get_prefs(conn, u["id"])
+        empty = not (analyses or reg or drafts)
+        recent = []
+        for a in analyses[:4]:
+            recent.append({"kind": m._T("Analyse", "Analysis"), "title": a["title"], "level": a["overall"], "url": m.ci_url("analysis", aid=a["id"]), "date": a["created_at"][:10]})
+        for d_ in drafts:
+            recent.append({"kind": m._T("Brouillon", "Draft"), "title": d_["title"], "level": None, "url": m.ci_url("draft", did=d_["id"]), "date": d_["created_at"][:10]})
+        recent.sort(key=lambda x: x["date"], reverse=True)
+        conn.close()
+        smtp_ok = notifications.is_configured()
+        return m._ci_page("home", **m._ci_ctx("home", todo=todo[:12], todo_more=max(0, len(todo) - 12), recent=recent[:6], empty=empty,
+                                              kpi={"analyses": len(analyses), "high": high, "active": len(active), "due30": due30,
+                                                   "approvals": pending_appr, "negotiations": open_neg},
+                                              reminders_on=bool(pref["enabled"]) if pref else True, smtp_ok=smtp_ok, user=u))
+
+    @m.ci_route("sample", "/espace/exemple", "/home/sample", ("POST",))
+    def ci_sample():
+        u = m._ci_user()
+        if not u:
+            return m._ci_need_login()
+        conn = m.dbm.get_db()
+        if conn.execute("SELECT COUNT(*) AS c FROM contract_analyses WHERE user_id=?", (u["id"],)).fetchone()["c"]:
+            conn.close()
+            return m._ci_redirect("home")
+        lang = g.lang
+        text = SAMPLE_CONTRACT_EN if lang == "en" else SAMPLE_CONTRACT_FR
+        custom_rules, kb_sources = m._ci_load_knowledge(conn)
+        result = m.contract_engine.analyze_contract(text, custom_rules=custom_rules, sources=kb_sources)
+        apply_default_playbook(conn, u["id"], result, text)
+        cur = conn.execute(
+            "INSERT INTO contract_analyses (user_id, title, language, source_name, text_content, result_json, overall, created_at) VALUES (?,?,?,?,?,?,?,?)",
+            (u["id"], m._T("Exemple : contrat de services", "Sample: services agreement"), result["language"], None, text, json.dumps(result, ensure_ascii=False), result["summary"]["overall"], m.dbm.now()))
+        conn.commit()
+        aid = cur.lastrowid
+        conn.close()
+        flash(m._T("Voici une analyse d'exemple (non décomptée de votre quota). Essayez ensuite avec votre propre contrat.", "Here is a sample analysis (not counted against your quota). Then try your own contract."), "success")
+        return m._ci_redirect("analysis", aid=aid)

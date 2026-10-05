@@ -274,6 +274,7 @@ CI_MONTHLY_LIMITS = {
     "ai": {"anonymous": 0, "free": 0, "premium": int(os.environ.get("CI_AI_PREMIUM_LIMIT", "30"))},
     "approval": {"anonymous": 0, "free": 3, "premium": None},
     "negotiation": {"anonymous": 0, "free": 2, "premium": None},
+    "signature": {"anonymous": 0, "free": 2, "premium": None},
 }
 CI_REGISTRY_LIMITS = {"anonymous": 0, "free": 10, "premium": None}
 CI_PLAYBOOK_LIMITS = {"anonymous": 0, "free": 1, "premium": 10}
@@ -501,6 +502,42 @@ CREATE TABLE IF NOT EXISTS ci_playbook_positions (
     topic_id TEXT NOT NULL,
     stance TEXT NOT NULL,
     note TEXT
+);
+
+CREATE TABLE IF NOT EXISTS ci_calendar_tokens (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    token TEXT UNIQUE NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ci_signature_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_id INTEGER NOT NULL REFERENCES users(id),
+    registry_id INTEGER NOT NULL REFERENCES ci_registry(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    body_snapshot TEXT NOT NULL,
+    body_sha256 TEXT NOT NULL,
+    source_label TEXT,
+    lang TEXT NOT NULL DEFAULT 'fr',
+    message TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TEXT NOT NULL,
+    completed_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS ci_signers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_id INTEGER NOT NULL REFERENCES ci_signature_requests(id) ON DELETE CASCADE,
+    signer_name TEXT,
+    signer_email TEXT NOT NULL,
+    token TEXT UNIQUE NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    signed_name TEXT,
+    ip_address TEXT,
+    user_agent TEXT,
+    signed_at TEXT,
+    decline_reason TEXT,
+    notified_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS ci_registry (
@@ -946,6 +983,10 @@ def init_db():
     _ensure_columns(conn, "contract_analyses", [
         ("ai_json", "TEXT"),
         ("ai_created_at", "TEXT"),
+    ])
+    _ensure_columns(conn, "ci_negotiations", [
+        ("ref_type", "TEXT"),
+        ("ref_id", "INTEGER"),
     ])
     conn.commit()
     _seed_review_demo_content(conn)

@@ -22,6 +22,18 @@
 {% include "contract/_subnav.html" %}
 <section class="block" style="border-top:none;padding-top:0;">
   <div class="callout">{{ 'Dates here are only as reliable as what was entered or detected. Email reminders can be turned on below.' if lang == 'en' else 'Les dates ne sont aussi fiables que ce qui a été saisi ou détecté. Des rappels par courriel peuvent être activés ci-dessous.' }}</div>
+  <div class="card" style="margin-bottom:24px;" id="calendrier">
+    <h3 style="margin-top:0;">{{ 'Calendar' if lang == 'en' else 'Calendrier' }}</h3>
+    <p class="helptext">{{ 'See your deadlines in Google Calendar, Outlook or Apple Calendar, with an alert 7 days and 1 day before.' if lang == 'en' else 'Voyez vos échéances dans Google Agenda, Outlook ou Calendrier Apple, avec une alerte 7 jours et 1 jour avant.' }}</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+      <a class="btn btn-ghost btn-sm" href="{{ ci_url('calendar_ics') }}">{{ 'Download .ics file' if lang == 'en' else 'Télécharger le fichier .ics' }}</a>
+      <form method="POST" action="{{ ci_url('calendar_link') }}"><button class="btn btn-ghost btn-sm" type="submit">{{ ('Create a new subscription link' if cal.feed_url else 'Create a subscription link') if lang == 'en' else ('Renouveler le lien d\'abonnement' if cal.feed_url else 'Créer un lien d\'abonnement') }}</button></form>
+      {% if cal.feed_url %}<form method="POST" action="{{ ci_url('calendar_revoke') }}"><button class="btn btn-danger btn-sm" type="submit">{{ 'Delete the link' if lang == 'en' else 'Supprimer le lien' }}</button></form>{% endif %}
+    </div>
+    {% if cal.feed_url %}
+      <div class="helptext">{{ 'Paste this address in your calendar app ("subscribe to a calendar from a URL"). It updates by itself. Anyone with this address can see your deadlines: do not share it.' if lang == 'en' else 'Collez cette adresse dans votre application de calendrier (« s\'abonner à un calendrier par URL »). Il se met à jour tout seul. Toute personne qui possède cette adresse voit vos échéances : ne la partagez pas.' }}<br><code style="word-break:break-all;">{{ cal.feed_url }}</code></div>
+    {% endif %}
+  </div>
   <div class="card" style="margin-bottom:24px;" id="rappels">
     <h3 style="margin-top:0;">{{ 'Email reminders' if lang == 'en' else 'Rappels par courriel' }}</h3>
     {% if not smtp_ok %}

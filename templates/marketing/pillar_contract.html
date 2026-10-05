@@ -34,6 +34,7 @@
       <div class="eyebrow">Outils</div>
       <h2>Travaillez vos contrats dans Massey AI</h2>
       <p>Un compte gratuit suffit pour commencer (quotas mensuels) ; le plan Premium les lève. Analyse automatisée par règles : elle oriente la relecture, elle ne remplace pas un avocat.</p>
+      <p style="margin-top:14px;"><a class="btn btn-primary" href="{{ url_for('ci_home') }}">Ouvrir mon espace</a></p>
     </div>
   </div>
   <div class="grid-2 reveal">
@@ -55,6 +56,31 @@
     <a class="card tool-card" href="{{ url_for('ci_deadlines') }}">
       <h3 style="margin-top:0;">Échéances</h3>
       <p style="color:var(--ink-soft);font-size:0.9rem;">Préavis, renouvellements, paiements : un suivi unique, alimenté par vos analyses.</p>
+      <span class="btn btn-primary btn-sm">Ouvrir</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_negotiations') }}">
+      <h3 style="margin-top:0;">Négocier</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Envoyez un texte à la contrepartie par lien privé, échangez des versions et voyez chaque modification surlignée.</p>
+      <span class="btn btn-primary btn-sm">Ouvrir</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_approvals') }}">
+      <h3 style="margin-top:0;">Approbations</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Un circuit de validation interne : chaque approbateur reçoit un lien par courriel, sans compte à créer.</p>
+      <span class="btn btn-primary btn-sm">Ouvrir</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_registry') }}">
+      <h3 style="margin-top:0;">Registre</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Tous vos contrats au même endroit : statut, parties, dates et fichier signé archivé avec son empreinte.</p>
+      <span class="btn btn-primary btn-sm">Ouvrir</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_signatures') }}">
+      <h3 style="margin-top:0;">Signatures</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Faites signer le contrat final par lien privé : PDF signé avec certificat, archivé automatiquement dans le registre.</p>
+      <span class="btn btn-primary btn-sm">Ouvrir</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_playbooks') }}">
+      <h3 style="margin-top:0;">Playbooks</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Vos positions de négociation, appliquées automatiquement à chaque analyse.</p>
       <span class="btn btn-primary btn-sm">Ouvrir</span>
     </a>
   </div>

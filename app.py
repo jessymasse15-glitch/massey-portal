@@ -1029,8 +1029,10 @@ def ci_deadlines():
     cap = dbm.CI_OBLIGATION_LIMITS[_access_info(u)["tier"]]
     conn = dbm.get_db()
     prefs = ci_reminders.get_prefs(conn, u["id"])
+    import ci_extras
+    cal = ci_extras.calendar_context(conn, u)
     conn.close()
-    return _ci_page("deadlines", **_ci_ctx("deadlines", groups=groups, kind_labels=kind_labels,
+    return _ci_page("deadlines", **_ci_ctx("deadlines", cal=cal, groups=groups, kind_labels=kind_labels,
                                            total=len(rows), cap=cap, today=today.isoformat(),
                                            reminder_prefs=prefs, smtp_ok=notifications.is_configured(),
                                            offset_choices=ci_reminders.ALLOWED_OFFSETS))
