@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Contract registry' if lang == 'en' else 'Registre des contrats' }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'Contract registry' if lang == 'en' else 'Registre des contrats' }}</h1>
+  <p class="lede">{{ 'Keep every contract in one place: status, parties, dates, and the final signed file with its SHA-256 fingerprint.' if lang == 'en' else 'Gardez chaque contrat au même endroit : statut, parties, dates et fichier final signé avec son empreinte SHA-256.' }}</p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="grid-2">
+    <form method="POST" class="card">
+      <h3 style="margin-top:0;">{{ 'Add a contract' if lang == 'en' else 'Ajouter un contrat' }}</h3>
+      <div class="form-group"><label for="title">{{ 'Title' if lang == 'en' else 'Titre' }} *</label><input id="title" name="title" required maxlength="160"></div>
+      <div class="form-group"><label for="counterparty">{{ 'Counterparty' if lang == 'en' else 'Contrepartie' }}</label><input id="counterparty" name="counterparty" maxlength="120"></div>
+      <button class="btn btn-primary btn-sm" type="submit" {{ 'disabled' if not can_add }}>{{ 'Add' if lang == 'en' else 'Ajouter' }}</button>
+      <p class="helptext">{{ count }}{% if cap is not none %} / {{ cap }}{% endif %} {{ 'contracts' if lang == 'en' else 'contrats' }}{% if cap is none %} — {{ 'unlimited (Premium)' if lang == 'en' else 'illimité (Premium)' }}{% endif %}</p>
+    </form>
+    <form method="GET" class="card">
+      <h3 style="margin-top:0;">{{ 'Search' if lang == 'en' else 'Rechercher' }}</h3>
+      <div class="form-group"><input name="q" value="{{ q }}" placeholder="{{ 'Title, counterparty, notes…' if lang == 'en' else 'Titre, contrepartie, notes…' }}"></div>
+      <div class="form-group"><select name="status"><option value="">{{ 'All statuses' if lang == 'en' else 'Tous les statuts' }}</option>{% for k, lab in status_labels.items() %}<option value="{{ k }}" {{ 'selected' if status==k }}>{{ lab }}</option>{% endfor %}</select></div>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:400;"><input type="checkbox" name="archived" value="1" style="width:auto;" {{ 'checked' if show_archived }}> {{ 'Show archived' if lang == 'en' else 'Voir les archivés' }}</label>
+      <button class="btn btn-ghost btn-sm" type="submit" style="margin-top:10px;">{{ 'Filter' if lang == 'en' else 'Filtrer' }}</button>
+    </form>
+  </div>
+  <div style="margin-top:28px;">
+  {% for e in entries %}
+    <a class="doc-row" href="{{ ci_url('registry_entry', rid=e['id']) }}" style="text-decoration:none;color:inherit;">
+      <span><strong>{{ e['title'] }}</strong><br><span class="helptext">{{ e['counterparty'] or '—' }}{% if e['end_date'] %} · {{ 'ends' if lang == 'en' else 'fin' }} {{ e['end_date'] }}{% if e['end_date'] < today and e['status'] == 'actif' %} ⚠ {{ 'past end date' if lang == 'en' else 'date de fin dépassée' }}{% endif %}{% endif %}{% if e['file_name'] %} · 📎 {{ e['file_name'] }}{% endif %}</span></span>
+      <span class="status-pill {{ 'done' if e['status']=='actif' else '' }}">{{ status_labels.get(e['status'], e['status']) }}</span>
+    </a>
+  {% else %}
+    <p class="helptext">{{ 'No contract in the registry yet.' if lang == 'en' else 'Aucun contrat dans le registre pour l\'instant.' }}</p>
+  {% endfor %}
+  </div>
+</section>
+{% endblock %}

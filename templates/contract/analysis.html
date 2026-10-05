@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "contract/_macros.html" import disclaimer, level_pill, overall_label with context %}
+{% from "contract/_macros.html" import disclaimer, level_pill, overall_label, workflow_box with context %}
 {% block title %}{{ analysis['title'] }} — Contract Intelligence{% endblock %}
 {% block content %}
 <section class="page-hero reveal">
@@ -58,6 +58,32 @@
     {% endif %}
   </div>
 
+  <div class="ai-box" id="playbook">
+    <h2>{{ 'Your playbook' if lang == 'en' else 'Votre playbook' }}</h2>
+    {% if result.playbook %}
+      <p><strong>{{ result.playbook.name }}</strong> —
+        {% if result.playbook.compliant %}<span class="risk-badge info">{{ 'Compliant' if lang == 'en' else 'Conforme' }}</span>
+        {% else %}<span class="risk-badge eleve">{{ result.playbook.deviations|length }} {{ 'deviation(s)' if lang == 'en' else 'écart(s)' }}</span>{% endif %}</p>
+      {% for d in result.playbook.deviations %}
+        <div class="finding eleve">
+          {% if d.type == 'forbid' %}<h4 style="margin:0;">{{ 'Never accepted: ' if lang == 'en' else 'Position « jamais » : ' }}{{ d.topic }}</h4><div class="where">{{ 'Section' }} {{ d.clause_number }}</div><blockquote>{{ d.excerpt }}</blockquote>
+          {% elif d.type == 'require' %}<h4 style="margin:0;">{{ 'Required clause missing: ' if lang == 'en' else 'Clause exigée absente : ' }}{{ d.topic }}</h4>
+          {% elif d.type == 'payment_days' %}<h4 style="margin:0;">{{ 'Payment term too long: ' if lang == 'en' else 'Délai de paiement trop long : ' }}{{ d.value }} {{ 'days (max ' if lang == 'en' else 'jours (max ' }}{{ d.limit }})</h4><blockquote>{{ d.excerpt }}</blockquote>
+          {% else %}<h4 style="margin:0;">{{ 'Notice too short: ' if lang == 'en' else 'Préavis trop court : ' }}{{ d.value }} {{ 'days (min ' if lang == 'en' else 'jours (min ' }}{{ d.limit }})</h4><blockquote>{{ d.excerpt }}</blockquote>{% endif %}
+          {% if d.note %}<p><strong>{{ 'Your position / fallback' if lang == 'en' else 'Votre position / repli' }} :</strong> {{ d.note }}</p>{% endif %}
+        </div>
+      {% endfor %}
+    {% endif %}
+    {% if my_playbooks %}
+      <form method="POST" action="{{ ci_url('analysis_playbook', aid=analysis['id']) }}" class="inline-form">
+        <select name="playbook_id" style="width:auto;">{% for p in my_playbooks %}<option value="{{ p['id'] }}">{{ p['name'] }}</option>{% endfor %}</select>
+        <button class="btn btn-ghost btn-sm" type="submit">{{ 'Check against this playbook' if lang == 'en' else 'Confronter à ce playbook' }}</button>
+      </form>
+    {% else %}
+      <p class="helptext">{{ 'Define your own negotiation positions once, and every analysis is checked against them.' if lang == 'en' else 'Définissez une fois vos positions de négociation : chaque analyse sera confrontée à celles-ci.' }} <a href="{{ ci_url('playbooks') }}">{{ 'Create a playbook' if lang == 'en' else 'Créer un playbook' }}</a></p>
+    {% endif %}
+  </div>
+
   <h2>{{ 'Points to review' if lang == 'en' else 'Points à examiner' }} ({{ result.findings|length }})</h2>
   {% if not result.findings %}
     <p class="helptext">{{ 'No risky wording pattern detected. This does not mean the contract is balanced.' if lang == 'en' else 'Aucune formulation à risque détectée. Cela ne signifie pas que le contrat soit équilibré.' }}</p>
@@ -87,6 +113,26 @@
     </div>
   {% endfor %}
 
+
+  <h2 style="margin-top:40px;" id="parties">{{ 'Obligations by party' if lang == 'en' else 'Obligations par partie' }}</h2>
+  <p class="helptext">{{ 'Who must do what, detected from phrases like "shall / must / undertakes to". The party is guessed from the words before the verb: check each line.' if lang == 'en' else 'Qui doit faire quoi, repéré à partir de formulations comme « doit / s\'engage à / est tenu de ». La partie est devinée d\'après les mots qui précèdent le verbe : vérifiez chaque ligne.' }}</p>
+  {% if party_obligations %}
+  <form method="POST" action="{{ ci_url('analysis_parties', aid=analysis['id']) }}">
+    {% for party, items in party_obligations %}
+      <h4>{{ party if party != '—' else ('Unassigned' if lang == 'en' else 'Non attribué') }} ({{ items|length }})</h4>
+      {% for o in items %}
+        <label class="doc-row" style="font-weight:400;cursor:pointer;">
+          <span style="display:flex;gap:10px;align-items:flex-start;"><input type="checkbox" name="pick" value="{{ party_index[(o.party, o.action)] }}" style="width:auto;margin-top:4px;">
+            <span>{% if o.kind == 'interdiction' %}<span class="risk-badge moyen" style="margin-right:6px;">{{ 'prohibition' if lang == 'en' else 'interdiction' }}</span>{% endif %}{{ o.action }}<br><span class="helptext">{{ 'Section' }} {{ o.clause_number }}{% if o.delay_text %} · {{ o.delay_text }}{% endif %}</span></span></span>
+        </label>
+      {% endfor %}
+    {% endfor %}
+    <button class="btn btn-ghost btn-sm" type="submit" style="margin-top:12px;">{{ 'Add selected to my tracker' if lang == 'en' else 'Ajouter la sélection à mon suivi' }}</button>
+  </form>
+  {% else %}
+    <p class="helptext">{{ 'No obligation wording detected.' if lang == 'en' else 'Aucune formulation d\'obligation détectée.' }}</p>
+  {% endif %}
+
   <h2 style="margin-top:40px;" id="deadlines">{{ 'Dates and deadlines found' if lang == 'en' else 'Dates et délais repérés' }} ({{ obligations|length }})</h2>
   <form method="GET" class="inline-form" style="margin-bottom:14px;">
     <label for="effective" class="helptext" style="margin:0 8px 0 0;">{{ 'Effective date (to estimate relative deadlines)' if lang == 'en' else 'Date d\'effet (pour estimer les délais relatifs)' }}</label>
@@ -115,6 +161,8 @@
   {% else %}
     <p class="helptext">{{ 'No date or delay detected.' if lang == 'en' else 'Aucune date ni délai détecté.' }}</p>
   {% endif %}
+
+  {{ workflow_box('analysis', analysis['id']) }}
 
   <div style="margin-top:40px;display:flex;gap:12px;flex-wrap:wrap;">
     <a class="btn btn-ghost" href="{{ ci_url('analyze') }}">{{ '← All analyses' if lang == 'en' else '← Toutes les analyses' }}</a>

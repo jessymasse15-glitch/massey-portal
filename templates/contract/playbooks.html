@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Playbooks — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>Playbooks</h1>
+  <p class="lede">{{ 'Write down your own negotiation positions (clauses you never accept, clauses you always require, maximum payment term, minimum notice). Every analysis is then checked against them.' if lang == 'en' else 'Consignez vos propres positions de négociation (clauses jamais acceptées, clauses toujours exigées, délai de paiement maximal, préavis minimal). Chaque analyse est ensuite confrontée à ces positions.' }}</p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+  <form method="POST" class="card" style="max-width:520px;margin-bottom:28px;">
+    <h3 style="margin-top:0;">{{ 'New playbook' if lang == 'en' else 'Nouveau playbook' }}</h3>
+    <div class="form-group"><label for="name">{{ 'Name' if lang == 'en' else 'Nom' }}</label><input id="name" name="name" maxlength="80" required placeholder="{{ 'Standard supplier contracts' if lang == 'en' else 'Contrats fournisseurs standard' }}"></div>
+    <button class="btn btn-primary btn-sm" type="submit">{{ 'Create' if lang == 'en' else 'Créer' }}</button>
+    <p class="helptext">{{ count }}{% if cap is not none %} / {{ cap }}{% endif %} playbook(s)</p>
+  </form>
+  {% for p in playbooks %}
+    <a class="doc-row" href="{{ ci_url('playbook', pid=p['id']) }}" style="text-decoration:none;color:inherit;">
+      <span><strong>{{ p['name'] }}</strong><br><span class="helptext">{{ p['n'] }} {{ 'position(s)' if lang == 'en' else 'position(s)' }}{% if p['max_payment_days'] %} · {{ 'max payment' if lang == 'en' else 'paiement max' }} {{ p['max_payment_days'] }} d{% endif %}{% if p['min_notice_days'] %} · {{ 'min notice' if lang == 'en' else 'préavis min' }} {{ p['min_notice_days'] }} d{% endif %}</span></span>
+      {% if p['is_default'] %}<span class="status-pill done">{{ 'default' if lang == 'en' else 'par défaut' }}</span>{% endif %}
+    </a>
+  {% else %}
+    <p class="helptext">{{ 'No playbook yet.' if lang == 'en' else 'Aucun playbook pour l\'instant.' }}</p>
+  {% endfor %}
+</section>
+{% endblock %}

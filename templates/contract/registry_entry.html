@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ e['title'] }} — {{ 'Registry' if lang == 'en' else 'Registre' }}{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">{{ 'Contract record' if lang == 'en' else 'Fiche contrat' }}</div>
+  <h1>{{ e['title'] }}</h1>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+  <form method="POST" enctype="multipart/form-data" class="card" style="max-width:820px;">
+    <div class="grid-2">
+      <div class="form-group"><label>{{ 'Title' if lang == 'en' else 'Titre' }}</label><input name="title" value="{{ e['title'] }}" maxlength="160"></div>
+      <div class="form-group"><label>{{ 'Counterparty' if lang == 'en' else 'Contrepartie' }}</label><input name="counterparty" value="{{ e['counterparty'] or '' }}" maxlength="120"></div>
+      <div class="form-group"><label>{{ 'Status' if lang == 'en' else 'Statut' }}</label><select name="status">{% for k, lab in status_labels.items() %}<option value="{{ k }}" {{ 'selected' if e['status']==k }}>{{ lab }}</option>{% endfor %}</select></div>
+      <div class="form-group"><label>{{ 'Value / amount' if lang == 'en' else 'Valeur / montant' }}</label><input name="value_text" value="{{ e['value_text'] or '' }}" maxlength="120"></div>
+      <div class="form-group"><label>{{ 'Start date' if lang == 'en' else 'Date de début' }}</label><input type="date" name="start_date" value="{{ e['start_date'] or '' }}"></div>
+      <div class="form-group"><label>{{ 'End date' if lang == 'en' else 'Date de fin' }}</label><input type="date" name="end_date" value="{{ e['end_date'] or '' }}"></div>
+    </div>
+    <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-bottom:14px;"><input type="checkbox" name="track_end" value="1" style="width:auto;"> {{ 'Add the end date to my deadlines (with email reminders)' if lang == 'en' else 'Ajouter la date de fin à mes échéances (avec rappels par courriel)' }}</label>
+    <div class="form-group"><label>Notes</label><textarea name="notes" rows="4" maxlength="2000">{{ e['notes'] or '' }}</textarea></div>
+    <div class="form-group"><label>{{ 'Final / signed file (pdf, docx, doc, txt, png, jpg)' if lang == 'en' else 'Fichier final / signé (pdf, docx, doc, txt, png, jpg)' }}</label><input type="file" name="file" accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg">
+      {% if e['file_name'] %}<div class="helptext">📎 <a href="{{ ci_url('registry_file', rid=e['id']) }}">{{ e['file_name'] }}</a> · SHA-256 <code style="word-break:break-all;">{{ e['file_sha256'] }}</code></div>{% endif %}</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn btn-primary" type="submit">{{ 'Save' if lang == 'en' else 'Enregistrer' }}</button>
+      <a class="btn btn-ghost" href="{{ ci_url('registry') }}">{{ 'Back' if lang == 'en' else 'Retour' }}</a></div>
+  </form>
+  <p style="margin-top:18px;">
+    {% if links.analysis %}<a class="btn btn-ghost btn-sm" href="{{ links.analysis }}">{{ 'Linked analysis' if lang == 'en' else 'Analyse liée' }}</a>{% endif %}
+    {% if links.draft %}<a class="btn btn-ghost btn-sm" href="{{ links.draft }}">{{ 'Linked draft' if lang == 'en' else 'Brouillon lié' }}</a>{% endif %}
+  </p>
+  <p class="helptext" style="max-width:70ch;">{{ 'Electronic signature: use your client file (Client area) to sign a final document with a certificate, then upload the signed file here.' if lang == 'en' else 'Signature électronique : utilisez votre dossier client (Espace client) pour signer un document final avec certificat, puis téléversez le fichier signé ici.' }}</p>
+  <div style="display:flex;gap:10px;margin-top:12px;">
+    <form method="POST" action="{{ ci_url('registry_archive', rid=e['id']) }}"><button class="btn btn-ghost btn-sm" type="submit">{{ ('Unarchive' if lang == 'en' else 'Désarchiver') if e['archived'] else ('Archive' if lang == 'en' else 'Archiver') }}</button></form>
+    <form method="POST" action="{{ ci_url('registry_delete', rid=e['id']) }}" onsubmit="return confirm('{{ 'Delete this record and its file?' if lang == 'en' else 'Supprimer cette fiche et son fichier ?' }}');"><button class="btn btn-danger btn-sm" type="submit">{{ 'Delete' if lang == 'en' else 'Supprimer' }}</button></form>
+  </div>
+</section>
+{% endblock %}

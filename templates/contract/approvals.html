@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "contract/_macros.html" import quota with context %}
+{% block title %}{{ 'Approvals' if lang == 'en' else 'Approbations' }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'Internal approvals' if lang == 'en' else 'Approbations internes' }}</h1>
+  <p class="lede">{{ 'Send a contract to colleagues for sign-off, one after the other. Each approver decides from a private email link.' if lang == 'en' else 'Envoyez un contrat à vos collègues pour validation, l\'un après l\'autre. Chaque approbateur décide depuis un lien privé reçu par courriel.' }}</p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="callout">{{ 'Start an approval from an analysis or a draft ("Next steps" box).' if lang == 'en' else 'Lancez une approbation depuis une analyse ou un brouillon (encadré « Suite »).' }}</div>
+  {{ quota(limit, used, allowed) }}
+  {% for a in approvals %}
+    <a class="doc-row" href="{{ ci_url('approval', aid=a['id']) }}" style="text-decoration:none;color:inherit;">
+      <span><strong>{{ a['title'] }}</strong><br><span class="helptext">{{ a['created_at'][:10] }}</span></span>
+      <span class="status-pill {{ 'done' if a['status']=='approved' else ('urgent' if a['status']=='rejected' else ('pending' if a['status']=='pending' else '')) }}">{{ status_labels[a['status']] }}</span>
+    </a>
+  {% else %}
+    <p class="helptext">{{ 'No approval yet.' if lang == 'en' else 'Aucune approbation pour l\'instant.' }}</p>
+  {% endfor %}
+</section>
+{% endblock %}

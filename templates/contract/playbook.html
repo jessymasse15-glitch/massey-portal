@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ pb['name'] }} — Playbook{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Playbook</div>
+  <h1>{{ pb['name'] }}</h1>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+  <form method="POST">
+    <div class="grid-2">
+      <div class="form-group"><label for="name">{{ 'Name' if lang == 'en' else 'Nom' }}</label><input id="name" name="name" maxlength="80" value="{{ pb['name'] }}"></div>
+      <div class="form-group"><label style="display:flex;gap:8px;align-items:center;margin-top:26px;font-weight:500;"><input type="checkbox" name="is_default" value="1" style="width:auto;" {{ 'checked' if pb['is_default'] }}> {{ 'Apply automatically to every new analysis' if lang == 'en' else 'Appliquer automatiquement à chaque nouvelle analyse' }}</label></div>
+      <div class="form-group"><label for="mp">{{ 'Maximum payment term accepted (days)' if lang == 'en' else 'Délai de paiement maximal accepté (jours)' }}</label><input id="mp" type="number" min="1" name="max_payment_days" value="{{ pb['max_payment_days'] or '' }}"></div>
+      <div class="form-group"><label for="mn">{{ 'Minimum notice period required (days)' if lang == 'en' else 'Préavis minimal exigé (jours)' }}</label><input id="mn" type="number" min="1" name="min_notice_days" value="{{ pb['min_notice_days'] or '' }}"></div>
+    </div>
+    <h3>{{ 'Positions by topic' if lang == 'en' else 'Positions par sujet' }}</h3>
+    <p class="helptext">{{ '"Never accept": flag the contract if this wording appears. "Always require": flag the contract if this clause is missing.' if lang == 'en' else '« Jamais » : alerte si cette formulation apparaît. « Toujours exiger » : alerte si cette clause est absente.' }}</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>{{ 'Topic' if lang == 'en' else 'Sujet' }}</th><th>{{ 'Position' if lang == 'en' else 'Position' }}</th><th>{{ 'Your note / fallback wording' if lang == 'en' else 'Votre note / formulation de repli' }}</th></tr></thead>
+      <tbody>
+      {% for tid, tlabel in topics %}
+        {% set pos = positions.get(tid) %}
+        <tr>
+          <td>{{ tlabel }}</td>
+          <td><select name="stance_{{ tid }}" style="width:auto;">
+            <option value="">—</option>
+            <option value="forbid" {{ 'selected' if pos and pos['stance']=='forbid' }}>{{ 'Never accept' if lang == 'en' else 'Jamais' }}</option>
+            <option value="require" {{ 'selected' if pos and pos['stance']=='require' }}>{{ 'Always require' if lang == 'en' else 'Toujours exiger' }}</option>
+          </select></td>
+          <td><input name="note_{{ tid }}" maxlength="300" value="{{ pos['note'] if pos and pos['note'] else '' }}"></td>
+        </tr>
+      {% endfor %}
+      </tbody></table></div>
+    <div style="display:flex;gap:10px;margin-top:16px;"><button class="btn btn-primary" type="submit">{{ 'Save' if lang == 'en' else 'Enregistrer' }}</button>
+      <a class="btn btn-ghost" href="{{ ci_url('playbooks') }}">{{ 'Back' if lang == 'en' else 'Retour' }}</a></div>
+  </form>
+  <form method="POST" action="{{ ci_url('playbook_delete', pid=pb['id']) }}" style="margin-top:20px;" onsubmit="return confirm('{{ 'Delete this playbook?' if lang == 'en' else 'Supprimer ce playbook ?' }}');"><button class="btn btn-danger btn-sm" type="submit">{{ 'Delete' if lang == 'en' else 'Supprimer' }}</button></form>
+</section>
+{% endblock %}

@@ -159,16 +159,25 @@ def split_clauses(text):
         line = raw.strip()
         m = _HEAD_A.match(line) if line else None
         title_only = None
+        inline_body = None
         if m:
             number, title = m.group(1), m.group(2).strip()
         else:
             mb = _HEAD_B.match(line) if line else None
+            inline_body = None
             if mb and not mb.group(2).rstrip().endswith((",", ";")) and len(mb.group(2).split()) <= 14:
                 number, title = mb.group(1), mb.group(2).strip()
+            elif mb:
+                # « 2. Paiement. Le Client doit… » : court titre suivi du corps sur la même ligne.
+                head, sep, rest = mb.group(2).partition(". ")
+                if sep and rest.strip() and 1 <= len(head.split()) <= 6:
+                    number, title, inline_body = mb.group(1), head.strip(), rest.strip()
+                else:
+                    number = None
             else:
                 number = None
         if number is not None and len(title) <= 120:
-            current = {"number": number, "title": title, "lines": []}
+            current = {"number": number, "title": title, "lines": [inline_body] if m is None and inline_body else []}
             clauses.append(current)
         else:
             (current["lines"] if current else preamble).append(raw)
@@ -1026,3 +1035,140 @@ def select_excerpts(sources, target_ids, terms_text, budget=14000, per_source=26
         if used >= budget:
             break
     return out
+
+
+# ---------------------------------------------------------------------------
+# Obligations par partie
+# ---------------------------------------------------------------------------
+
+_OBL_VERBS_FR = r"(?:ne\s+(?:doit|doivent|devra|devront|peut|peuvent|pourra|pourront)\s+pas|doit|doivent|devra|devront|s'engage(?:nt)?\s+à|s'oblige(?:nt)?\s+à|est\s+tenue?\s+de|sont\s+tenue?s\s+de)"
+_OBL_VERBS_EN = r"(?:shall\s+not|must\s+not|may\s+not|shall|must|agrees?\s+to|undertakes?\s+to|is\s+required\s+to|are\s+required\s+to)"
+_OBL_RX = re.compile(r"\b(" + _OBL_VERBS_FR + "|" + _OBL_VERBS_EN + r")\b", re.IGNORECASE)
+_PARTY_WORDS = (r"prestataire|client|vendeur|acheteur|fournisseur|bailleur|locataire|employeur|employ[ée]|d[ée]biteur|cr[ée]ancier|"
+                r"licenci[ée]|conc[ée]dant|mandataire|mandant|soci[ée]t[ée]|partie|parties|"
+                r"service provider|provider|client|seller|buyer|supplier|landlord|tenant|employer|employee|licensor|licensee|"
+                r"contractor|consultant|company|party|parties|each party|both parties")
+_PARTY_DEF_RX = re.compile(r"(?:(?:le|la|les|l'|the|chaque|each|both|les deux)\s*)+(?:" + _PARTY_WORDS + r")\s*$", re.IGNORECASE)
+_PARTY_NAME_RX = re.compile(r"([A-ZÀ-ÝÉ][\w&'’\-\.]*(?:\s+[A-ZÀ-ÝÉ][\w&'’\-\.]*){0,3})\s*,?\s*$")
+_PARTY_STOP = {"article", "clause", "section", "il", "elle", "ils", "elles", "ceci", "cela", "celui-ci", "celle-ci", "it", "this", "that",
+               "toutefois", "cependant", "dans", "en", "si", "lorsque", "however", "if", "when", "the", "le", "la", "les"}
+
+
+def _split_sentences(text):
+    out, start = [], 0
+    for m in re.finditer(r"[.;\n]+", text):
+        seg = text[start:m.end()]
+        if seg.strip():
+            out.append(seg)
+        start = m.end()
+    if text[start:].strip():
+        out.append(text[start:])
+    return out
+
+
+def _party_before(sentence, verb_start):
+    head = sentence[:verb_start].rstrip()
+    head = re.sub(r"[,\s]+$", "", head)[-90:]
+    m = _PARTY_DEF_RX.search(head)
+    if m:
+        label = re.sub(r"\s+", " ", m.group(0)).strip()
+        return label[0].upper() + label[1:]
+    m = _PARTY_NAME_RX.search(head)
+    if m:
+        cand = m.group(1).strip()
+        words = cand.split()
+        while words and fold(words[0]) in _PARTY_STOP:
+            words = words[1:]
+        if words:
+            return " ".join(words)
+    return None
+
+
+def extract_party_obligations(text, lang=None):
+    """Repère « qui doit faire quoi » : phrases à verbe d'obligation (doit, s'engage à,
+    shall…), avec la partie sujet quand elle est identifiable. Heuristique : la partie
+    est celle qui précède le verbe ; les phrases dont le sujet est introuvable sont
+    rattachées à « Non attribué »."""
+    clauses = split_clauses(text)
+    results, seen = [], set()
+    for clause in clauses:
+        for sent in _split_sentences(clause["text"]):
+            m = _OBL_RX.search(sent)
+            if not m:
+                continue
+            verb = re.sub(r"\s+", " ", m.group(1).lower())
+            prohibition = bool(re.match(r"ne |shall not|must not|may not", verb))
+            party = _party_before(sent, m.start())
+            action = re.sub(r"\s+", " ", sent).strip(" ;.\n")
+            if len(action) < 15:
+                continue
+            key = (party, action[:100])
+            if key in seen:
+                continue
+            seen.add(key)
+            dm = _DURATION_DIGITS.search(fold(sent))
+            delay = None
+            if dm:
+                n = int(dm.group(1) or dm.group(2))
+                delay = "%d %s" % (n, dm.group(3))
+            results.append({
+                "party": party or "—", "action": action[:320], "kind": "interdiction" if prohibition else "obligation",
+                "clause_number": clause["number"], "clause_title": clause["title"], "delay_text": delay,
+            })
+            if len(results) >= 80:
+                break
+    return results
+
+
+def party_groups(obligations):
+    groups = {}
+    for o in obligations:
+        groups.setdefault(o["party"], []).append(o)
+    return sorted(groups.items(), key=lambda kv: (kv[0] == "—", -len(kv[1])))
+
+
+# ---------------------------------------------------------------------------
+# Playbooks
+# ---------------------------------------------------------------------------
+
+def topic_label(topic_id):
+    for r in RULES + EXPECTED:
+        if r["id"] == topic_id:
+            return r["fr"][0]
+    return topic_id
+
+
+def apply_playbook(result, obligations, playbook, custom_labels=None):
+    """Confronte une analyse aux positions d'un playbook.
+    playbook : {name, max_payment_days, min_notice_days, positions:[{topic_id, stance, note}]}
+    Retourne {name, deviations:[...], compliant}. Types d'écarts : forbid, require,
+    payment_days, notice_days."""
+    custom_labels = custom_labels or {}
+    found = {}
+    for f in result.get("findings", []):
+        found.setdefault(f["rule"], f)
+    missing = {m["rule"] for m in result.get("missing", [])}
+    expected_ids = {r["id"] for r in EXPECTED}
+    devs = []
+    for pos in playbook.get("positions", []):
+        tid, stance, note = pos["topic_id"], pos["stance"], pos.get("note") or ""
+        label = custom_labels.get(tid) or topic_label(tid)
+        if stance == "forbid" and tid in found:
+            f = found[tid]
+            devs.append({"type": "forbid", "topic": label, "clause_number": f["clause_number"],
+                         "excerpt": f["excerpt"], "note": note})
+        elif stance == "require":
+            present = (tid not in missing) if tid in expected_ids else (tid in found)
+            if not present:
+                devs.append({"type": "require", "topic": label, "note": note})
+    mx = playbook.get("max_payment_days")
+    if mx:
+        for o in obligations:
+            if o["kind"] == "paiement" and o.get("delay_days") and o["delay_days"] > mx:
+                devs.append({"type": "payment_days", "value": o["delay_days"], "limit": mx, "excerpt": o["excerpt"]})
+    mn = playbook.get("min_notice_days")
+    if mn:
+        for o in obligations:
+            if o["kind"] == "preavis" and o.get("delay_days") and o["delay_days"] < mn:
+                devs.append({"type": "notice_days", "value": o["delay_days"], "limit": mn, "excerpt": o["excerpt"]})
+    return {"name": playbook.get("name", ""), "deviations": devs, "compliant": not devs}

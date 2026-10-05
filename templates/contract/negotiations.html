@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "contract/_macros.html" import quota with context %}
+{% block title %}{{ 'Negotiations' if lang == 'en' else 'Négociations' }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'Negotiation' if lang == 'en' else 'Négociation' }}</h1>
+  <p class="lede">{{ 'Exchange versions of a contract with the other party. Every change is shown as a redline, and the deal is closed when one side accepts the other\'s latest version.' if lang == 'en' else 'Échangez des versions d\'un contrat avec l\'autre partie. Chaque modification est affichée en redline, et l\'accord est conclu quand une partie accepte la dernière version de l\'autre.' }}</p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="callout">{{ 'Open a negotiation from an analysis or a draft ("Next steps" box).' if lang == 'en' else 'Ouvrez une négociation depuis une analyse ou un brouillon (encadré « Suite »).' }}</div>
+  {{ quota(limit, used, allowed) }}
+  {% for n in negotiations %}
+    <a class="doc-row" href="{{ ci_url('negotiation', nid=n['id']) }}" style="text-decoration:none;color:inherit;">
+      <span><strong>{{ n['title'] }}</strong><br><span class="helptext">{{ n['counterparty_name'] or n['counterparty_email'] }} · {{ n['versions'] }} {{ 'version(s)' if lang == 'en' else 'version(s)' }} · {{ n['updated_at'][:10] }}</span></span>
+      <span class="status-pill {{ 'done' if n['status']=='agreed' else ('pending' if n['status']=='open' else '') }}">{{ status_labels[n['status']] }}</span>
+    </a>
+  {% else %}
+    <p class="helptext">{{ 'No negotiation yet.' if lang == 'en' else 'Aucune négociation pour l\'instant.' }}</p>
+  {% endfor %}
+</section>
+{% endblock %}

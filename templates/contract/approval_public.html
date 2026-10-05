@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Approval requested' if lang == 'en' else 'Approbation demandée' }} — {{ approval['title'] }}{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">{{ 'Approval requested' if lang == 'en' else 'Approbation demandée' }}</div>
+  <h1>{{ approval['title'] }}</h1>
+  <p class="lede">{{ owner['full_name'] }} {{ 'asks for your decision' if lang == 'en' else 'demande votre décision' }} ({{ 'step' if lang == 'en' else 'étape' }} {{ step['step_order'] }}/{{ steps|length }}).{% if approval['message'] %} « {{ approval['message'] }} »{% endif %}</p>
+</section>
+<section class="block" style="border-top:none;padding-top:0;">
+  {% if can_decide %}
+    <form method="POST" class="card" style="max-width:720px;margin-bottom:28px;">
+      <div class="form-group"><label for="comment">{{ 'Comment (required if you reject)' if lang == 'en' else 'Commentaire (obligatoire si vous refusez)' }}</label>
+        <textarea id="comment" name="comment" rows="3" maxlength="1000"></textarea></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-primary" name="decision" value="approved" type="submit">{{ 'Approve' if lang == 'en' else 'Approuver' }}</button>
+        <button class="btn btn-danger" name="decision" value="rejected" type="submit">{{ 'Reject' if lang == 'en' else 'Refuser' }}</button>
+      </div>
+      <p class="helptext">{{ 'Your decision is final and the requester is notified by email.' if lang == 'en' else 'Votre décision est définitive et le demandeur est prévenu par courriel.' }}</p>
+    </form>
+  {% else %}
+    <div class="callout">{{ step_labels[step['status']] }}{% if approval['status'] != 'pending' %} — {{ status_labels[approval['status']] }}{% endif %}.</div>
+  {% endif %}
+  {% for s in steps if s['comment'] %}
+    <div class="finding info"><div class="head"><h4>{{ s['approver_name'] or s['approver_email'] }}</h4><span class="status-pill">{{ step_labels[s['status']] }}</span></div><blockquote>{{ s['comment'] }}</blockquote></div>
+  {% endfor %}
+  <h3>{{ 'Contract text' if lang == 'en' else 'Texte du contrat' }}</h3>
+  <div class="diff-view"><pre style="white-space:pre-wrap;font-family:inherit;margin:0;font-size:0.9rem;">{{ approval['body_snapshot'] }}</pre></div>
+  <p class="helptext" style="margin-top:16px;">{{ 'This page is private: do not share the link.' if lang == 'en' else 'Cette page est privée : ne partagez pas le lien.' }}</p>
+</section>
+{% endblock %}

@@ -272,16 +272,20 @@ CI_MONTHLY_LIMITS = {
     "compare": {"anonymous": 0, "free": 5, "premium": None},
     # Analyse approfondie par IA : réservée au Premium, plafonnée pour maîtriser le coût.
     "ai": {"anonymous": 0, "free": 0, "premium": int(os.environ.get("CI_AI_PREMIUM_LIMIT", "30"))},
+    "approval": {"anonymous": 0, "free": 3, "premium": None},
+    "negotiation": {"anonymous": 0, "free": 2, "premium": None},
 }
+CI_REGISTRY_LIMITS = {"anonymous": 0, "free": 10, "premium": None}
+CI_PLAYBOOK_LIMITS = {"anonymous": 0, "free": 1, "premium": 10}
 CI_OBLIGATION_KINDS = [
     ("echeance", "Échéance"), ("date_effet", "Date d'effet"), ("terme", "Terme du contrat"),
     ("paiement", "Paiement"), ("preavis", "Préavis"), ("renouvellement", "Renouvellement"),
-    ("duree", "Durée"), ("delai", "Délai"), ("date", "Date"),
+    ("duree", "Durée"), ("delai", "Délai"), ("date", "Date"), ("obligation", "Obligation"),
 ]
 CI_OBLIGATION_KINDS_EN = [
     ("echeance", "Deadline"), ("date_effet", "Effective date"), ("terme", "End of term"),
     ("paiement", "Payment"), ("preavis", "Notice"), ("renouvellement", "Renewal"),
-    ("duree", "Term length"), ("delai", "Delay"), ("date", "Date"),
+    ("duree", "Term length"), ("delai", "Delay"), ("date", "Date"), ("obligation", "Obligation"),
 ]
 CI_OBLIGATION_LIMITS = {"anonymous": 0, "free": 25, "premium": None}
 
@@ -411,6 +415,111 @@ CREATE TABLE IF NOT EXISTS ci_custom_rules (
     fix TEXT NOT NULL,
     active INTEGER NOT NULL DEFAULT 1,
     created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ci_reminder_prefs (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id),
+    enabled INTEGER NOT NULL DEFAULT 1,
+    offsets TEXT NOT NULL DEFAULT '30,7,1,0',
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ci_reminder_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    obligation_id INTEGER NOT NULL,
+    kind TEXT NOT NULL,
+    sent_at TEXT NOT NULL,
+    UNIQUE(obligation_id, kind)
+);
+
+CREATE TABLE IF NOT EXISTS ci_approvals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_id INTEGER NOT NULL REFERENCES users(id),
+    ref_type TEXT NOT NULL,
+    ref_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    body_snapshot TEXT NOT NULL,
+    lang TEXT NOT NULL DEFAULT 'fr',
+    message TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TEXT NOT NULL,
+    decided_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS ci_approval_steps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    approval_id INTEGER NOT NULL REFERENCES ci_approvals(id) ON DELETE CASCADE,
+    step_order INTEGER NOT NULL,
+    approver_name TEXT,
+    approver_email TEXT NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    status TEXT NOT NULL DEFAULT 'waiting',
+    comment TEXT,
+    notified_at TEXT,
+    decided_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS ci_negotiations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_id INTEGER NOT NULL REFERENCES users(id),
+    title TEXT NOT NULL,
+    counterparty_name TEXT,
+    counterparty_email TEXT NOT NULL,
+    counterparty_token TEXT NOT NULL UNIQUE,
+    lang TEXT NOT NULL DEFAULT 'fr',
+    status TEXT NOT NULL DEFAULT 'open',
+    accepted_by TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ci_neg_versions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    negotiation_id INTEGER NOT NULL REFERENCES ci_negotiations(id) ON DELETE CASCADE,
+    version_no INTEGER NOT NULL,
+    author TEXT NOT NULL,
+    body_text TEXT NOT NULL,
+    note TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ci_playbooks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    name TEXT NOT NULL,
+    is_default INTEGER NOT NULL DEFAULT 0,
+    max_payment_days INTEGER,
+    min_notice_days INTEGER,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ci_playbook_positions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    playbook_id INTEGER NOT NULL REFERENCES ci_playbooks(id) ON DELETE CASCADE,
+    topic_id TEXT NOT NULL,
+    stance TEXT NOT NULL,
+    note TEXT
+);
+
+CREATE TABLE IF NOT EXISTS ci_registry (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    title TEXT NOT NULL,
+    counterparty TEXT,
+    status TEXT NOT NULL DEFAULT 'brouillon',
+    start_date TEXT,
+    end_date TEXT,
+    value_text TEXT,
+    notes TEXT,
+    analysis_id INTEGER,
+    draft_id INTEGER,
+    negotiation_id INTEGER,
+    file_name TEXT,
+    file_path TEXT,
+    file_sha256 TEXT,
+    archived INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
@@ -997,3 +1106,12 @@ def log_activity(user_id, action, detail=""):
 
 CI_RULE_LEVELS = [("eleve", "Élevé"), ("moyen", "Moyen"), ("info", "À noter")]
 CI_RULE_LANGUAGES = [("all", "FR et EN"), ("fr", "Français"), ("en", "English")]
+
+CI_REGISTRY_STATUSES = [
+    ("brouillon", "Brouillon"), ("negociation", "En négociation"), ("approbation", "En approbation"),
+    ("signature", "En signature"), ("actif", "Actif"), ("expire", "Expiré"), ("resilie", "Résilié"),
+]
+CI_REGISTRY_STATUSES_EN = [
+    ("brouillon", "Draft"), ("negociation", "In negotiation"), ("approbation", "In approval"),
+    ("signature", "Out for signature"), ("actif", "Active"), ("expire", "Expired"), ("resilie", "Terminated"),
+]

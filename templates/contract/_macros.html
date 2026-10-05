@@ -36,3 +36,44 @@
   <div class="helptext">{{ '.docx, .pdf (with a text layer) or .txt — 5 MB max. If both are given, the file is used.' if lang == 'en' else '.docx, .pdf (avec couche texte) ou .txt — 5 Mo max. Si les deux sont fournis, le fichier est utilisé.' }}</div>
 </div>
 {% endmacro %}
+
+{% macro redline(diff) %}
+  {% if diff.stats.identical %}
+    <div class="callout">{{ 'No change from the previous version.' if lang == 'en' else 'Aucun changement par rapport à la version précédente.' }}</div>
+  {% else %}
+    <p class="helptext">{{ diff.stats.changed }} {{ 'edited' if lang == 'en' else 'modifié(s)' }} · {{ diff.stats.added }} {{ 'added' if lang == 'en' else 'ajouté(s)' }} · {{ diff.stats.removed }} {{ 'removed' if lang == 'en' else 'supprimé(s)' }} — <span class="diff-legend"><ins>{{ 'added' if lang == 'en' else 'ajouté' }}</ins> <del>{{ 'removed' if lang == 'en' else 'supprimé' }}</del></span></p>
+    <div class="diff-view">
+      {% for b in diff.blocks %}<p class="diff-block {{ b.status }}">{% for kind, seg in b.segments %}{% if kind == 'ins' %}<ins>{{ seg }}</ins>{% elif kind == 'del' %}<del>{{ seg }}</del>{% else %}{{ seg }}{% endif %}{% endfor %}</p>{% endfor %}
+    </div>
+  {% endif %}
+{% endmacro %}
+
+{% macro workflow_box(ref_type, ref_id) %}
+<details class="ai-box" style="padding:14px 20px;">
+  <summary style="cursor:pointer;font-weight:600;">{{ 'Next steps: approval, negotiation, registry' if lang == 'en' else 'Suite : approbation, négociation, registre' }}</summary>
+  <div class="grid-2" style="margin-top:16px;">
+    <form method="POST" action="{{ ci_url('approval_new') }}" class="card">
+      <input type="hidden" name="ref_type" value="{{ ref_type }}"><input type="hidden" name="ref_id" value="{{ ref_id }}">
+      <h4 style="margin-top:0;">{{ 'Request internal approval' if lang == 'en' else 'Demander une approbation interne' }}</h4>
+      <div class="form-group"><label>{{ 'Approvers, in order (one per line: Name <email>)' if lang == 'en' else 'Approbateurs, dans l\'ordre (un par ligne : Nom <courriel>)' }}</label>
+        <textarea name="approvers" rows="3" required placeholder="Marie Jean <marie@exemple.com>&#10;paul@exemple.com"></textarea></div>
+      <div class="form-group"><label>{{ 'Message (optional)' if lang == 'en' else 'Message (optionnel)' }}</label><input name="message" maxlength="500"></div>
+      <button class="btn btn-primary btn-sm" type="submit">{{ 'Start approval' if lang == 'en' else 'Lancer l\'approbation' }}</button>
+      <p class="helptext">{{ 'Each approver gets a private link by email and decides in turn; no account needed.' if lang == 'en' else 'Chaque approbateur reçoit un lien privé par courriel et décide à son tour ; aucun compte requis.' }}</p>
+    </form>
+    <form method="POST" action="{{ ci_url('negotiation_new') }}" class="card">
+      <input type="hidden" name="ref_type" value="{{ ref_type }}"><input type="hidden" name="ref_id" value="{{ ref_id }}">
+      <h4 style="margin-top:0;">{{ 'Negotiate with the other party' if lang == 'en' else 'Négocier avec la contrepartie' }}</h4>
+      <div class="form-group"><label>{{ 'Counterparty name' if lang == 'en' else 'Nom de la contrepartie' }}</label><input name="counterparty_name" maxlength="80"></div>
+      <div class="form-group"><label>{{ 'Counterparty email' if lang == 'en' else 'Courriel de la contrepartie' }} *</label><input type="email" name="counterparty_email" required></div>
+      <div class="form-group"><label>{{ 'Note (optional)' if lang == 'en' else 'Note (optionnelle)' }}</label><input name="note" maxlength="500"></div>
+      <button class="btn btn-primary btn-sm" type="submit">{{ 'Open negotiation' if lang == 'en' else 'Ouvrir la négociation' }}</button>
+      <p class="helptext">{{ 'You exchange versions with tracked changes. The other party uses a private link.' if lang == 'en' else 'Vous échangez des versions avec modifications visibles. L\'autre partie utilise un lien privé.' }}</p>
+    </form>
+  </div>
+  <form method="POST" action="{{ ci_url('registry_from') }}" style="margin-top:12px;">
+    <input type="hidden" name="ref_type" value="{{ ref_type }}"><input type="hidden" name="ref_id" value="{{ ref_id }}">
+    <button class="btn btn-ghost btn-sm" type="submit">{{ 'Add to the contract registry' if lang == 'en' else 'Ajouter au registre des contrats' }}</button>
+  </form>
+</details>
+{% endmacro %}

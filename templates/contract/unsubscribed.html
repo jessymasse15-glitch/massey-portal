@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Rappels — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Contract Intelligence</div>
+  <h1>{% if ok %}Rappels désactivés{% else %}Lien invalide{% endif %}</h1>
+  <p class="lede">{% if ok %}Vous ne recevrez plus de rappels d'échéances par courriel. Vous pouvez les réactiver à tout moment depuis la page Échéances.{% else %}Ce lien de désabonnement n'est pas valide ou a expiré. Connectez-vous et réglez vos rappels depuis la page Échéances.{% endif %}</p>
+  <p><a class="btn btn-ghost" href="{{ url_for('ci_deadlines') }}">Ouvrir mes échéances</a></p>
+</section>
+{% endblock %}

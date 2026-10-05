@@ -1,4 +1,5 @@
 import os
+import sys
 import re
 import secrets
 import functools
@@ -21,6 +22,7 @@ import signing
 import notifications
 import contract_engine
 import ci_ai
+import ci_reminders
 
 APP_ROOT = os.path.dirname(__file__)
 # En production (Render), DATA_DIR pointe vers le disque persistant unique
@@ -615,6 +617,7 @@ def ci_analyze():
         title = (request.form.get("title") or "").strip()[:140] or source or _T("Contrat sans titre", "Untitled contract")
         custom_rules, kb_sources = _ci_load_knowledge(conn)
         result = contract_engine.analyze_contract(text, custom_rules=custom_rules, sources=kb_sources)
+        ci_features.apply_default_playbook(conn, u["id"], result, text)
         cur = conn.execute(
             "INSERT INTO contract_analyses (user_id, title, language, source_name, text_content, result_json, overall, created_at) "
             "VALUES (?,?,?,?,?,?,?,?)",
@@ -659,11 +662,18 @@ def ci_analysis(aid):
     conn = dbm.get_db()
     ai_limit, ai_used, ai_allowed = _ci_quota(conn, u, "ai")
     conn.close()
+    party_obligations = contract_engine.party_groups(contract_engine.extract_party_obligations(row["text_content"], result["language"]))
+    flat = contract_engine.extract_party_obligations(row["text_content"], result["language"])
+    index_of = {(o["party"], o["action"]): i for i, o in enumerate(flat)}
+    conn = dbm.get_db()
+    my_playbooks = conn.execute("SELECT id, name, is_default FROM ci_playbooks WHERE user_id=? ORDER BY id", (u["id"],)).fetchall()
+    conn.close()
     ai = json.loads(row["ai_json"]) if row["ai_json"] else None
     ai_sources = {str(x["id"]): x for x in (ai or {}).get("sources_used", [])}
     return _ci_page("analysis", **_ci_ctx("analyze", analysis=row, result=result, obligations=obligations,
                                           effective=effective, kind_labels=kind_labels,
                                           today=datetime.utcnow().date().isoformat(),
+                                          party_obligations=party_obligations, party_index=index_of, my_playbooks=my_playbooks,
                                           ai=ai, ai_sources=ai_sources, ai_configured=ci_ai.is_configured(),
                                           ai_limit=ai_limit, ai_used=ai_used, ai_allowed=ai_allowed,
                                           is_premium_user=_access_info(u)["is_premium"]))
@@ -699,7 +709,8 @@ def ci_analysis_ai(aid):
                      + [c["title"] for c in result["clauses"]])
     excerpts = contract_engine.select_excerpts(sources, target, terms)
     try:
-        ai = ci_ai.run_analysis(row["text_content"], result["language"], result, excerpts)
+        ai = ci_ai.run_analysis(row["text_content"], result["language"], result, excerpts,
+                                ci_features.playbook_ai_lines(result.get("playbook")))
     except ci_ai.AIError as exc:
         conn.close()
         app.logger.warning("Analyse IA échouée (%s) %s", exc.code, exc.detail)
@@ -905,7 +916,13 @@ def ci_draft(did):
         return _ci_redirect("draft", did=did)
     conn.close()
     pending = re.findall(r"\[(?:à compléter|to complete) : [^\]]+\]", row["body_text"])
-    return _ci_page("draft", **_ci_ctx("generate", draft=row, pending=pending))
+    ai_notes = None
+    if row["template_key"] == "ai":
+        try:
+            ai_notes = json.loads(row["values_json"])
+        except ValueError:
+            ai_notes = {"assumptions": [], "to_verify": [], "model": ""}
+    return _ci_page("draft", **_ci_ctx("generate", draft=row, pending=pending, ai_notes=ai_notes))
 
 
 @ci_route("draft_download", "/brouillon/<int:did>/telecharger/<fmt>", "/draft/<int:did>/download/<fmt>")
@@ -1010,8 +1027,13 @@ def ci_deadlines():
             groups["later"].append(r)
     kind_labels = dict(dbm.CI_OBLIGATION_KINDS_EN if g.lang == "en" else dbm.CI_OBLIGATION_KINDS)
     cap = dbm.CI_OBLIGATION_LIMITS[_access_info(u)["tier"]]
+    conn = dbm.get_db()
+    prefs = ci_reminders.get_prefs(conn, u["id"])
+    conn.close()
     return _ci_page("deadlines", **_ci_ctx("deadlines", groups=groups, kind_labels=kind_labels,
-                                           total=len(rows), cap=cap, today=today.isoformat()))
+                                           total=len(rows), cap=cap, today=today.isoformat(),
+                                           reminder_prefs=prefs, smtp_ok=notifications.is_configured(),
+                                           offset_choices=ci_reminders.ALLOWED_OFFSETS))
 
 
 def _ci_get_obligation(conn, u, oid):
@@ -3378,6 +3400,10 @@ def create_admin():
         print(f"Admin {email} créé.")
     conn.commit()
     conn.close()
+
+
+import ci_features  # noqa: E402 — dépend des aides définies plus haut dans ce module
+ci_features.init(sys.modules[__name__])
 
 
 if __name__ == "__main__":

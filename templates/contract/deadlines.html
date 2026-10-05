@@ -21,7 +21,32 @@
 </section>
 {% include "contract/_subnav.html" %}
 <section class="block" style="border-top:none;padding-top:0;">
-  <div class="callout">{{ 'Dates here are only as reliable as what was entered or detected. This tracker does not send reminders: check it regularly.' if lang == 'en' else 'Les dates ne sont aussi fiables que ce qui a été saisi ou détecté. Ce suivi n\'envoie pas de rappels : consultez-le régulièrement.' }}</div>
+  <div class="callout">{{ 'Dates here are only as reliable as what was entered or detected. Email reminders can be turned on below.' if lang == 'en' else 'Les dates ne sont aussi fiables que ce qui a été saisi ou détecté. Des rappels par courriel peuvent être activés ci-dessous.' }}</div>
+  <div class="card" style="margin-bottom:24px;" id="rappels">
+    <h3 style="margin-top:0;">{{ 'Email reminders' if lang == 'en' else 'Rappels par courriel' }}</h3>
+    {% if not smtp_ok %}
+      <div class="callout" style="border-left-color:var(--warn);">{{ 'Email sending is not enabled on this site yet: no reminder will be sent until the administrator configures it.' if lang == 'en' else 'L\'envoi de courriels n\'est pas encore activé sur ce site : aucun rappel ne partira tant que l\'administrateur ne l\'a pas configuré.' }}</div>
+    {% endif %}
+    <form method="POST" action="{{ ci_url('reminder_prefs') }}">
+      <label style="display:flex;gap:10px;align-items:center;font-weight:500;margin-bottom:12px;">
+        <input type="checkbox" name="enabled" value="1" style="width:auto;" {{ 'checked' if reminder_prefs.enabled }}>
+        {{ 'Email me about upcoming and overdue deadlines' if lang == 'en' else 'Me prévenir par courriel des échéances à venir et en retard' }}
+      </label>
+      <div class="helptext" style="margin-bottom:6px;">{{ 'Remind me this many days before the due date:' if lang == 'en' else 'Me rappeler combien de jours avant l\'échéance :' }}</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
+        {% for d in offset_choices %}
+          <label style="display:flex;gap:6px;align-items:center;font-weight:400;font-size:0.88rem;"><input type="checkbox" name="offsets" value="{{ d }}" style="width:auto;" {{ 'checked' if d in reminder_prefs.offsets }}> {{ ('On the day' if lang == 'en' else 'Le jour même') if d == 0 else ('%d d' % d) }}</label>
+        {% endfor %}
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" type="submit">{{ 'Save' if lang == 'en' else 'Enregistrer' }}</button>
+      </div>
+      <p class="helptext">{{ 'One summary email per day at most. Overdue items are repeated weekly (8 times at most).' if lang == 'en' else 'Un seul courriel récapitulatif par jour au maximum. Les échéances dépassées sont rappelées chaque semaine (8 fois au plus).' }} → {{ current_user['email'] }}</p>
+    </form>
+    <form method="POST" action="{{ ci_url('reminder_test') }}" style="margin-top:6px;">
+      <button class="btn btn-ghost btn-sm" type="submit">{{ 'Send me a test email' if lang == 'en' else 'M\'envoyer un courriel de test' }}</button>
+    </form>
+  </div>
   <form method="POST" action="{{ ci_url('deadline_add') }}" class="card" style="margin-bottom:32px;">
     <h3 style="margin-top:0;">{{ 'Add a deadline' if lang == 'en' else 'Ajouter une échéance' }}</h3>
     <div class="grid-2">

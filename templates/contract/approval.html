@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ approval['title'] }} — {{ 'Approval' if lang == 'en' else 'Approbation' }}{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">{{ 'Approval' if lang == 'en' else 'Approbation' }} · {{ approval['created_at'][:10] }}</div>
+  <h1>{{ approval['title'] }}</h1>
+  <p class="lede"><span class="status-pill {{ 'done' if approval['status']=='approved' else ('urgent' if approval['status']=='rejected' else 'pending') }}">{{ status_labels[approval['status']] }}</span></p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+  {% for s in steps %}
+    <div class="finding {{ 'info' if s['status']=='approved' else ('eleve' if s['status']=='rejected' else 'moyen') }}">
+      <div class="head"><h4>{{ s['step_order'] }}. {{ s['approver_name'] or s['approver_email'] }}</h4><span class="status-pill {{ 'done' if s['status']=='approved' else ('urgent' if s['status']=='rejected' else '') }}">{{ step_labels[s['status']] }}</span></div>
+      <div class="where">{{ s['approver_email'] }}{% if s['decided_at'] %} · {{ s['decided_at'][:16]|replace('T',' ') }}{% endif %}</div>
+      {% if s['comment'] %}<blockquote>{{ s['comment'] }}</blockquote>{% endif %}
+      {% if s['status'] == 'pending' and approval['status'] == 'pending' %}
+        <p class="helptext">{{ 'If the email did not arrive, share this private link yourself:' if lang == 'en' else 'Si le courriel n\'est pas arrivé, transmettez vous-même ce lien privé :' }}<br><code style="word-break:break-all;">{{ links[s['id']] }}</code></p>
+      {% endif %}
+    </div>
+  {% endfor %}
+  {% if approval['status'] == 'pending' %}
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">
+      <form method="POST" action="{{ ci_url('approval_remind', aid=approval['id']) }}"><button class="btn btn-ghost btn-sm" type="submit">{{ 'Remind the current approver' if lang == 'en' else 'Relancer l\'approbateur en cours' }}</button></form>
+      <form method="POST" action="{{ ci_url('approval_cancel', aid=approval['id']) }}" onsubmit="return confirm('{{ 'Cancel this approval? Links will stop working.' if lang == 'en' else 'Annuler cette approbation ? Les liens cesseront de fonctionner.' }}');"><button class="btn btn-danger btn-sm" type="submit">{{ 'Cancel approval' if lang == 'en' else 'Annuler l\'approbation' }}</button></form>
+    </div>
+  {% endif %}
+  <h3 style="margin-top:32px;">{{ 'Contract text submitted' if lang == 'en' else 'Texte soumis' }}</h3>
+  <div class="diff-view"><pre style="white-space:pre-wrap;font-family:inherit;margin:0;font-size:0.9rem;">{{ approval['body_snapshot'] }}</pre></div>
+</section>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "contract/_macros.html" import redline with context %}
+{% block title %}{{ neg['title'] }} — {{ 'Negotiation' if lang == 'en' else 'Négociation' }}{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">{{ 'Negotiation' if lang == 'en' else 'Négociation' }}{% if public %} · {{ owner['full_name'] }}{% else %} · {{ neg['counterparty_name'] or neg['counterparty_email'] }}{% endif %}</div>
+  <h1>{{ neg['title'] }}</h1>
+  <p class="lede"><span class="status-pill {{ 'done' if neg['status']=='agreed' else ('pending' if neg['status']=='open' else '') }}">{{ status_labels[neg['status']] }}</span>
+    &nbsp;{{ 'Version' if lang == 'en' else 'Version' }} {{ latest['version_no'] }} {{ 'by' if lang == 'en' else 'de' }} {{ (('you' if lang == 'en' else 'vous') if latest['author'] == side else ('the other party' if lang == 'en' else 'l\'autre partie')) }}</p>
+</section>
+{% if not public %}{% include "contract/_subnav.html" %}{% endif %}
+<section class="block" style="border-top:none;padding-top:0;">
+  {% if not public %}
+    <div class="callout">{{ 'Private link for the counterparty (also emailed):' if lang == 'en' else 'Lien privé de la contrepartie (aussi envoyé par courriel) :' }}<br><code style="word-break:break-all;">{{ share_link }}</code></div>
+  {% endif %}
+  {% if neg['status'] == 'agreed' %}
+    <div class="callout" style="border-left-color:var(--good);">{{ 'Agreement reached on version' if lang == 'en' else 'Accord conclu sur la version' }} {{ latest['version_no'] }}.
+      {% if not public %}<a href="{{ ci_url('negotiation_download', nid=neg['id'], fmt='docx') }}">Word</a> · <a href="{{ ci_url('negotiation_download', nid=neg['id'], fmt='txt') }}">.txt</a>{% endif %}</div>
+  {% endif %}
+
+  {% if latest['note'] %}<blockquote class="finding" style="font-style:italic;">{{ latest['note'] }}</blockquote>{% endif %}
+
+  <h2>{{ 'Changes since the previous version' if lang == 'en' else 'Modifications depuis la version précédente' }}</h2>
+  {% if diff %}{{ redline(diff) }}{% else %}<p class="helptext">{{ 'First version: nothing to compare yet.' if lang == 'en' else 'Première version : rien à comparer pour l\'instant.' }}</p>{% endif %}
+
+  {% if can_act %}
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin:20px 0;">
+      {% if can_accept %}
+      <form method="POST" {% if public %}{% else %}action="{{ ci_url('negotiation_accept', nid=neg['id']) }}"{% endif %}>
+        {% if public %}<input type="hidden" name="action" value="accept">{% endif %}
+        <button class="btn btn-primary" type="submit" onclick="return confirm('{{ 'Accept this version as final?' if lang == 'en' else 'Accepter cette version comme finale ?' }}');">{{ 'Accept this version' if lang == 'en' else 'Accepter cette version' }}</button>
+      </form>
+      {% endif %}
+      {% if not public %}
+      <form method="POST" action="{{ ci_url('negotiation_close', nid=neg['id']) }}" onsubmit="return confirm('{{ 'Close this negotiation?' if lang == 'en' else 'Clôturer cette négociation ?' }}');"><button class="btn btn-ghost" type="submit">{{ 'Close without agreement' if lang == 'en' else 'Clôturer sans accord' }}</button></form>
+      {% endif %}
+    </div>
+    <h3>{{ 'Propose a new version' if lang == 'en' else 'Proposer une nouvelle version' }}</h3>
+    <form method="POST" {% if not public %}action="{{ ci_url('negotiation_propose', nid=neg['id']) }}"{% endif %}>
+      {% if public %}<input type="hidden" name="action" value="propose">{% endif %}
+      <textarea name="body_text" class="ci-textarea ci-draft" rows="22" required>{{ latest['body_text'] }}</textarea>
+      <div class="form-group" style="margin-top:10px;"><label>{{ 'Note to the other party (optional)' if lang == 'en' else 'Note à l\'autre partie (optionnelle)' }}</label><input name="note" maxlength="500"></div>
+      <button class="btn btn-primary" type="submit">{{ 'Send new version' if lang == 'en' else 'Envoyer la nouvelle version' }}</button>
+      <p class="helptext">{{ 'Edit the text above; the other party sees your changes as a redline.' if lang == 'en' else 'Modifiez le texte ci-dessus ; l\'autre partie verra vos changements en redline.' }}</p>
+    </form>
+  {% endif %}
+
+  <h3 style="margin-top:32px;">{{ 'History' if lang == 'en' else 'Historique' }}</h3>
+  {% for v in versions|reverse %}
+    <div class="doc-row"><span>v{{ v['version_no'] }} — {{ (('you' if lang == 'en' else 'vous') if v['author'] == side else ('other party' if lang == 'en' else 'autre partie')) }}{% if v['note'] %}<br><span class="helptext">{{ v['note'] }}</span>{% endif %}</span><span class="helptext">{{ v['created_at'][:16]|replace('T',' ') }}</span></div>
+  {% endfor %}
+  {% if not public %}<p style="margin-top:20px;"><a class="btn btn-ghost btn-sm" href="{{ ci_url('negotiations') }}">← {{ 'All negotiations' if lang == 'en' else 'Toutes les négociations' }}</a></p>{% endif %}
+</section>
+{% endblock %}

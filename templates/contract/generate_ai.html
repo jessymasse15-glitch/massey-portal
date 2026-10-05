@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Draft with AI' if lang == 'en' else 'Rédiger avec l\'IA' }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'Draft a contract with AI' if lang == 'en' else 'Rédiger un contrat avec l\'IA' }}<span class="ai-tag">IA</span></h1>
+  <p class="lede">{{ 'Describe the deal in your own words. The AI writes a first full draft, with visible placeholders for anything you did not say, using the legal texts your administrators loaded.' if lang == 'en' else 'Décrivez l\'opération avec vos mots. L\'IA rédige un premier contrat complet, avec des champs à compléter bien visibles pour tout ce que vous n\'avez pas précisé, en s\'appuyant sur les textes juridiques chargés par les administrateurs.' }}</p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="callout"><strong>{{ 'A first draft, not a signed-off contract.' if lang == 'en' else 'Un premier jet, pas un contrat validé.' }}</strong> {{ 'AI can make mistakes: have a lawyer review it before use.' if lang == 'en' else 'L\'IA peut se tromper : faites relire par un avocat avant tout usage.' }} <a href="{{ url_for('intake') }}">{{ 'Have a lawyer review it' if lang == 'en' else 'Faire réviser par un avocat' }}</a></div>
+  {% if not configured %}
+    <p class="helptext">{{ 'Not enabled on this site yet.' if lang == 'en' else 'Pas encore activée sur ce site.' }}</p>
+  {% elif not premium %}
+    <div class="callout">{{ 'AI drafting is part of the Premium plan.' if lang == 'en' else 'La rédaction par IA fait partie du plan Premium.' }} <a href="{{ url_for('membership_en' if lang == 'en' else 'membership') }}">{{ 'See Premium' if lang == 'en' else 'Voir Premium' }}</a></div>
+  {% else %}
+  <form method="POST" class="card" style="max-width:820px;">
+    <div class="grid-2">
+      <div class="form-group"><label>{{ 'Type of contract' if lang == 'en' else 'Type de contrat' }} *</label><input name="kind" required value="{{ form.get('kind','') }}" placeholder="{{ 'Distribution agreement' if lang == 'en' else 'Contrat de distribution' }}"></div>
+      <div class="form-group"><label>{{ 'Language of the draft' if lang == 'en' else 'Langue du contrat' }}</label><select name="language"><option value="fr" {{ 'selected' if lang=='fr' }}>Français</option><option value="en" {{ 'selected' if lang=='en' }}>English</option></select></div>
+      <div class="form-group"><label>{{ 'Party A (name, role)' if lang == 'en' else 'Partie A (nom, rôle)' }}</label><input name="party_a" value="{{ form.get('party_a','') }}"></div>
+      <div class="form-group"><label>{{ 'Party B (name, role)' if lang == 'en' else 'Partie B (nom, rôle)' }}</label><input name="party_b" value="{{ form.get('party_b','') }}"></div>
+    </div>
+    <div class="form-group"><label>{{ 'Governing law (optional, default Haitian law)' if lang == 'en' else 'Droit applicable (optionnel, droit haïtien par défaut)' }}</label><input name="law" value="{{ form.get('law','') }}"></div>
+    <div class="form-group"><label>{{ 'Key terms and context' if lang == 'en' else 'Conditions clés et contexte' }} *</label>
+      <textarea name="terms" rows="8" required placeholder="{{ 'What is sold or provided, price, duration, deliveries, exclusivity, special requirements…' if lang == 'en' else 'Ce qui est vendu ou fourni, prix, durée, livraisons, exclusivité, exigences particulières…' }}">{{ form.get('terms','') }}</textarea></div>
+    <label style="display:flex;gap:10px;align-items:flex-start;font-weight:400;font-size:0.86rem;margin-bottom:12px;">
+      <input type="checkbox" name="consent" value="1" style="width:auto;margin-top:3px;" required>
+      <span>{{ 'I agree that this description is sent to a third-party AI provider (Anthropic) to write the draft. Do not include information you are not allowed to share.' if lang == 'en' else 'J\'accepte que cette description soit envoyée à un fournisseur d\'IA tiers (Anthropic) pour rédiger le contrat. N\'y mettez pas d\'information que vous n\'avez pas le droit de partager.' }}</span>
+    </label>
+    <button class="btn btn-primary" type="submit" {{ 'disabled' if not allowed }}>{{ 'Write the draft' if lang == 'en' else 'Rédiger le contrat' }}</button>
+    <p class="helptext ci-quota">{{ 'This month: ' if lang == 'en' else 'Ce mois-ci : ' }}{{ used }} / {{ limit }} ({{ 'shared with in-depth analyses' if lang == 'en' else 'partagé avec les analyses approfondies' }})</p>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}
