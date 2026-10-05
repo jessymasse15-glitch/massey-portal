@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "contract/_macros.html" import disclaimer with context %}
+{% block title %}{{ draft['title'] }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">{{ 'Draft' if lang == 'en' else 'Brouillon' }} · {{ draft['created_at'][:10] }}</div>
+  <h1>{{ draft['title'] }}</h1>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+  {{ disclaimer('draft') }}
+  {% if pending %}
+    <div class="callout" style="border-left-color:var(--warn);">{{ pending|length }} {{ 'field(s) still to complete (shown in brackets below).' if lang == 'en' else 'champ(s) restant(s) à compléter (entre crochets ci-dessous).' }}</div>
+  {% endif %}
+  <form method="POST">
+    <textarea name="body_text" class="ci-textarea ci-draft" rows="32">{{ draft['body_text'] }}</textarea>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-primary" type="submit">{{ 'Save changes' if lang == 'en' else 'Enregistrer les modifications' }}</button>
+      <a class="btn btn-ghost" href="{{ ci_url('draft_download', did=draft['id'], fmt='docx') }}">{{ 'Download Word (.docx)' if lang == 'en' else 'Télécharger Word (.docx)' }}</a>
+      <a class="btn btn-ghost" href="{{ ci_url('draft_download', did=draft['id'], fmt='txt') }}">{{ 'Download text (.txt)' if lang == 'en' else 'Télécharger texte (.txt)' }}</a>
+      <a class="btn btn-ghost" href="{{ url_for('intake') }}">{{ 'Have a lawyer review it' if lang == 'en' else 'Faire réviser par un avocat' }}</a>
+    </div>
+  </form>
+  <form method="POST" action="{{ ci_url('draft_delete', did=draft['id']) }}" style="margin-top:24px;" onsubmit="return confirm('{{ 'Delete this draft?' if lang == 'en' else 'Supprimer ce brouillon ?' }}');">
+    <button class="btn btn-danger btn-sm" type="submit">{{ 'Delete draft' if lang == 'en' else 'Supprimer le brouillon' }}</button>
+  </form>
+</section>
+{% endblock %}

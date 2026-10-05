@@ -264,6 +264,25 @@ FREE_PLAN_FEATURES_EN = [
 SEARCH_RESULT_LIMITS = {"anonymous": 3, "free": 12, "premium": 50}
 CLAUSE_RESULT_LIMITS = {"anonymous": 4, "free": 15, "premium": 500}
 
+# Quotas mensuels des outils Contract Intelligence (None = illimité).
+# Les visiteurs anonymes sont invités à créer un compte (limite 0).
+CI_MONTHLY_LIMITS = {
+    "analysis": {"anonymous": 0, "free": 3, "premium": None},
+    "draft": {"anonymous": 0, "free": 2, "premium": None},
+    "compare": {"anonymous": 0, "free": 5, "premium": None},
+}
+CI_OBLIGATION_KINDS = [
+    ("echeance", "Échéance"), ("date_effet", "Date d'effet"), ("terme", "Terme du contrat"),
+    ("paiement", "Paiement"), ("preavis", "Préavis"), ("renouvellement", "Renouvellement"),
+    ("duree", "Durée"), ("delai", "Délai"), ("date", "Date"),
+]
+CI_OBLIGATION_KINDS_EN = [
+    ("echeance", "Deadline"), ("date_effet", "Effective date"), ("terme", "End of term"),
+    ("paiement", "Payment"), ("preavis", "Notice"), ("renouvellement", "Renewal"),
+    ("duree", "Term length"), ("delai", "Delay"), ("date", "Date"),
+]
+CI_OBLIGATION_LIMITS = {"anonymous": 0, "free": 25, "premium": None}
+
 
 def get_active_membership(conn, user_id):
     return conn.execute(
@@ -339,6 +358,63 @@ CREATE TABLE IF NOT EXISTS tax_obligations (
     note TEXT,
     created_by INTEGER REFERENCES users(id),
     created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS contract_analyses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    title TEXT NOT NULL,
+    language TEXT NOT NULL DEFAULT 'fr',
+    source_name TEXT,
+    text_content TEXT NOT NULL,
+    result_json TEXT NOT NULL,
+    overall TEXT NOT NULL DEFAULT 'faible',
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS contract_drafts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    template_key TEXT NOT NULL,
+    language TEXT NOT NULL DEFAULT 'fr',
+    title TEXT NOT NULL,
+    values_json TEXT NOT NULL,
+    body_text TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS contract_obligations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    analysis_id INTEGER REFERENCES contract_analyses(id) ON DELETE SET NULL,
+    contract_label TEXT,
+    label TEXT NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'echeance',
+    due_date TEXT,
+    delay_text TEXT,
+    estimated INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'a_faire',
+    note TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS contract_usage (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    kind TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS contract_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key TEXT NOT NULL,
+    language TEXT NOT NULL DEFAULT 'fr',
+    title TEXT NOT NULL,
+    description TEXT,
+    variables_json TEXT NOT NULL,
+    body_text TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE(key, language)
 );
 
 CREATE TABLE IF NOT EXISTS compliance_items (
@@ -730,6 +806,8 @@ def init_db():
     conn.commit()
     _seed_review_demo_content(conn)
     _seed_clause_library(conn)
+    from contract_templates_seed import seed_templates
+    seed_templates(conn, now())
     conn.close()
 
 

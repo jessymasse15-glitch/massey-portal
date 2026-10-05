@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "contract/_macros.html" import quota, upload_fields with context %}
+{% block title %}{{ 'Compare versions' if lang == 'en' else 'Comparer deux versions' }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'Compare two versions' if lang == 'en' else 'Comparer deux versions' }}</h1>
+  <p class="lede">{{ 'See exactly what changed between two versions of a contract: additions, deletions and edited wording, word by word.' if lang == 'en' else 'Voyez exactement ce qui a changé entre deux versions d\'un contrat : ajouts, suppressions et formulations modifiées, mot à mot.' }}</p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+  <form method="POST" enctype="multipart/form-data">
+    <div class="grid-2">
+      <div class="card"><h3 style="margin-top:0;">{{ 'Original version' if lang == 'en' else 'Version initiale' }}</h3>
+        {% call upload_fields('old_', 'Text' if lang == 'en' else 'Texte', 'Or a file' if lang == 'en' else 'Ou un fichier') %}{{ form.get('old_text', '') }}{% endcall %}</div>
+      <div class="card"><h3 style="margin-top:0;">{{ 'New version' if lang == 'en' else 'Nouvelle version' }}</h3>
+        {% call upload_fields('new_', 'Text' if lang == 'en' else 'Texte', 'Or a file' if lang == 'en' else 'Ou un fichier') %}{{ form.get('new_text', '') }}{% endcall %}</div>
+    </div>
+    <button type="submit" class="btn btn-primary" {{ 'disabled' if not allowed }}>{{ 'Compare' if lang == 'en' else 'Comparer' }}</button>
+    {{ quota(limit, used, allowed) }}
+  </form>
+
+  {% if comparison %}
+    {% set s = comparison.stats %}
+    <h2 style="margin-top:40px;" id="result">{{ 'Result' if lang == 'en' else 'Résultat' }}</h2>
+    {% if s.identical %}
+      <div class="callout">{{ 'The two versions are identical.' if lang == 'en' else 'Les deux versions sont identiques.' }}</div>
+    {% else %}
+      <p class="helptext">{{ s.changed }} {{ 'paragraph(s) edited' if lang == 'en' else 'paragraphe(s) modifié(s)' }} · {{ s.added }} {{ 'added' if lang == 'en' else 'ajouté(s)' }} · {{ s.removed }} {{ 'removed' if lang == 'en' else 'supprimé(s)' }} · +{{ s.added_words }} / −{{ s.removed_words }} {{ 'words' if lang == 'en' else 'mots' }}</p>
+      <p class="helptext"><span class="diff-legend"><ins>{{ 'added' if lang == 'en' else 'ajouté' }}</ins> <del>{{ 'removed' if lang == 'en' else 'supprimé' }}</del></span> — {{ comparison.old_name }} → {{ comparison.new_name }}</p>
+      <div class="diff-view">
+        {% for b in comparison.blocks %}
+          <p class="diff-block {{ b.status }}">{% for kind, seg in b.segments %}{% if kind == 'ins' %}<ins>{{ seg }}</ins>{% elif kind == 'del' %}<del>{{ seg }}</del>{% else %}{{ seg }}{% endif %}{% endfor %}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

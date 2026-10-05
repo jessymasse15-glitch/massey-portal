@@ -1,0 +1,38 @@
+{% macro disclaimer(kind='analysis') %}
+<div class="callout ci-disclaimer">
+  {% if lang == 'en' %}
+    {% if kind == 'draft' %}<strong>Starting-point template, not a ready-to-sign contract.</strong> It does not replace review by a lawyer who knows your situation.
+    {% else %}<strong>Automated, rule-based analysis — not legal advice.</strong> It flags wording patterns and common gaps; it does not understand your deal, may miss issues or flag harmless ones.{% endif %}
+    <a href="{{ url_for('intake') }}">Have a lawyer review this</a>.
+  {% else %}
+    {% if kind == 'draft' %}<strong>Trame de départ, pas un contrat prêt à signer.</strong> Elle ne remplace pas la relecture par un avocat qui connaît votre situation.
+    {% else %}<strong>Analyse automatisée par règles — ce n'est pas un avis juridique.</strong> Elle repère des formulations et des lacunes courantes ; elle ne comprend pas votre opération, peut manquer des points ou en signaler d'inoffensifs.{% endif %}
+    <a href="{{ url_for('intake') }}">Faire réviser par un avocat</a>.
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro quota(limit, used, allowed) %}
+<p class="helptext ci-quota">
+  {% if limit is none %}{{ 'Unlimited with your Premium plan.' if lang == 'en' else 'Illimité avec votre plan Premium.' }}
+  {% else %}{{ 'This month: ' if lang == 'en' else 'Ce mois-ci : ' }}{{ used }} / {{ limit }}
+    {% if not allowed %} — {{ 'limit reached.' if lang == 'en' else 'limite atteinte.' }} <a href="{{ url_for('membership_en' if lang == 'en' else 'membership') }}">{{ 'See Premium' if lang == 'en' else 'Voir Premium' }}</a>{% endif %}
+  {% endif %}
+</p>
+{% endmacro %}
+
+{% macro level_pill(level) %}<span class="risk-badge {{ level }}">{{ level_labels.get(level, level) }}</span>{% endmacro %}
+
+{% macro overall_label(o) %}{% if lang == 'en' %}{{ {'eleve':'High risk','moyen':'Medium risk','faible':'Low risk'}[o] }}{% else %}{{ {'eleve':'Risque élevé','moyen':'Risque moyen','faible':'Risque faible'}[o] }}{% endif %}{% endmacro %}
+
+{% macro upload_fields(prefix='', label_text='', label_file='') %}
+<div class="form-group">
+  <label for="{{ prefix }}text">{{ label_text }}</label>
+  <textarea id="{{ prefix }}text" name="{{ prefix }}text" class="ci-textarea" rows="9" placeholder="{{ 'Paste the contract text here…' if lang == 'en' else 'Collez le texte du contrat ici…' }}">{{ caller() if caller else '' }}</textarea>
+</div>
+<div class="form-group">
+  <label for="{{ prefix }}file">{{ label_file }}</label>
+  <input type="file" id="{{ prefix }}file" name="{{ prefix }}file" accept=".docx,.pdf,.txt,.md">
+  <div class="helptext">{{ '.docx, .pdf (with a text layer) or .txt — 5 MB max. If both are given, the file is used.' if lang == 'en' else '.docx, .pdf (avec couche texte) ou .txt — 5 Mo max. Si les deux sont fournis, le fichier est utilisé.' }}</div>
+</div>
+{% endmacro %}

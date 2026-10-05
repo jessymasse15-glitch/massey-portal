@@ -28,7 +28,39 @@
   </div>
 </section>
 
-<section class="block">
+<section class="block" id="outils">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Tools</div>
+      <h2>Work on your contracts in Massey AI</h2>
+      <p>A free account is enough to start (monthly quotas); Premium lifts them. Rule-based automated analysis: it guides review, it does not replace a lawyer.</p>
+    </div>
+  </div>
+  <div class="grid-2 reveal">
+    <a class="card tool-card" href="{{ url_for('ci_analyze_en') }}">
+      <h3 style="margin-top:0;">Analyse</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Risky and missing clauses, dates and deadlines in a contract, with the exact passage and a suggested fix.</p>
+      <span class="btn btn-primary btn-sm">Open</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_generate_en') }}">
+      <h3 style="margin-top:0;">Generate</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Services, NDA, sale: a template, your details, library clauses, a Word file.</p>
+      <span class="btn btn-primary btn-sm">Open</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_compare_en') }}">
+      <h3 style="margin-top:0;">Compare</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Two versions of a contract: additions, deletions and edited wording, word by word.</p>
+      <span class="btn btn-primary btn-sm">Open</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_deadlines_en') }}">
+      <h3 style="margin-top:0;">Deadlines</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Notice periods, renewals, payments: one tracker, fed by your analyses.</p>
+      <span class="btn btn-primary btn-sm">Open</span>
+    </a>
+  </div>
+</section>
+
+<section class="block" id="bibliotheque">
   <div class="block-head reveal">
     <div>
       <div class="eyebrow">Library</div>
@@ -106,7 +138,7 @@
     <p class="helptext">No contracts uploaded yet.</p>
   {% endfor %}
   <div class="callout reveal" style="max-width:74ch;margin-top:24px;">
-    From any file, compare two versions of the same contract (line-by-line diff for text files, metadata and fingerprint comparison for other formats) and log your redlining observations. AI contract generation and automatic risk detection will follow once Massey AI is connected to an analysis engine.
+    From any file, compare two versions of the same contract (line-by-line diff for text files, fingerprint for other formats) and log your redlining observations. To analyse a contract, generate one or track its deadlines, use the tools above.
   </div>
 </section>
 {% else %}

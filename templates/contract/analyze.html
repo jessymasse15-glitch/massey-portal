@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "contract/_macros.html" import disclaimer, quota, overall_label with context %}
+{% block title %}{{ 'Analyse a contract' if lang == 'en' else 'Analyser un contrat' }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'Analyse a contract' if lang == 'en' else 'Analyser un contrat' }}</h1>
+  <p class="lede">{{ 'Upload or paste a contract: risky clauses, missing clauses, key dates and deadlines — each with the exact passage and a suggested fix.' if lang == 'en' else 'Téléversez ou collez un contrat : clauses à risque, clauses manquantes, dates et délais clés — chacun avec le passage exact et une piste de correction.' }}</p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="grid-2">
+    <div class="card">
+      <h3 style="margin-top:0;">{{ 'New analysis' if lang == 'en' else 'Nouvelle analyse' }}</h3>
+      <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="title">{{ 'Contract name (optional)' if lang == 'en' else 'Nom du contrat (optionnel)' }}</label>
+          <input type="text" id="title" name="title" maxlength="140">
+        </div>
+        {% from "contract/_macros.html" import upload_fields with context %}
+        {{ upload_fields('', 'Contract text' if lang == 'en' else 'Texte du contrat', 'Or a file' if lang == 'en' else 'Ou un fichier') }}
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;" {{ 'disabled' if not allowed }}>{{ 'Analyse' if lang == 'en' else 'Lancer l\'analyse' }}</button>
+        {{ quota(limit, used, allowed) }}
+      </form>
+    </div>
+    <div>
+      {{ disclaimer('analysis') }}
+      <h3>{{ 'Your analyses' if lang == 'en' else 'Vos analyses' }}</h3>
+      {% if history %}
+        {% for h in history %}
+          <a class="doc-row" href="{{ ci_url('analysis', aid=h['id']) }}" style="text-decoration:none;color:inherit;">
+            <span><strong>{{ h['title'] }}</strong><br><span class="helptext">{{ h['created_at'][:10] }}</span></span>
+            <span class="risk-badge {{ {'eleve':'eleve','moyen':'moyen','faible':'info'}[h['overall']] }}">{{ overall_label(h['overall']) }}</span>
+          </a>
+        {% endfor %}
+      {% else %}
+        <p class="helptext">{{ 'No analysis yet. Your contracts stay private: only you can see them.' if lang == 'en' else 'Aucune analyse pour l\'instant. Vos contrats restent privés : vous seul pouvez les voir.' }}</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

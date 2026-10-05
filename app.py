@@ -4,6 +4,7 @@ import secrets
 import functools
 import unicodedata
 import difflib
+import json
 from datetime import datetime, timedelta
 
 from flask import (
@@ -18,6 +19,7 @@ import totp
 import payments
 import signing
 import notifications
+import contract_engine
 
 APP_ROOT = os.path.dirname(__file__)
 # En production (Render), DATA_DIR pointe vers le disque persistant unique
@@ -134,7 +136,7 @@ def inject_user():
     lang_switch_url = None
     if counterpart:
         try:
-            lang_switch_url = url_for(counterpart)
+            lang_switch_url = url_for(counterpart, **(request.view_args or {}))
         except Exception:
             lang_switch_url = None
     u = current_user()
@@ -444,6 +446,550 @@ def pillar_contract_intelligence_en():
     ctx["categories"] = dbm.CLAUSE_CATEGORIES_EN
     ctx["risk_labels"] = dbm.CLAUSE_RISK_LABELS_EN
     return render_template("marketing/en/pillar_contract.html", **ctx)
+
+
+# ---------------------------------------------------------------------------
+# Contract Intelligence — outils (analyse, génération, comparaison, échéances)
+# ---------------------------------------------------------------------------
+
+def _T(fr, en):
+    return fr if getattr(g, "lang", "fr") == "fr" else en
+
+
+def ci_url(name, **kw):
+    return url_for("ci_" + name + ("_en" if getattr(g, "lang", "fr") == "en" else ""), **kw)
+
+
+app.jinja_env.globals["ci_url"] = ci_url
+
+
+def ci_route(name, fr, en, methods=("GET",)):
+    """Enregistre une même vue sous deux chemins (FR / EN) et renseigne le
+    sélecteur de langue."""
+    def deco(fn):
+        app.add_url_rule("/contract-intelligence" + fr, endpoint="ci_" + name, view_func=fn, methods=list(methods))
+        app.add_url_rule("/en/contract-intelligence" + en, endpoint="ci_" + name + "_en", view_func=fn, methods=list(methods))
+        LANG_COUNTERPART["ci_" + name] = "ci_" + name + "_en"
+        LANG_COUNTERPART["ci_" + name + "_en"] = "ci_" + name
+        return fn
+    return deco
+
+
+def _ci_redirect(name, **kw):
+    return redirect(ci_url(name, **kw))
+
+
+def _ci_user():
+    """Utilisateur connecté, ou None (la vue redirige alors vers l'inscription)."""
+    return current_user()
+
+
+def _ci_need_login():
+    flash(_T("Créez un compte gratuit ou connectez-vous pour utiliser cet outil.",
+             "Create a free account or sign in to use this tool."), "error")
+    return redirect(url_for("register", next=request.path))
+
+
+def _ci_month_start():
+    return datetime.utcnow().strftime("%Y-%m-01")
+
+
+def _ci_quota(conn, u, kind):
+    """(limite, utilisé ce mois-ci, autorisé ?). limite None = illimité."""
+    tier = _access_info(u)["tier"]
+    limit = dbm.CI_MONTHLY_LIMITS[kind][tier]
+    used = conn.execute(
+        "SELECT COUNT(*) AS c FROM contract_usage WHERE user_id=? AND kind=? AND created_at>=?",
+        (u["id"], kind, _ci_month_start()),
+    ).fetchone()["c"]
+    return limit, used, (limit is None or used < limit)
+
+
+def _ci_record_usage(conn, u, kind):
+    conn.execute("INSERT INTO contract_usage (user_id, kind, created_at) VALUES (?,?,?)", (u["id"], kind, dbm.now()))
+
+
+def _ci_iso_date(value):
+    value = (value or "").strip()
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date().isoformat()
+    except ValueError:
+        return None
+
+
+def _ci_read_input(prefix=""):
+    """Texte à partir d'un fichier envoyé (prefix+'file') ou collé (prefix+'text').
+    Retourne (texte, nom_source, message_erreur)."""
+    f = request.files.get(prefix + "file")
+    if f and f.filename:
+        name = secure_filename(f.filename) or "document"
+        data = f.read(contract_engine.MAX_BYTES + 1)
+        try:
+            return contract_engine.extract_text(data, name), name, None
+        except contract_engine.ExtractionError as exc:
+            msgs = {
+                "too_large": _T("Fichier trop volumineux (5 Mo maximum).", "File too large (5 MB maximum)."),
+                "unsupported": _T("Format non pris en charge : utilisez .docx, .pdf ou .txt, ou collez le texte.",
+                                  "Unsupported format: use .docx, .pdf or .txt, or paste the text."),
+                "empty": _T("Aucun texte exploitable trouvé (un PDF numérisé sans couche texte ne peut pas être lu). Collez le texte à la place.",
+                            "No usable text found (a scanned PDF without a text layer cannot be read). Paste the text instead."),
+                "unreadable": _T("Le fichier n'a pas pu être lu (corrompu ou protégé).", "The file could not be read (corrupted or protected)."),
+                "missing_dependency": _T("La lecture de ce format n'est pas disponible sur ce serveur : collez le texte.",
+                                         "Reading this format is not available on this server: paste the text."),
+            }
+            return None, name, msgs.get(exc.code, msgs["unreadable"])
+    pasted = (request.form.get(prefix + "text") or "").strip()
+    if pasted:
+        pasted = contract_engine._normalize_text(pasted)[:contract_engine.MAX_CHARS]
+        if len(pasted) < contract_engine.MIN_CHARS:
+            return None, None, _T("Le texte est trop court pour être analysé.", "The text is too short to analyse.")
+        return pasted, None, None
+    return None, None, _T("Joignez un fichier ou collez le texte du contrat.", "Attach a file or paste the contract text.")
+
+
+def _ci_quota_message(kind, limit):
+    return _T(
+        f"Vous avez atteint la limite mensuelle du compte gratuit ({limit}). Le plan Premium la lève.",
+        f"You have reached the free account's monthly limit ({limit}). Premium lifts it.",
+    )
+
+
+def _ci_ctx(active, **extra):
+    extra["ci_active"] = active
+    extra["level_labels"] = contract_engine.LEVEL_LABELS[getattr(g, "lang", "fr")]
+    return extra
+
+
+def _ci_page(name, **ctx):
+    return render_template("contract/" + name + ".html", **ctx)
+
+
+# ---- Analyser ------------------------------------------------------------
+
+@ci_route("analyze", "/analyser", "/analyze", ("GET", "POST"))
+def ci_analyze():
+    u = _ci_user()
+    if not u:
+        return _ci_need_login()
+    conn = dbm.get_db()
+    limit, used, allowed = _ci_quota(conn, u, "analysis")
+    if request.method == "POST":
+        if not allowed:
+            conn.close()
+            flash(_ci_quota_message("analysis", limit), "error")
+            return _ci_redirect("analyze")
+        text, source, err = _ci_read_input()
+        if err:
+            conn.close()
+            flash(err, "error")
+            return _ci_redirect("analyze")
+        title = (request.form.get("title") or "").strip()[:140] or source or _T("Contrat sans titre", "Untitled contract")
+        result = contract_engine.analyze_contract(text)
+        cur = conn.execute(
+            "INSERT INTO contract_analyses (user_id, title, language, source_name, text_content, result_json, overall, created_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            (u["id"], title, result["language"], source, text, json.dumps(result, ensure_ascii=False),
+             result["summary"]["overall"], dbm.now()),
+        )
+        _ci_record_usage(conn, u, "analysis")
+        conn.commit()
+        aid = cur.lastrowid
+        conn.close()
+        dbm.log_activity(u["id"], "contract_analysis", f"analyse #{aid}")
+        return _ci_redirect("analysis", aid=aid)
+    history = conn.execute(
+        "SELECT id, title, overall, language, created_at FROM contract_analyses WHERE user_id=? ORDER BY id DESC LIMIT 30",
+        (u["id"],),
+    ).fetchall()
+    conn.close()
+    return _ci_page("analyze", **_ci_ctx("analyze", history=history, limit=limit, used=used, allowed=allowed))
+
+
+def _ci_get_analysis(conn, u, aid):
+    row = conn.execute("SELECT * FROM contract_analyses WHERE id=? AND user_id=?", (aid, u["id"])).fetchone()
+    if not row:
+        conn.close()
+        abort(404)
+    return row
+
+
+@ci_route("analysis", "/analyse/<int:aid>", "/analysis/<int:aid>")
+def ci_analysis(aid):
+    u = _ci_user()
+    if not u:
+        return _ci_need_login()
+    conn = dbm.get_db()
+    row = _ci_get_analysis(conn, u, aid)
+    conn.close()
+    result = json.loads(row["result_json"])
+    effective = _ci_iso_date(request.args.get("effective"))
+    eff_date = datetime.strptime(effective, "%Y-%m-%d").date() if effective else None
+    obligations = contract_engine.extract_obligations(row["text_content"], result["language"], eff_date)
+    kind_labels = dict(dbm.CI_OBLIGATION_KINDS_EN if g.lang == "en" else dbm.CI_OBLIGATION_KINDS)
+    return _ci_page("analysis", **_ci_ctx("analyze", analysis=row, result=result, obligations=obligations,
+                                          effective=effective, kind_labels=kind_labels,
+                                          today=datetime.utcnow().date().isoformat()))
+
+
+@ci_route("analysis_delete", "/analyse/<int:aid>/supprimer", "/analysis/<int:aid>/delete", ("POST",))
+def ci_analysis_delete(aid):
+    u = _ci_user()
+    if not u:
+        return _ci_need_login()
+    conn = dbm.get_db()
+    _ci_get_analysis(conn, u, aid)
+    conn.execute("DELETE FROM contract_analyses WHERE id=? AND user_id=?", (aid, u["id"]))
+    conn.commit()
+    conn.close()
+    flash(_T("Analyse supprimée.", "Analysis deleted."), "success")
+    return _ci_redirect("analyze")
+
+
+@ci_route("analysis_obligations", "/analyse/<int:aid>/echeances", "/analysis/<int:aid>/deadlines", ("POST",))
+def ci_analysis_obligations(aid):
+    u = _ci_user()
+    if not u:
+        return _ci_need_login()
+    conn = dbm.get_db()
+    row = _ci_get_analysis(conn, u, aid)
+    result = json.loads(row["result_json"])
+    effective = _ci_iso_date(request.form.get("effective"))
+    eff_date = datetime.strptime(effective, "%Y-%m-%d").date() if effective else None
+    found = contract_engine.extract_obligations(row["text_content"], result["language"], eff_date)
+    chosen = set()
+    for v in request.form.getlist("pick"):
+        if v.isdigit():
+            chosen.add(int(v))
+    tier = _access_info(u)["tier"]
+    cap = dbm.CI_OBLIGATION_LIMITS[tier]
+    count = conn.execute("SELECT COUNT(*) AS c FROM contract_obligations WHERE user_id=?", (u["id"],)).fetchone()["c"]
+    added = 0
+    blocked = False
+    for i, ob in enumerate(found):
+        if i not in chosen:
+            continue
+        if cap is not None and count + added >= cap:
+            blocked = True
+            break
+        due = _ci_iso_date(request.form.get(f"due_{i}")) or ob["due_date"]
+        label = ob["label"][:200]
+        dup = conn.execute(
+            "SELECT id FROM contract_obligations WHERE user_id=? AND analysis_id=? AND label=? AND COALESCE(due_date,'')=COALESCE(?,'')",
+            (u["id"], aid, label, due),
+        ).fetchone()
+        if dup:
+            continue
+        conn.execute(
+            "INSERT INTO contract_obligations (user_id, analysis_id, contract_label, label, kind, due_date, delay_text, estimated, status, created_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (u["id"], aid, row["title"], label, ob["kind"], due, ob["delay_text"],
+             1 if (ob["estimated"] and due == ob["due_date"]) else 0, "a_faire", dbm.now()),
+        )
+        added += 1
+    conn.commit()
+    conn.close()
+    if added:
+        flash(_T(f"{added} échéance(s) ajoutée(s) à votre suivi.", f"{added} deadline(s) added to your tracker."), "success")
+    elif not blocked:
+        flash(_T("Aucune nouvelle échéance sélectionnée.", "No new deadline selected."), "error")
+    if blocked:
+        flash(_T(f"Limite du compte gratuit atteinte ({cap} échéances). Le plan Premium la lève.",
+                 f"Free account limit reached ({cap} deadlines). Premium lifts it."), "error")
+    return _ci_redirect("deadlines")
+
+
+# ---- Générer -------------------------------------------------------------
+
+def _ci_templates(conn):
+    return conn.execute("SELECT * FROM contract_templates WHERE language=? ORDER BY id", (g.lang,)).fetchall()
+
+
+def _ci_template(conn, key):
+    row = conn.execute("SELECT * FROM contract_templates WHERE key=? AND language=?", (key, g.lang)).fetchone()
+    if not row:
+        conn.close()
+        abort(404)
+    return row
+
+
+@ci_route("generate", "/generer", "/generate")
+def ci_generate():
+    u = _ci_user()
+    if not u:
+        return _ci_need_login()
+    conn = dbm.get_db()
+    templates = _ci_templates(conn)
+    limit, used, allowed = _ci_quota(conn, u, "draft")
+    drafts = conn.execute(
+        "SELECT id, title, language, created_at FROM contract_drafts WHERE user_id=? ORDER BY id DESC LIMIT 30", (u["id"],)
+    ).fetchall()
+    conn.close()
+    return _ci_page("generate", **_ci_ctx("generate", templates=templates, drafts=drafts, limit=limit, used=used, allowed=allowed))
+
+
+@ci_route("generate_form", "/generer/<key>", "/generate/<key>", ("GET", "POST"))
+def ci_generate_form(key):
+    u = _ci_user()
+    if not u:
+        return _ci_need_login()
+    conn = dbm.get_db()
+    tpl = _ci_template(conn, key)
+    variables = json.loads(tpl["variables_json"])
+    limit, used, allowed = _ci_quota(conn, u, "draft")
+    cap = dbm.CLAUSE_RESULT_LIMITS[_access_info(u)["tier"]]
+    library = []
+    if g.lang == "fr":
+        library = conn.execute("SELECT id, title, category, risk_level FROM contract_clauses ORDER BY category, id LIMIT ?", (cap,)).fetchall()
+    values = {}
+    if request.method == "POST":
+        if not allowed:
+            conn.close()
+            flash(_ci_quota_message("draft", limit), "error")
+            return _ci_redirect("generate")
+        for v in variables:
+            if v["type"] == "bool":
+                values[v["key"]] = "1" if request.form.get(v["key"]) else ""
+            else:
+                values[v["key"]] = (request.form.get(v["key"]) or "").strip()[:2000]
+        for v in variables:
+            if v["type"] == "date" and values[v["key"]] and not _ci_iso_date(values[v["key"]]):
+                values[v["key"]] = ""
+        missing = contract_engine.validate_values(variables, values)
+        if missing:
+            conn.close()
+            labels = {v["key"]: v["label_en" if g.lang == "en" else "label_fr"] for v in variables}
+            flash(_T("Champs requis : ", "Required fields: ") + ", ".join(labels[k] for k in missing), "error")
+            return _ci_page("generate_form", **_ci_ctx("generate", tpl=tpl, variables=variables, library=library,
+                                                       values=values, limit=limit, used=used, allowed=allowed))
+        body = contract_engine.render_contract(tpl["body_text"], variables, values, g.lang)
+        extra = []
+        picked = [int(x) for x in request.form.getlist("clause") if x.isdigit()]
+        if picked and library:
+            allowed_ids = {r["id"] for r in library}
+            for cid in picked:
+                if cid in allowed_ids:
+                    c = conn.execute("SELECT title, body_text FROM contract_clauses WHERE id=?", (cid,)).fetchone()
+                    if c:
+                        extra.append((c["title"], c["body_text"]))
+        body = contract_engine.append_clauses(body, extra, g.lang)
+        cur = conn.execute(
+            "INSERT INTO contract_drafts (user_id, template_key, language, title, values_json, body_text, created_at) VALUES (?,?,?,?,?,?,?)",
+            (u["id"], key, g.lang, tpl["title"], json.dumps(values, ensure_ascii=False), body, dbm.now()),
+        )
+        _ci_record_usage(conn, u, "draft")
+        conn.commit()
+        did = cur.lastrowid
+        conn.close()
+        dbm.log_activity(u["id"], "contract_draft", f"brouillon #{did} — {key}")
+        return _ci_redirect("draft", did=did)
+    for v in variables:
+        values[v["key"]] = v.get("default", "")
+    conn.close()
+    return _ci_page("generate_form", **_ci_ctx("generate", tpl=tpl, variables=variables, library=library,
+                                               values=values, limit=limit, used=used, allowed=allowed))
+
+
+def _ci_get_draft(conn, u, did):
+    row = conn.execute("SELECT * FROM contract_drafts WHERE id=? AND user_id=?", (did, u["id"])).fetchone()
+    if not row:
+        conn.close()
+        abort(404)
+    return row
+
+
+@ci_route("draft", "/brouillon/<int:did>", "/draft/<int:did>", ("GET", "POST"))
+def ci_draft(did):
+    u = _ci_user()
+    if not u:
+        return _ci_need_login()
+    conn = dbm.get_db()
+    row = _ci_get_draft(conn, u, did)
+    if request.method == "POST":
+        body = (request.form.get("body_text") or "").strip()[:contract_engine.MAX_CHARS]
+        if body:
+            conn.execute("UPDATE contract_drafts SET body_text=? WHERE id=? AND user_id=?", (body, did, u["id"]))
+            conn.commit()
+            flash(_T("Brouillon enregistré.", "Draft saved."), "success")
+        conn.close()
+        return _ci_redirect("draft", did=did)
+    conn.close()
+    pending = re.findall(r"\[(?:à compléter|to complete) : [^\]]+\]", row["body_text"])
+    return _ci_page("draft", **_ci_ctx("generate", draft=row, pending=pending))
+
+
+@ci_route("draft_download", "/brouillon/<int:did>/telecharger/<fmt>", "/draft/<int:did>/download/<fmt>")
+def ci_draft_download(did, fmt):
+    u = _ci_user()
+    if not u:
+        return _ci_need_login()
+    conn = dbm.get_db()
+    row = _ci_get_draft(conn, u, did)
+    conn.close()
+    base = secure_filename(row["title"]) or "contract"
+    note = _T("Trame générée avec Massey AI — Contract Intelligence. À faire réviser par un avocat avant signature.",
+              "Template generated with Massey AI — Contract Intelligence. Have a lawyer review it before signing.")
+    if fmt == "docx":
+        data = contract_engine.build_docx(row["title"], row["body_text"], note)
+        if data is None:
+            flash(_T("L'export Word n'est pas disponible sur ce serveur : utilisez le format texte.",
+                     "Word export is not available on this server: use the text format."), "error")
+            return _ci_redirect("draft", did=did)
+        return Response(data, mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        headers={"Content-Disposition": f'attachment; filename="{base}.docx"'})
+    if fmt == "txt":
+        txt = row["title"].upper() + "\n\n" + row["body_text"] + "\n\n---\n" + note + "\n"
+        return Response(txt, mimetype="text/plain; charset=utf-8",
+                        headers={"Content-Disposition": f'attachment; filename="{base}.txt"'})
+    abort(404)
+
+
+@ci_route("draft_delete", "/brouillon/<int:did>/supprimer", "/draft/<int:did>/delete", ("POST",))
+def ci_draft_delete(did):
+    u = _ci_user()
+    if not u:
+        return _ci_need_login()
+    conn = dbm.get_db()
+    _ci_get_draft(conn, u, did)
+    conn.execute("DELETE FROM contract_drafts WHERE id=? AND user_id=?", (did, u["id"]))
+    conn.commit()
+    conn.close()
+    flash(_T("Brouillon supprimé.", "Draft deleted."), "success")
+    return _ci_redirect("generate")
+
+
+# ---- Comparer ------------------------------------------------------------
+
+@ci_route("compare", "/comparer", "/compare", ("GET", "POST"))
+def ci_compare():
+    u = _ci_user()
+    if not u:
+        return _ci_need_login()
+    conn = dbm.get_db()
+    limit, used, allowed = _ci_quota(conn, u, "compare")
+    comparison = None
+    form = {}
+    if request.method == "POST":
+        form = request.form
+        if not allowed:
+            flash(_ci_quota_message("compare", limit), "error")
+        else:
+            old, old_name, err1 = _ci_read_input("old_")
+            new, new_name, err2 = _ci_read_input("new_")
+            if err1 or err2:
+                flash(_T("Version initiale : ", "Original version: ") + err1 if err1 else
+                      _T("Nouvelle version : ", "New version: ") + err2, "error")
+            else:
+                comparison = contract_engine.compare_texts(old, new)
+                comparison["old_name"] = old_name or _T("Version initiale", "Original version")
+                comparison["new_name"] = new_name or _T("Nouvelle version", "New version")
+                _ci_record_usage(conn, u, "compare")
+                conn.commit()
+                used += 1
+                allowed = limit is None or used < limit
+    conn.close()
+    return _ci_page("compare", **_ci_ctx("compare", comparison=comparison, form=form, limit=limit, used=used, allowed=allowed))
+
+
+# ---- Échéances -----------------------------------------------------------
+
+@ci_route("deadlines", "/echeances", "/deadlines")
+def ci_deadlines():
+    u = _ci_user()
+    if not u:
+        return _ci_need_login()
+    conn = dbm.get_db()
+    rows = conn.execute(
+        "SELECT * FROM contract_obligations WHERE user_id=? ORDER BY (status='fait'), (due_date IS NULL), due_date, id",
+        (u["id"],),
+    ).fetchall()
+    conn.close()
+    today = datetime.utcnow().date()
+    soon = (today + timedelta(days=30)).isoformat()
+    groups = {"overdue": [], "soon": [], "later": [], "undated": [], "done": []}
+    for r in rows:
+        if r["status"] == "fait":
+            groups["done"].append(r)
+        elif not r["due_date"]:
+            groups["undated"].append(r)
+        elif r["due_date"] < today.isoformat():
+            groups["overdue"].append(r)
+        elif r["due_date"] <= soon:
+            groups["soon"].append(r)
+        else:
+            groups["later"].append(r)
+    kind_labels = dict(dbm.CI_OBLIGATION_KINDS_EN if g.lang == "en" else dbm.CI_OBLIGATION_KINDS)
+    cap = dbm.CI_OBLIGATION_LIMITS[_access_info(u)["tier"]]
+    return _ci_page("deadlines", **_ci_ctx("deadlines", groups=groups, kind_labels=kind_labels,
+                                           total=len(rows), cap=cap, today=today.isoformat()))
+
+
+def _ci_get_obligation(conn, u, oid):
+    row = conn.execute("SELECT * FROM contract_obligations WHERE id=? AND user_id=?", (oid, u["id"])).fetchone()
+    if not row:
+        conn.close()
+        abort(404)
+    return row
+
+
+@ci_route("deadline_add", "/echeances/ajouter", "/deadlines/add", ("POST",))
+def ci_deadline_add():
+    u = _ci_user()
+    if not u:
+        return _ci_need_login()
+    label = (request.form.get("label") or "").strip()[:200]
+    kind = request.form.get("kind", "echeance")
+    if kind not in dict(dbm.CI_OBLIGATION_KINDS):
+        kind = "echeance"
+    due = _ci_iso_date(request.form.get("due_date"))
+    contract = (request.form.get("contract_label") or "").strip()[:140] or None
+    if not label:
+        flash(_T("La description est requise.", "A description is required."), "error")
+        return _ci_redirect("deadlines")
+    conn = dbm.get_db()
+    cap = dbm.CI_OBLIGATION_LIMITS[_access_info(u)["tier"]]
+    count = conn.execute("SELECT COUNT(*) AS c FROM contract_obligations WHERE user_id=?", (u["id"],)).fetchone()["c"]
+    if cap is not None and count >= cap:
+        conn.close()
+        flash(_T(f"Limite du compte gratuit atteinte ({cap} échéances). Le plan Premium la lève.",
+                 f"Free account limit reached ({cap} deadlines). Premium lifts it."), "error")
+        return _ci_redirect("deadlines")
+    conn.execute(
+        "INSERT INTO contract_obligations (user_id, contract_label, label, kind, due_date, status, created_at) VALUES (?,?,?,?,?,?,?)",
+        (u["id"], contract, label, kind, due, "a_faire", dbm.now()),
+    )
+    conn.commit()
+    conn.close()
+    flash(_T("Échéance ajoutée.", "Deadline added."), "success")
+    return _ci_redirect("deadlines")
+
+
+@ci_route("deadline_toggle", "/echeances/<int:oid>/statut", "/deadlines/<int:oid>/status", ("POST",))
+def ci_deadline_toggle(oid):
+    u = _ci_user()
+    if not u:
+        return _ci_need_login()
+    conn = dbm.get_db()
+    row = _ci_get_obligation(conn, u, oid)
+    conn.execute("UPDATE contract_obligations SET status=? WHERE id=? AND user_id=?",
+                 ("a_faire" if row["status"] == "fait" else "fait", oid, u["id"]))
+    conn.commit()
+    conn.close()
+    return _ci_redirect("deadlines")
+
+
+@ci_route("deadline_delete", "/echeances/<int:oid>/supprimer", "/deadlines/<int:oid>/delete", ("POST",))
+def ci_deadline_delete(oid):
+    u = _ci_user()
+    if not u:
+        return _ci_need_login()
+    conn = dbm.get_db()
+    _ci_get_obligation(conn, u, oid)
+    conn.execute("DELETE FROM contract_obligations WHERE id=? AND user_id=?", (oid, u["id"]))
+    conn.commit()
+    conn.close()
+    return _ci_redirect("deadlines")
 
 
 def _transaction_intelligence_context():

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "contract/_macros.html" import disclaimer, quota with context %}
+{% block title %}{{ 'Generate a contract' if lang == 'en' else 'Générer un contrat' }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'Generate a contract' if lang == 'en' else 'Générer un contrat' }}</h1>
+  <p class="lede">{{ 'Pick a template, fill in the details, add clauses from the library, and download a Word file.' if lang == 'en' else 'Choisissez un modèle, renseignez les informations, ajoutez des clauses de la bibliothèque et téléchargez un fichier Word.' }}</p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+  {{ disclaimer('draft') }}
+  <div class="grid-3">
+    {% for t in templates %}
+      <div class="card">
+        <h3 style="margin-top:0;">{{ t['title'] }}</h3>
+        <p style="color:var(--ink-soft);font-size:0.9rem;">{{ t['description'] }}</p>
+        <a class="btn btn-primary btn-sm" href="{{ ci_url('generate_form', key=t['key']) }}">{{ 'Use this template' if lang == 'en' else 'Utiliser ce modèle' }}</a>
+      </div>
+    {% endfor %}
+  </div>
+  {{ quota(limit, used, allowed) }}
+  <h3 style="margin-top:40px;">{{ 'Your drafts' if lang == 'en' else 'Vos brouillons' }}</h3>
+  {% for d in drafts %}
+    <a class="doc-row" href="{{ ci_url('draft', did=d['id']) }}" style="text-decoration:none;color:inherit;">
+      <span><strong>{{ d['title'] }}</strong></span><span class="helptext">{{ d['created_at'][:10] }}</span>
+    </a>
+  {% else %}
+    <p class="helptext">{{ 'No draft yet.' if lang == 'en' else 'Aucun brouillon pour l\'instant.' }}</p>
+  {% endfor %}
+</section>
+{% endblock %}

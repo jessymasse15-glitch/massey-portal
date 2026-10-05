@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "contract/_macros.html" import disclaimer, level_pill, overall_label with context %}
+{% block title %}{{ analysis['title'] }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">{{ 'Contract analysis' if lang == 'en' else 'Analyse de contrat' }}</div>
+  <h1>{{ analysis['title'] }}</h1>
+  <p class="lede">
+    <span class="risk-badge {{ {'eleve':'eleve','moyen':'moyen','faible':'info'}[result.summary.overall] }}">{{ overall_label(result.summary.overall) }}</span>
+    &nbsp;{{ result.clause_count }} {{ 'sections' if lang == 'en' else 'sections' }} · {{ result.word_count }} {{ 'words' if lang == 'en' else 'mots' }} · {{ result.summary.counts.eleve }} {{ 'high' if lang == 'en' else 'élevé(s)' }}, {{ result.summary.counts.moyen }} {{ 'medium' if lang == 'en' else 'moyen(s)' }}, {{ result.summary.counts.info }} {{ 'notes' if lang == 'en' else 'à noter' }}
+  </p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+  {{ disclaimer('analysis') }}
+
+  <h2>{{ 'Points to review' if lang == 'en' else 'Points à examiner' }} ({{ result.findings|length }})</h2>
+  {% if not result.findings %}
+    <p class="helptext">{{ 'No risky wording pattern detected. This does not mean the contract is balanced.' if lang == 'en' else 'Aucune formulation à risque détectée. Cela ne signifie pas que le contrat soit équilibré.' }}</p>
+  {% endif %}
+  {% for f in result.findings %}
+    <div class="finding {{ f.level }}">
+      <div class="head"><h4>{{ f.topic }}</h4>{{ level_pill(f.level) }}</div>
+      <div class="where">{{ 'Section' if lang == 'en' else 'Section' }} {{ f.clause_number }}{% if f.clause_title %} — {{ f.clause_title }}{% endif %}</div>
+      <blockquote>{{ f.excerpt }}</blockquote>
+      <p><strong>{{ 'Why it matters' if lang == 'en' else 'Pourquoi c\'est important' }} :</strong> {{ f.why }}</p>
+      <p><strong>{{ 'Suggested fix' if lang == 'en' else 'Piste de correction' }} :</strong> {{ f.fix }}</p>
+    </div>
+  {% endfor %}
+
+  <h2 style="margin-top:40px;">{{ 'Possibly missing clauses' if lang == 'en' else 'Clauses possiblement absentes' }} ({{ result.missing|length }})</h2>
+  {% if not result.missing %}
+    <p class="helptext">{{ 'All the usual clause topics appear to be covered.' if lang == 'en' else 'Les sujets de clauses habituels semblent tous couverts.' }}</p>
+  {% endif %}
+  {% for m in result.missing %}
+    <div class="finding {{ m.level }}">
+      <div class="head"><h4>{{ m.topic }}</h4>{{ level_pill(m.level) }}</div>
+      <p>{{ m.why }}</p>
+      <p><strong>{{ 'Suggested fix' if lang == 'en' else 'Piste de correction' }} :</strong> {{ m.fix }}
+        {% if lang == 'fr' %}<a href="{{ url_for('pillar_contract_intelligence', category=m.library) }}#bibliotheque">→ Voir la bibliothèque</a>{% endif %}</p>
+    </div>
+  {% endfor %}
+
+  <h2 style="margin-top:40px;" id="deadlines">{{ 'Dates and deadlines found' if lang == 'en' else 'Dates et délais repérés' }} ({{ obligations|length }})</h2>
+  <form method="GET" class="inline-form" style="margin-bottom:14px;">
+    <label for="effective" class="helptext" style="margin:0 8px 0 0;">{{ 'Effective date (to estimate relative deadlines)' if lang == 'en' else 'Date d\'effet (pour estimer les délais relatifs)' }}</label>
+    <input type="date" id="effective" name="effective" value="{{ effective or '' }}" style="width:auto;">
+    <button class="btn btn-ghost btn-sm" type="submit">{{ 'Recompute' if lang == 'en' else 'Recalculer' }}</button>
+  </form>
+  {% if obligations %}
+  <form method="POST" action="{{ ci_url('analysis_obligations', aid=analysis['id']) }}">
+    <input type="hidden" name="effective" value="{{ effective or '' }}">
+    <div class="table-wrap"><table>
+      <thead><tr><th></th><th>{{ 'Type' if lang == 'en' else 'Type' }}</th><th>{{ 'Passage' if lang == 'en' else 'Passage' }}</th><th>{{ 'Delay' if lang == 'en' else 'Délai' }}</th><th>{{ 'Due date' if lang == 'en' else 'Échéance' }}</th></tr></thead>
+      <tbody>
+      {% for o in obligations %}
+        <tr>
+          <td><input type="checkbox" name="pick" value="{{ loop.index0 }}" {{ 'checked' if o.due_date }}></td>
+          <td>{{ kind_labels.get(o.kind, o.kind) }}</td>
+          <td style="max-width:420px;">{{ o.excerpt }}</td>
+          <td>{{ o.delay_text or '—' }}</td>
+          <td><input type="date" name="due_{{ loop.index0 }}" value="{{ o.due_date or '' }}" style="width:auto;">{% if o.estimated %}<div class="helptext">{{ 'estimated' if lang == 'en' else 'estimée' }}</div>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody></table></div>
+    <p class="helptext">{{ 'Relative deadlines (e.g. "30 days") get a date only when tied to signature/effective date; otherwise enter the date yourself. Check the original contract.' if lang == 'en' else 'Les délais relatifs (ex. « 30 jours ») ne reçoivent une date que s\'ils sont rattachés à la signature ou à la date d\'effet ; sinon saisissez la date vous-même. Vérifiez dans le contrat d\'origine.' }}</p>
+    <button class="btn btn-primary" type="submit">{{ 'Add selected to my tracker' if lang == 'en' else 'Ajouter la sélection à mon suivi' }}</button>
+  </form>
+  {% else %}
+    <p class="helptext">{{ 'No date or delay detected.' if lang == 'en' else 'Aucune date ni délai détecté.' }}</p>
+  {% endif %}
+
+  <div style="margin-top:40px;display:flex;gap:12px;flex-wrap:wrap;">
+    <a class="btn btn-ghost" href="{{ ci_url('analyze') }}">{{ '← All analyses' if lang == 'en' else '← Toutes les analyses' }}</a>
+    <form method="POST" action="{{ ci_url('analysis_delete', aid=analysis['id']) }}" onsubmit="return confirm('{{ 'Delete this analysis and its text?' if lang == 'en' else 'Supprimer cette analyse et son texte ?' }}');">
+      <button class="btn btn-danger btn-sm" type="submit">{{ 'Delete' if lang == 'en' else 'Supprimer' }}</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

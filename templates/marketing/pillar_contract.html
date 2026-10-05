@@ -28,7 +28,39 @@
   </div>
 </section>
 
-<section class="block">
+<section class="block" id="outils">
+  <div class="block-head reveal">
+    <div>
+      <div class="eyebrow">Outils</div>
+      <h2>Travaillez vos contrats dans Massey AI</h2>
+      <p>Un compte gratuit suffit pour commencer (quotas mensuels) ; le plan Premium les lève. Analyse automatisée par règles : elle oriente la relecture, elle ne remplace pas un avocat.</p>
+    </div>
+  </div>
+  <div class="grid-2 reveal">
+    <a class="card tool-card" href="{{ url_for('ci_analyze') }}">
+      <h3 style="margin-top:0;">Analyser</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Clauses à risque, clauses manquantes, dates et délais d'un contrat, avec le passage exact et une piste de correction.</p>
+      <span class="btn btn-primary btn-sm">Ouvrir</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_generate') }}">
+      <h3 style="margin-top:0;">Générer</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Contrat de services, NDA, vente : un modèle, vos informations, des clauses de la bibliothèque, un fichier Word.</p>
+      <span class="btn btn-primary btn-sm">Ouvrir</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_compare') }}">
+      <h3 style="margin-top:0;">Comparer</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Deux versions d'un contrat : ajouts, suppressions et formulations modifiées, mot à mot.</p>
+      <span class="btn btn-primary btn-sm">Ouvrir</span>
+    </a>
+    <a class="card tool-card" href="{{ url_for('ci_deadlines') }}">
+      <h3 style="margin-top:0;">Échéances</h3>
+      <p style="color:var(--ink-soft);font-size:0.9rem;">Préavis, renouvellements, paiements : un suivi unique, alimenté par vos analyses.</p>
+      <span class="btn btn-primary btn-sm">Ouvrir</span>
+    </a>
+  </div>
+</section>
+
+<section class="block" id="bibliotheque">
   <div class="block-head reveal">
     <div>
       <div class="eyebrow">Bibliothèque</div>
@@ -106,7 +138,7 @@
     <p class="helptext">Aucun contrat téléversé pour l'instant.</p>
   {% endfor %}
   <div class="callout reveal" style="max-width:74ch;margin-top:24px;">
-    Depuis chaque dossier, comparez deux versions d'un même contrat (diff ligne à ligne pour les fichiers texte, comparaison de métadonnées et empreinte pour les autres formats) et consignez vos observations de redlining. La génération de contrats par IA et la détection automatique de risques suivront une fois Massey AI connecté à un moteur d'analyse.
+    Depuis chaque dossier, comparez deux versions d'un même contrat (diff ligne à ligne pour les fichiers texte, empreinte pour les autres formats) et consignez vos observations de redlining. Pour analyser un contrat, en générer un ou suivre ses échéances, utilisez les outils ci-dessus.
   </div>
 </section>
 {% else %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "contract/_macros.html" import disclaimer, quota with context %}
+{% block title %}{{ tpl['title'] }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">{{ 'Contract generator' if lang == 'en' else 'Générateur de contrat' }}</div>
+  <h1>{{ tpl['title'] }}</h1>
+  <p class="lede">{{ tpl['description'] }}</p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+  {{ disclaimer('draft') }}
+  <form method="POST" class="card" style="max-width:820px;">
+    {% for v in variables %}
+      {% set label = v['label_en'] if lang == 'en' else v['label_fr'] %}
+      {% if v['type'] == 'bool' %}
+        <div class="form-group"><label style="display:flex;gap:10px;align-items:center;font-weight:500;">
+          <input type="checkbox" name="{{ v['key'] }}" value="1" {{ 'checked' if values.get(v['key']) }} style="width:auto;"> {{ label }}</label></div>
+      {% else %}
+        <div class="form-group">
+          <label for="f_{{ v['key'] }}">{{ label }}{% if v['required'] %} *{% endif %}</label>
+          {% if v['type'] == 'textarea' %}
+            <textarea id="f_{{ v['key'] }}" name="{{ v['key'] }}" rows="3" {{ 'required' if v['required'] }}>{{ values.get(v['key'], '') }}</textarea>
+          {% else %}
+            <input type="{{ 'date' if v['type'] == 'date' else ('number' if v['type'] == 'number' else 'text') }}" {% if v['type']=='number' %}min="0" step="1"{% endif %}
+                   id="f_{{ v['key'] }}" name="{{ v['key'] }}" value="{{ values.get(v['key'], '') }}" {{ 'required' if v['required'] }}>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endfor %}
+    {% if library %}
+      <div class="form-group">
+        <label>{{ 'Add clauses from the library (optional)' if lang == 'en' else 'Ajouter des clauses de la bibliothèque (optionnel)' }}</label>
+        <div class="ci-clause-pick">
+          {% for c in library %}
+            <label><input type="checkbox" name="clause" value="{{ c['id'] }}" style="width:auto;"> {{ c['title'] }}</label>
+          {% endfor %}
+        </div>
+      </div>
+    {% elif lang == 'en' %}
+      <p class="helptext">Library clauses are currently available in French only.</p>
+    {% endif %}
+    <button type="submit" class="btn btn-primary" {{ 'disabled' if not allowed }}>{{ 'Generate the draft' if lang == 'en' else 'Générer le brouillon' }}</button>
+    {{ quota(limit, used, allowed) }}
+  </form>
+</section>
+{% endblock %}

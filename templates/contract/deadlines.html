@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Deadlines and obligations' if lang == 'en' else 'Échéances et obligations' }} — Contract Intelligence{% endblock %}
+{% macro row(o) %}
+  <div class="doc-row">
+    <span>
+      <strong>{{ o['label'] }}</strong><br>
+      <span class="helptext">{{ kind_labels.get(o['kind'], o['kind']) }}{% if o['contract_label'] %} · {{ o['contract_label'] }}{% endif %}{% if o['delay_text'] %} · {{ o['delay_text'] }}{% endif %}{% if o['estimated'] %} · {{ 'estimated date' if lang == 'en' else 'date estimée' }}{% endif %}</span>
+    </span>
+    <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+      <span class="status-pill {{ 'done' if o['status']=='fait' }}">{{ o['due_date'] or ('No date' if lang == 'en' else 'Sans date') }}</span>
+      <form method="POST" action="{{ ci_url('deadline_toggle', oid=o['id']) }}"><button class="btn btn-ghost btn-sm" type="submit">{{ ('Reopen' if lang == 'en' else 'Rouvrir') if o['status']=='fait' else ('Done' if lang == 'en' else 'Fait') }}</button></form>
+      <form method="POST" action="{{ ci_url('deadline_delete', oid=o['id']) }}"><button class="btn btn-danger btn-sm" type="submit">{{ 'Delete' if lang == 'en' else 'Supprimer' }}</button></form>
+    </span>
+  </div>
+{% endmacro %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'Deadlines and obligations' if lang == 'en' else 'Échéances et obligations' }}</h1>
+  <p class="lede">{{ 'One place for renewal windows, notice periods, payments and key dates — from your analyses or added by hand.' if lang == 'en' else 'Un seul endroit pour les fenêtres de renouvellement, préavis, paiements et dates clés — issus de vos analyses ou ajoutés à la main.' }}</p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;">
+  <div class="callout">{{ 'Dates here are only as reliable as what was entered or detected. This tracker does not send reminders: check it regularly.' if lang == 'en' else 'Les dates ne sont aussi fiables que ce qui a été saisi ou détecté. Ce suivi n\'envoie pas de rappels : consultez-le régulièrement.' }}</div>
+  <form method="POST" action="{{ ci_url('deadline_add') }}" class="card" style="margin-bottom:32px;">
+    <h3 style="margin-top:0;">{{ 'Add a deadline' if lang == 'en' else 'Ajouter une échéance' }}</h3>
+    <div class="grid-2">
+      <div class="form-group"><label for="label">{{ 'Description' if lang == 'en' else 'Description' }} *</label><input id="label" name="label" required maxlength="200"></div>
+      <div class="form-group"><label for="contract_label">{{ 'Contract (optional)' if lang == 'en' else 'Contrat (optionnel)' }}</label><input id="contract_label" name="contract_label" maxlength="140"></div>
+      <div class="form-group"><label for="kind">{{ 'Type' if lang == 'en' else 'Type' }}</label>
+        <select id="kind" name="kind">{% for k, lab in kind_labels.items() %}<option value="{{ k }}">{{ lab }}</option>{% endfor %}</select></div>
+      <div class="form-group"><label for="due_date">{{ 'Due date' if lang == 'en' else 'Échéance' }}</label><input type="date" id="due_date" name="due_date"></div>
+    </div>
+    <button class="btn btn-primary" type="submit">{{ 'Add' if lang == 'en' else 'Ajouter' }}</button>
+    <p class="helptext ci-quota">{{ total }}{% if cap is not none %} / {{ cap }}{% endif %} {{ 'deadlines tracked' if lang == 'en' else 'échéances suivies' }}{% if cap is none %} — {{ 'unlimited (Premium)' if lang == 'en' else 'illimité (Premium)' }}{% endif %}</p>
+  </form>
+
+  {% set titles = {'overdue': ('Overdue','En retard'), 'soon': ('Next 30 days','30 prochains jours'), 'later': ('Later','Plus tard'), 'undated': ('No date','Sans date'), 'done': ('Done','Terminées')} %}
+  {% for key in ['overdue','soon','later','undated','done'] %}
+    {% if groups[key] %}
+      <h3 style="margin-top:28px;">{{ titles[key][0] if lang == 'en' else titles[key][1] }} ({{ groups[key]|length }})</h3>
+      {% for o in groups[key] %}{{ row(o) }}{% endfor %}
+    {% endif %}
+  {% endfor %}
+  {% if not total %}
+    <p class="helptext">{{ 'Nothing tracked yet. Analyse a contract to import its dates, or add one above.' if lang == 'en' else 'Rien de suivi pour l\'instant. Analysez un contrat pour importer ses dates, ou ajoutez-en une ci-dessus.' }}</p>
+  {% endif %}
+</section>
+{% endblock %}
