@@ -18,6 +18,8 @@ SOFT = colors.HexColor("#5B4A4C")
 LINE = colors.HexColor("#D9D2D0")
 LEVEL_COLORS = {"eleve": colors.HexColor("#B23A2E"), "moyen": colors.HexColor("#9C6B14"), "info": colors.HexColor("#1E8E5A")}
 
+_LOGO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "img", "mark-header.png")
+
 _REPL = {"→": "->", "✓": "v", "→": "->", "•": "-", " ": " ", " ": " ", " ": " ", "​": ""}
 
 
@@ -66,9 +68,16 @@ def _doc(buf, title, footer_left):
         w, h = A4
         canvas.setFillColor(colors.HexColor("#0B1E36"))
         canvas.rect(0, h - 14 * mm, w, 14 * mm, stroke=0, fill=1)
+        x0 = 18 * mm
+        if os.path.exists(_LOGO):
+            try:
+                canvas.drawImage(_LOGO, x0, h - 12.2 * mm, width=11 * mm, height=8.4 * mm, mask="auto", preserveAspectRatio=True)
+                x0 += 13.5 * mm
+            except Exception:  # noqa: BLE001 — le logo ne doit jamais empêcher la génération
+                pass
         canvas.setFillColor(colors.white)
         canvas.setFont("Helvetica-Bold", 10)
-        canvas.drawString(18 * mm, h - 9 * mm, "Massey Contracts & Tax")
+        canvas.drawString(x0, h - 9 * mm, "Massey Contracts & Tax")
         canvas.setFont("Helvetica", 8)
         canvas.drawRightString(w - 18 * mm, h - 9 * mm, "Contract Intelligence")
         canvas.setFillColor(SOFT)
@@ -77,7 +86,7 @@ def _doc(buf, title, footer_left):
         canvas.drawRightString(w - 18 * mm, 10 * mm, "%d" % doc.page)
         canvas.restoreState()
     return SimpleDocTemplate(buf, pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=24 * mm, bottomMargin=18 * mm,
-                             title=_raw(title), author="Massey Contracts & Tax"), decorate
+                             title=_raw(title), author="Massey Contracts & Tax", invariant=1), decorate
 
 
 def _badge(level, label):
@@ -173,7 +182,7 @@ def analysis_report(title, result, lang, party_groups, obligations, created_at, 
     return buf.getvalue()
 
 
-def signed_contract(title, body, lang, body_sha, signers, request_ref, completed_at):
+def signed_contract(title, body, lang, body_sha, signers, request_ref, completed_at, verify_url=None):
     """PDF final : texte exact du contrat puis page de certificat de signature."""
     en = lang == "en"
     S = _styles()
@@ -205,6 +214,26 @@ def signed_contract(title, body, lang, body_sha, signers, request_ref, completed
     t.setStyle(TableStyle([("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"), ("FONTSIZE", (0, 0), (-1, 0), 8), ("LINEBELOW", (0, 0), (-1, -1), 0.3, LINE), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
     cert.append(t)
     cert.append(Spacer(1, 10))
+    if verify_url:
+        try:
+            import qrcode
+            from reportlab.platypus import Image
+            qr = qrcode.QRCode(box_size=4, border=1)
+            qr.add_data(verify_url)
+            qr.make(fit=True)
+            qbuf = io.BytesIO()
+            qr.make_image(fill_color="black", back_color="white").save(qbuf, format="PNG")
+            qbuf.seek(0)
+            row = Table([[Image(qbuf, width=24 * mm, height=24 * mm),
+                          [Paragraph("<b>%s</b>" % _c("Verify this document" if en else "Vérifier ce document"), S["small"]),
+                           Paragraph(_c(("Scan the code or open the address below, then drop this PDF: the site tells you whether it matches the signed original." if en
+                                         else "Scannez le code ou ouvrez l'adresse ci-dessous, puis déposez ce PDF : le site vous dit s'il correspond à l'original signé.")), S["small"]),
+                           Paragraph(_c(verify_url), S["mono"])]]], colWidths=[28 * mm, None])
+            row.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (-1, -1), 0)]))
+            cert.append(row)
+            cert.append(Spacer(1, 8))
+        except Exception:  # noqa: BLE001 — le QR est un plus, jamais bloquant
+            pass
     cert.append(Paragraph(_c(
         "Each signatory received a private link by email, typed their full legal name and ticked two consent boxes. The server recorded the time, IP address and browser of each signature. "
         "This is an internal attestation with an audit trail, not a certified electronic signature issued by a trusted third party: its evidential value is not guaranteed by an external provider."
@@ -245,5 +274,49 @@ def contract_for_signature(title, body, lang, body_sha, signers):
             Paragraph(_c("Signature"), S["small"]), Spacer(1, 10),
             Paragraph("/dat%d/" % i, white), HRFlowable(width="30%", thickness=0.6, color=INK, hAlign="LEFT"),
             Paragraph(_c("Date"), S["small"]), Spacer(1, 18)]))
+    doc.build(story, onFirstPage=deco, onLaterPages=deco)
+    return buf.getvalue()
+
+
+def contract_document(title, body, lang, subtitle=None, parties=None):
+    """PDF de lecture du contrat : titre, intertitres en gras, texte justifié, bloc de signatures, pagination."""
+    import contract_engine
+    from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+    en = lang == "en"
+    S = _styles()
+    just = ParagraphStyle("just", parent=S["body"], fontName="Times-Roman", fontSize=10.8, leading=15.5, alignment=TA_JUSTIFY, spaceAfter=5)
+    head = ParagraphStyle("head", parent=just, spaceBefore=7, keepWithNext=0)
+    ttl = ParagraphStyle("ttl", parent=just, fontName="Times-Bold", fontSize=11, spaceBefore=12, keepWithNext=1, alignment=TA_LEFT)
+    big = ParagraphStyle("big", parent=ttl, fontSize=16, leading=20, alignment=TA_CENTER, spaceBefore=4, spaceAfter=3, textTransform="uppercase")
+    sub = ParagraphStyle("sub", parent=S["small"], alignment=TA_CENTER, fontName="Helvetica-Oblique")
+    buf = io.BytesIO()
+    doc, deco = _doc(buf, title, title)
+    story = [Paragraph(_c(title), big)]
+    if subtitle:
+        story.append(Paragraph(_c(subtitle), sub))
+    story += [HRFlowable(width="100%", thickness=1.2, color=BURGUNDY, spaceBefore=4, spaceAfter=10)]
+    for blk in contract_engine.render_blocks(body):
+        k = blk[0]
+        if k == "blank":
+            story.append(Spacer(1, 3))
+        elif k == "title":
+            story.append(Paragraph(_c(blk[1]), ttl))
+        elif k == "head":
+            lead = ("%s. %s" % (blk[1], blk[2])).strip()
+            story.append(Paragraph("<b>%s</b>%s" % (_c(lead), (" " + _c(blk[3])) if blk[3] else ""), head))
+        else:
+            story.append(Paragraph(_c(blk[1]), just))
+    names = [x for x in (parties or []) if x] or (["Party A", "Party B"] if en else ["Partie A", "Partie B"])
+    cells = []
+    for nm in names[:6]:
+        cells.append([Paragraph("<b>%s</b>" % _c(nm), S["base"]), Spacer(1, 30), HRFlowable(width="85%", thickness=0.6, color=INK, hAlign="LEFT"),
+                      Paragraph("Signature / Date", S["small"])])
+    rows = [cells[i:i + 2] for i in range(0, len(cells), 2)]
+    for r in rows:
+        if len(r) == 1:
+            r.append("")
+    tbl = Table(rows, colWidths=[85 * mm, 85 * mm])
+    tbl.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("BOTTOMPADDING", (0, 0), (-1, -1), 14)]))
+    story += [Spacer(1, 16), KeepTogether([Paragraph(_c("Made in as many originals as there are parties, on ____ / ____ / ________." if en else "Fait en autant d'exemplaires que de parties, le ____ / ____ / ________."), S["small"]), Spacer(1, 6), tbl])]
     doc.build(story, onFirstPage=deco, onLaterPages=deco)
     return buf.getvalue()

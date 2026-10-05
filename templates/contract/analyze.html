@@ -34,7 +34,17 @@
           </a>
         {% endfor %}
       {% else %}
-        <p class="helptext">{{ 'No analysis yet. Your contracts stay private: only you can see them.' if lang == 'en' else 'Aucune analyse pour l\'instant. Vos contrats restent privés : vous seul pouvez les voir.' }}</p>
+        <div class="card ci-empty"><strong>{{ 'No analysis yet' if lang == 'en' else 'Aucune analyse pour l\'instant' }}</strong><p class="helptext" style="margin:6px 0 0;">{{ 'Your contracts stay private: only you can see them.' if lang == 'en' else 'Vos contrats restent privés : vous seul pouvez les voir.' }}</p></div>
+        <p class="helptext" style="display:none;">{{ 'No analysis yet. Your contracts stay private: only you can see them.' if lang == 'en' else 'Aucune analyse pour l\'instant. Vos contrats restent privés : vous seul pouvez les voir.' }}</p>
+      {% endif %}
+      {% if shared_analyses %}
+        <h3 style="margin-top:28px;">{{ 'Shared with me' if lang == 'en' else 'Partagées avec moi' }}</h3>
+        {% for h in shared_analyses %}
+          <a class="doc-row" href="{{ ci_url('analysis', aid=h['id']) }}" style="text-decoration:none;color:inherit;">
+            <span><strong>{{ h['title'] }}</strong><br><span class="helptext">{{ h['owner_name'] or h['owner_email'] }} · {{ h['created_at'][:10] }}</span></span>
+            <span class="risk-badge {{ {'eleve':'eleve','moyen':'moyen','faible':'info'}[h['overall']] }}">{{ overall_label(h['overall']) }}</span>
+          </a>
+        {% endfor %}
       {% endif %}
     </div>
   </div>

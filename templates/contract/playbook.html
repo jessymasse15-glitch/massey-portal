@@ -7,7 +7,16 @@
 </section>
 {% include "contract/_subnav.html" %}
 <section class="block" style="border-top:none;padding-top:0;">
+  {% if not is_mine %}<div class="callout" style="margin-bottom:16px;">{{ 'Shared by your team: read only. Use it from any analysis ("Check against this playbook").' if lang == 'en' else 'Partagé par votre équipe : lecture seule. Utilisez-le depuis n\'importe quelle analyse (« Confronter à ce playbook »).' }}</div>{% endif %}
+  {% if is_mine and write_teams %}
+  <form method="POST" action="{{ ci_url('playbook_team', pid=pb['id']) }}" class="inline-form" style="margin-bottom:18px;">
+    <label class="helptext" style="margin:0 8px 0 0;">{{ 'Share with a team' if lang == 'en' else 'Partager avec une équipe' }}</label>
+    <select name="team_id" style="width:auto;"><option value="">{{ 'Private (only me)' if lang == 'en' else 'Privé (moi seul)' }}</option>{% for t in write_teams %}<option value="{{ t['id'] }}" {{ 'selected' if pb['team_id'] == t['id'] }}>{{ t['name'] }}</option>{% endfor %}</select>
+    <button class="btn btn-ghost btn-sm" type="submit">{{ 'Apply' if lang == 'en' else 'Appliquer' }}</button>
+  </form>
+  {% endif %}
   <form method="POST">
+    <fieldset {{ 'disabled' if not is_mine }} style="border:0;padding:0;margin:0;min-width:0;">
     <div class="grid-2">
       <div class="form-group"><label for="name">{{ 'Name' if lang == 'en' else 'Nom' }}</label><input id="name" name="name" maxlength="80" value="{{ pb['name'] }}"></div>
       <div class="form-group"><label style="display:flex;gap:8px;align-items:center;margin-top:26px;font-weight:500;"><input type="checkbox" name="is_default" value="1" style="width:auto;" {{ 'checked' if pb['is_default'] }}> {{ 'Apply automatically to every new analysis' if lang == 'en' else 'Appliquer automatiquement à chaque nouvelle analyse' }}</label></div>
@@ -32,9 +41,10 @@
         </tr>
       {% endfor %}
       </tbody></table></div>
-    <div style="display:flex;gap:10px;margin-top:16px;"><button class="btn btn-primary" type="submit">{{ 'Save' if lang == 'en' else 'Enregistrer' }}</button>
+    </fieldset>
+    <div style="display:flex;gap:10px;margin-top:16px;">{% if is_mine %}<button class="btn btn-primary" type="submit">{{ 'Save' if lang == 'en' else 'Enregistrer' }}</button>{% endif %}
       <a class="btn btn-ghost" href="{{ ci_url('playbooks') }}">{{ 'Back' if lang == 'en' else 'Retour' }}</a></div>
   </form>
-  <form method="POST" action="{{ ci_url('playbook_delete', pid=pb['id']) }}" style="margin-top:20px;" onsubmit="return confirm('{{ 'Delete this playbook?' if lang == 'en' else 'Supprimer ce playbook ?' }}');"><button class="btn btn-danger btn-sm" type="submit">{{ 'Delete' if lang == 'en' else 'Supprimer' }}</button></form>
+  {% if is_mine %}<form method="POST" action="{{ ci_url('playbook_delete', pid=pb['id']) }}" style="margin-top:20px;" onsubmit="return confirm('{{ 'Delete this playbook?' if lang == 'en' else 'Supprimer ce playbook ?' }}');"><button class="btn btn-danger btn-sm" type="submit">{{ 'Delete' if lang == 'en' else 'Supprimer' }}</button></form>{% endif %}
 </section>
 {% endblock %}

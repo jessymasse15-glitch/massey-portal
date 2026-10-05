@@ -134,3 +134,12 @@ l'URL de consentement (`https://account-d.docusign.com/oauth/auth?response_type=
 connecté avec l'utilisateur DocuSign ; (3) tester en `demo` ; (4) passer la revue « go-live » DocuSign puis `DOCUSIGN_ENV=production`.
 Webhook Connect (facultatif) : `POST https://<site>/contract-intelligence/signature/webhook/docusign`, HMAC activé.
 Le suivi est aussi fait toutes les heures par la tâche de fond et à chaque appel de `/contract-intelligence/rappels/executer`.
+
+
+## Contract Intelligence — confiance, équipes, recherche
+
+- **Chiffrement des fichiers archivés** (Fernet). Définissez `CI_FILE_KEY` (clé Fernet) dans les variables d'environnement Render ; sinon une clé est générée dans `ci_file.key` sur le disque de données. Perdre la clé = perdre les fichiers : sauvegardez-la séparément. Le texte extrait des fichiers est conservé en base pour la recherche (indiqué sur la page « Vos données »).
+- **Suppression définitive** : page `/vos-donnees` (export ZIP + suppression sur confirmation).
+- **Relecture par un avocat** : demandes dans `/admin/relectures` (rôle expert/admin) ; le devis est saisi manuellement.
+- **Équipes** : création réservée au plan Premium (3 équipes, 15 membres) ; rôles admin/juriste/approbateur/lecteur.
+- **Recherche globale** `/recherche`, **import en lot** (20 fichiers, 5 Mo) depuis le registre, page publique `/methode`.

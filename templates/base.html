@@ -7,6 +7,7 @@
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="{{ request.url_root.rstrip('/') }}{{ request.path }}">
 {% if lang_switch_url %}<link rel="alternate" hreflang="{{ 'en' if lang=='fr' else 'fr' }}" href="{{ request.url_root.rstrip('/') }}{{ lang_switch_url }}">{% endif %}
+<script>try{var t=localStorage.getItem('mct-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
 <title>{% block title %}Massey Contracts & Tax{% endblock %}</title>
 <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16.png') }}">
 <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32.png') }}">
@@ -91,6 +92,7 @@
             <a href="{{ url_for('admin_clauses_list') }}"><b>Clauses</b></a>
             <a href="{{ url_for('admin_rules_list') }}"><b>{% if lang=='en' %}CI rules{% else %}Règles CI{% endif %}</b></a>
             <a href="{{ url_for('admin_contact_messages') }}"><b>Messages</b></a>
+            <a href="{{ url_for('ci_admin_reviews') }}"><b>{% if lang=='en' %}CI lawyer reviews{% else %}Relectures CI{% endif %}</b></a>
             {% if current_user['role'] == 'admin' %}<a href="{{ url_for('admin_users') }}"><b>{% if lang=='en' %}Users{% else %}Utilisateurs{% endif %}</b></a>{% endif %}
             {% if current_user['role'] == 'admin' %}<a href="{{ url_for('admin_settings') }}"><b>{% if lang=='en' %}Settings{% else %}Paramètres{% endif %}</b></a>{% endif %}
           </div>

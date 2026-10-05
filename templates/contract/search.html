@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% set en = lang == 'en' %}
+{% block title %}{{ 'Search' if en else 'Recherche' }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'Search your contracts' if en else 'Rechercher dans vos contrats' }}</h1>
+  <p class="lede">{{ 'Analyses, drafts, archived contracts (including the text of archived files), notes and comments.' if en else 'Analyses, brouillons, contrats archivés (y compris le texte des fichiers archivés), notes et commentaires.' }}</p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;max-width:860px;">
+  <form method="GET" class="inline-form" style="margin-bottom:22px;">
+    <input type="search" name="q" value="{{ q }}" placeholder="{{ 'A word, a name, a clause…' if en else 'Un mot, un nom, une clause…' }}" autofocus style="width:340px;max-width:100%;">
+    <button class="btn btn-primary btn-sm" type="submit">{{ 'Search' if en else 'Rechercher' }}</button>
+  </form>
+  {% if q and q|length < 2 %}<p class="helptext">{{ 'Type at least 2 characters.' if en else 'Tapez au moins 2 caractères.' }}</p>
+  {% elif q and not total %}<div class="card ci-empty"><strong>{{ 'No result' if en else 'Aucun résultat' }}</strong><p class="helptext" style="margin:6px 0 0;">{{ 'Try another word. Scanned PDFs cannot be searched.' if en else "Essayez un autre mot. Les PDF numérisés ne sont pas interrogeables." }}</p></div>{% endif %}
+  {% for key, label_fr, label_en in (('registry', 'Registre', 'Registry'), ('analyses', 'Analyses', 'Analyses'), ('drafts', 'Brouillons', 'Drafts'), ('notes', 'Notes et commentaires', 'Notes and comments')) %}
+    {% if groups[key] %}
+    <h2 style="margin-top:28px;">{{ label_en if en else label_fr }} ({{ groups[key]|length }})</h2>
+    {% for r in groups[key] %}
+      <a class="doc-row" href="{{ r.url }}" style="text-decoration:none;color:inherit;"><span><strong>{{ r.title }}</strong>{% if r.shared %} <span class="status-pill">{{ 'shared' if en else 'partagé' }}</span>{% endif %}<br><span class="helptext">{{ r.snip }}</span></span></a>
+    {% endfor %}
+    {% endif %}
+  {% endfor %}
+</section>
+{% endblock %}

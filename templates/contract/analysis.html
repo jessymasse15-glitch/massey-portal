@@ -14,6 +14,58 @@
 <section class="block" style="border-top:none;padding-top:0;">
   {{ disclaimer('analysis') }}
 
+  {% if not is_owner %}<div class="callout" style="margin-bottom:18px;">{{ 'Shared with you by' if lang == 'en' else 'Analyse partagée avec vous par' }} <strong>{{ owner_name }}</strong> — {{ ('read and notes' if lang == 'en' else 'lecture et notes') if can_note else ('read only' if lang == 'en' else 'lecture seule') }}.</div>{% endif %}
+
+  <div class="ci-toolbar">
+    <a class="btn btn-primary btn-sm" href="{{ ci_url('analysis_pdf', aid=analysis['id']) }}">{{ 'PDF report' if lang == 'en' else 'Rapport PDF' }}</a>
+    <a class="btn btn-ghost btn-sm" href="#contrat">{{ 'Annotated contract' if lang == 'en' else 'Contrat annoté' }}</a>
+    {% if is_owner %}<a class="btn btn-ghost btn-sm" href="#partage">{{ 'Share' if lang == 'en' else 'Partager' }}</a>{% endif %}
+    {% if is_owner %}<a class="btn btn-lawyer btn-sm" href="{{ ci_url('review_request') }}?ref_type=analysis&ref_id={{ analysis['id'] }}">⚖ {{ 'Have a lawyer review it — get a quote' if lang == 'en' else 'Faire relire par un avocat — obtenir un devis' }}</a>{% endif %}
+    <a class="btn btn-ghost btn-sm" href="{{ ci_url('method') }}">{{ 'How this analysis works' if lang == 'en' else 'Comment fonctionne l\'analyse' }}</a>
+  </div>
+
+  <h2 id="contrat">{{ 'Annotated contract' if lang == 'en' else 'Contrat annoté' }}</h2>
+  <p class="helptext">{{ 'Risky passages are highlighted in the text itself. Click a highlight to jump to its explanation; add a note under any section.' if lang == 'en' else 'Les passages à risque sont surlignés dans le texte. Cliquez sur un surlignage pour aller à son explication ; ajoutez une note sous n\'importe quelle section.' }}
+    <span class="hl-legend"><mark class="hl hl-eleve">{{ 'high' if lang == 'en' else 'élevé' }}</mark> <mark class="hl hl-moyen">{{ 'medium' if lang == 'en' else 'moyen' }}</mark> <mark class="hl hl-info">{{ 'note' if lang == 'en' else 'à noter' }}</mark></span></p>
+  <div class="ci-doc" id="docview">
+    {% for c in clauses %}
+      {% set cid = 'c' ~ (c.number|replace('.', '_')|replace('—', '_')|replace(' ', '_')) %}
+      <section class="ci-clause {{ ('lv-' ~ c.level) if c.level }}" id="{{ cid }}">
+        {% for ln in c.lines %}<p class="{{ 'ci-head' if ln.head }}">{% for t, fi, lv in ln.segs %}{% if fi is not none %}<a href="#f{{ fi }}" class="hl hl-{{ lv }}" title="{{ result.findings[fi].topic }}">{{ t }}</a>{% else %}{{ t }}{% endif %}{% endfor %}</p>{% endfor %}
+        {% set cn = notes.get(c.number, []) %}
+        {% if cn or can_note %}
+        <div class="ci-notes">
+          {% for n in cn %}<div class="ci-note"><strong>{{ n['author_name'] }}</strong> <span class="helptext">{{ n['created_at'][:16].replace('T', ' ') }}</span><div>{{ n['body'] }}</div></div>{% endfor %}
+          {% if can_note %}
+          <details><summary>{{ 'Add a note' if lang == 'en' else 'Ajouter une note' }}</summary>
+            <form method="POST" action="{{ ci_url('analysis_note', aid=analysis['id']) }}" data-busy>
+              <input type="hidden" name="clause" value="{{ c.number }}">
+              <textarea name="body" rows="2" maxlength="1000" required placeholder="{{ 'Your note — people this analysis is shared with are notified.' if lang == 'en' else 'Votre note — les personnes avec qui l\'analyse est partagée sont prévenues.' }}"></textarea>
+              <button class="btn btn-ghost btn-sm" type="submit" style="margin-top:6px;">{{ 'Post' if lang == 'en' else 'Publier' }}</button>
+            </form></details>
+          {% endif %}
+        </div>
+        {% endif %}
+      </section>
+    {% endfor %}
+  </div>
+  {% if unplaced %}<p class="helptext">{{ 'Some findings could not be located in the text; they are listed below.' if lang == 'en' else 'Certains constats n\'ont pas pu être localisés dans le texte ; ils figurent dans la liste ci-dessous.' }}</p>{% endif %}
+
+  {% if is_owner %}
+  <div class="card" id="partage" style="max-width:820px;margin:26px 0;">
+    <h3 style="margin-top:0;">{{ 'Share this analysis' if lang == 'en' else 'Partager cette analyse' }}</h3>
+    <form method="POST" action="{{ ci_url('analysis_share', aid=analysis['id']) }}" class="inline-form" data-busy>
+      <input type="email" name="email" placeholder="{{ 'Colleague email' if lang == 'en' else 'Courriel du collègue' }}" required style="width:250px;">
+      <select name="role" style="width:auto;"><option value="commenter">{{ 'Read and notes' if lang == 'en' else 'Lecture et notes' }}</option><option value="viewer">{{ 'Read only' if lang == 'en' else 'Lecture seule' }}</option></select>
+      <button class="btn btn-ghost btn-sm" type="submit">{{ 'Share' if lang == 'en' else 'Partager' }}</button>
+    </form>
+    {% for sh in shares %}<div class="doc-row"><span>{{ sh['email'] }} <span class="helptext">· {{ ('read and notes' if lang == 'en' else 'lecture et notes') if sh['role'] == 'commenter' else ('read only' if lang == 'en' else 'lecture seule') }}</span></span>
+      <form method="POST" action="{{ ci_url('analysis_unshare', aid=analysis['id'], shid=sh['id']) }}"><button class="btn btn-ghost btn-sm" type="submit">{{ 'Remove' if lang == 'en' else 'Retirer' }}</button></form></div>
+    {% else %}<p class="helptext">{{ 'Not shared. The person must sign in with that email address.' if lang == 'en' else 'Non partagée. La personne doit se connecter avec cette adresse courriel.' }}</p>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if is_owner %}
   <div class="ai-box" id="ia">
     <h2>{{ 'In-depth analysis' if lang == 'en' else 'Analyse approfondie' }}<span class="ai-tag">IA</span></h2>
     {% if ai %}
@@ -84,12 +136,14 @@
     {% endif %}
   </div>
 
+  {% endif %}
+
   <h2>{{ 'Points to review' if lang == 'en' else 'Points à examiner' }} ({{ result.findings|length }})</h2>
   {% if not result.findings %}
     <p class="helptext">{{ 'No risky wording pattern detected. This does not mean the contract is balanced.' if lang == 'en' else 'Aucune formulation à risque détectée. Cela ne signifie pas que le contrat soit équilibré.' }}</p>
   {% endif %}
   {% for f in result.findings %}
-    <div class="finding {{ f.level }}">
+    <div class="finding {{ f.level }}" id="f{{ loop.index0 }}">
       <div class="head"><h4>{{ f.topic }}</h4>{{ level_pill(f.level) }}</div>
       <div class="where">{{ 'Section' if lang == 'en' else 'Section' }} {{ f.clause_number }}{% if f.clause_title %} — {{ f.clause_title }}{% endif %}</div>
       <blockquote>{{ f.excerpt }}</blockquote>
@@ -114,6 +168,12 @@
   {% endfor %}
 
 
+  {% if used_sources %}
+  <h2 style="margin-top:40px;">{{ 'Legal sources used in this analysis' if lang == 'en' else 'Sources juridiques utilisées dans cette analyse' }}</h2>
+  <div class="source-chips">{% for r in used_sources %}<span class="source-chip" title="{{ r.kind }}">{{ r.title }}{% if r.reference %} — {{ r.reference }}{% endif %}</span>{% endfor %}</div>
+  {% endif %}
+
+  {% if is_owner %}
   <h2 style="margin-top:40px;" id="parties">{{ 'Obligations by party' if lang == 'en' else 'Obligations par partie' }}</h2>
   <p class="helptext">{{ 'Who must do what, detected from phrases like "shall / must / undertakes to". The party is guessed from the words before the verb: check each line.' if lang == 'en' else 'Qui doit faire quoi, repéré à partir de formulations comme « doit / s\'engage à / est tenu de ». La partie est devinée d\'après les mots qui précèdent le verbe : vérifiez chaque ligne.' }}</p>
   {% if party_obligations %}
@@ -163,13 +223,14 @@
   {% endif %}
 
   {{ workflow_box('analysis', analysis['id']) }}
+  {% endif %}
 
   <div style="margin-top:40px;display:flex;gap:12px;flex-wrap:wrap;">
     <a class="btn btn-primary" href="{{ ci_url('analysis_pdf', aid=analysis['id']) }}">{{ 'Download the PDF report' if lang == 'en' else 'Télécharger le rapport PDF' }}</a>
     <a class="btn btn-ghost" href="{{ ci_url('analyze') }}">{{ '← All analyses' if lang == 'en' else '← Toutes les analyses' }}</a>
-    <form method="POST" action="{{ ci_url('analysis_delete', aid=analysis['id']) }}" onsubmit="return confirm('{{ 'Delete this analysis and its text?' if lang == 'en' else 'Supprimer cette analyse et son texte ?' }}');">
+    {% if is_owner %}<form method="POST" action="{{ ci_url('analysis_delete', aid=analysis['id']) }}" onsubmit="return confirm('{{ 'Delete this analysis and its text?' if lang == 'en' else 'Supprimer cette analyse et son texte ?' }}');">
       <button class="btn btn-danger btn-sm" type="submit">{{ 'Delete' if lang == 'en' else 'Supprimer' }}</button>
-    </form>
+    </form>{% endif %}
   </div>
 </section>
 {% endblock %}

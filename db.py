@@ -561,6 +561,110 @@ CREATE TABLE IF NOT EXISTS ci_registry (
     updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS ci_shares (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    registry_id INTEGER NOT NULL REFERENCES ci_registry(id) ON DELETE CASCADE,
+    owner_id INTEGER NOT NULL,
+    email TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'viewer',
+    created_at TEXT NOT NULL,
+    UNIQUE(registry_id, email)
+);
+
+CREATE TABLE IF NOT EXISTS ci_comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    registry_id INTEGER NOT NULL REFERENCES ci_registry(id) ON DELETE CASCADE,
+    author_id INTEGER NOT NULL,
+    author_name TEXT NOT NULL,
+    body TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ci_activity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    registry_id INTEGER NOT NULL,
+    actor_id INTEGER,
+    actor_label TEXT NOT NULL,
+    action TEXT NOT NULL,
+    detail TEXT,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_ci_activity_reg ON ci_activity(registry_id, id);
+CREATE INDEX IF NOT EXISTS idx_ci_shares_email ON ci_shares(email);
+
+CREATE TABLE IF NOT EXISTS ci_clause_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    analysis_id INTEGER NOT NULL REFERENCES contract_analyses(id) ON DELETE CASCADE,
+    clause_number TEXT NOT NULL,
+    author_id INTEGER NOT NULL,
+    author_name TEXT NOT NULL,
+    body TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_ci_notes_a ON ci_clause_notes(analysis_id);
+
+CREATE TABLE IF NOT EXISTS ci_analysis_shares (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    analysis_id INTEGER NOT NULL REFERENCES contract_analyses(id) ON DELETE CASCADE,
+    owner_id INTEGER NOT NULL,
+    email TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'viewer',
+    created_at TEXT NOT NULL,
+    UNIQUE(analysis_id, email)
+);
+
+CREATE TABLE IF NOT EXISTS ci_review_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    ref_type TEXT NOT NULL,
+    ref_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    scope TEXT,
+    urgency TEXT NOT NULL DEFAULT 'normal',
+    message TEXT,
+    phone TEXT,
+    words INTEGER,
+    status TEXT NOT NULL DEFAULT 'new',
+    quote_amount TEXT,
+    quote_note TEXT,
+    quoted_at TEXT,
+    decided_at TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ci_teams (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    owner_id INTEGER NOT NULL REFERENCES users(id),
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS ci_team_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_id INTEGER NOT NULL REFERENCES ci_teams(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'lecteur',
+    created_at TEXT NOT NULL,
+    UNIQUE(team_id, email)
+);
+CREATE INDEX IF NOT EXISTS idx_ci_team_members_email ON ci_team_members(email);
+CREATE TABLE IF NOT EXISTS ci_team_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_id INTEGER NOT NULL REFERENCES ci_teams(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    body_text TEXT NOT NULL,
+    created_by INTEGER NOT NULL,
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS ci_team_signoffs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    registry_id INTEGER NOT NULL REFERENCES ci_registry(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL,
+    user_name TEXT NOT NULL,
+    decision TEXT NOT NULL,
+    comment TEXT,
+    created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS contract_usage (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL REFERENCES users(id),
@@ -988,6 +1092,18 @@ def init_db():
         ("method", "TEXT NOT NULL DEFAULT 'simple'"),
         ("provider_ref", "TEXT"),
         ("stakes", "TEXT"),
+        ("final_sha256", "TEXT"),
+        ("cert_path", "TEXT"),
+        ("cert_sha256", "TEXT"),
+    ])
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_ci_sig_final ON ci_signature_requests(final_sha256)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_ci_sig_body ON ci_signature_requests(body_sha256)")
+    _ensure_columns(conn, "ci_registry", [
+        ("file_text", "TEXT"),
+        ("team_id", "INTEGER"),
+    ])
+    _ensure_columns(conn, "ci_playbooks", [
+        ("team_id", "INTEGER"),
     ])
     _ensure_columns(conn, "ci_negotiations", [
         ("ref_type", "TEXT"),

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Demandes de relecture — Administration{% endblock %}
+{% block content %}
+{% if detail %}
+  {% set r = detail %}
+  <h1>Relecture : {{ r['title'] }}</h1>
+  <p><a href="{{ url_for('ci_admin_reviews') }}">← Toutes les demandes</a></p>
+  <div class="card">
+    <p><b>{{ r['full_name'] }}</b> — <a href="mailto:{{ r['email'] }}">{{ r['email'] }}</a>{% if r['phone'] %} · {{ r['phone'] }}{% endif %}</p>
+    <p>Portée : {{ scope_labels.get(r['scope'], r['scope']) }} · urgence : {{ r['urgency'] }} · {{ r['words'] }} mots · statut : <b>{{ status_labels[r['status']] }}</b></p>
+    {% if r['message'] %}<p style="white-space:pre-wrap;">{{ r['message'] }}</p>{% endif %}
+    {% if r['quote_amount'] %}<div class="callout">Devis envoyé : <b>{{ r['quote_amount'] }}</b>{% if r['quote_note'] %}<br>{{ r['quote_note'] }}{% endif %}</div>{% endif %}
+    <form method="POST" class="inline-form" style="margin-top:12px;">
+      <input type="hidden" name="action" value="quote">
+      <input name="amount" placeholder="Montant, ex. 250 USD" value="{{ r['quote_amount'] or '' }}" style="width:200px;" required>
+      <input name="note" placeholder="Détail du devis (portée, délai)" value="{{ r['quote_note'] or '' }}" style="width:340px;">
+      <button class="btn btn-primary btn-sm" type="submit">{{ 'Renvoyer le devis' if r['quote_amount'] else 'Envoyer le devis' }}</button>
+    </form>
+    {% if r['status'] == 'accepted' %}<form method="POST" style="margin-top:10px;"><input type="hidden" name="action" value="done"><button class="btn btn-ghost btn-sm" type="submit">Marquer la relecture comme terminée</button></form>{% endif %}
+  </div>
+  <h3>Texte du contrat</h3>
+  <div class="diff-view"><pre style="white-space:pre-wrap;font-family:inherit;margin:0;font-size:.9rem;">{{ text }}</pre></div>
+{% else %}
+  <h1>Demandes de relecture</h1>
+  {% for r in reviews %}
+    <a class="doc-row" href="{{ url_for('ci_admin_review', rid=r['id']) }}" style="text-decoration:none;color:inherit;">
+      <span><strong>{{ r['title'] }}</strong><br><span class="helptext">{{ r['full_name'] }} · {{ scope_labels.get(r['scope'], r['scope']) }} · {{ r['created_at'][:10] }}{% if r['urgency'] == 'urgent' %} · ⚠ urgent{% endif %}</span></span>
+      <span class="status-pill {{ 'done' if r['status'] in ('accepted','done') else '' }}">{{ status_labels[r['status']] }}</span>
+    </a>
+  {% else %}<p class="helptext">Aucune demande pour l'instant.</p>{% endfor %}
+{% endif %}
+{% endblock %}

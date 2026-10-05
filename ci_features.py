@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 from flask import abort, flash, jsonify, redirect, render_template, request, send_file, url_for, g
 from werkzeug.utils import secure_filename
 
+import ci_crypto
 import ci_reminders
 import notifications
 
@@ -37,6 +38,16 @@ def init(app_module):
     _register_dashboard()
     import ci_extras
     ci_extras.init(m, sys.modules[__name__])
+    import ci_team
+    ci_team.init(m, sys.modules[__name__])
+    import ci_review
+    ci_review.init(m, sys.modules[__name__])
+    import ci_trust
+    ci_trust.init(m, sys.modules[__name__])
+    import ci_teams
+    ci_teams.init(m, sys.modules[__name__])
+    import ci_tools
+    ci_tools.init(m, sys.modules[__name__])
     _start_reminder_thread()
 
 
@@ -302,6 +313,9 @@ def _register_approvals():
         approval = conn.execute("SELECT * FROM ci_approvals WHERE id=?", (aid,)).fetchone()
         first = conn.execute("SELECT * FROM ci_approval_steps WHERE approval_id=? ORDER BY step_order LIMIT 1", (aid,)).fetchone()
         sent = _activate_step(conn, approval, first, u["full_name"])
+        import ci_team
+        ci_team.log_ref(conn, ref_type, ref_id, u, "approval_started", ", ".join(e for _n, e in people))
+        conn.commit()
         conn.close()
         m.dbm.log_activity(u["id"], "ci_approval_created", "approbation #%s" % aid)
         flash(m._T("Circuit d'approbation lancé. Le premier approbateur a été prévenu par courriel.",
@@ -385,6 +399,8 @@ def _register_approvals():
                 flash(m._T("Un motif est requis pour refuser.", "A reason is required to reject."), "error")
             else:
                 conn.execute("UPDATE ci_approval_steps SET status=?, comment=?, decided_at=? WHERE id=?", (decision, comment, m.dbm.now(), step["id"]))
+                import ci_team
+                ci_team.log_ref(conn, approval["ref_type"], approval["ref_id"], None, "approval_" + decision, step["approver_name"] or step["approver_email"])
                 en = lang == "en"
                 if decision == "rejected":
                     conn.execute("UPDATE ci_approvals SET status='rejected', decided_at=? WHERE id=?", (m.dbm.now(), approval["id"]))
@@ -517,6 +533,8 @@ def _register_negotiations():
         conn.execute("INSERT INTO ci_neg_versions (negotiation_id, version_no, author, body_text, note, created_at) VALUES (?,?,?,?,?,?)",
                      (nid, 1, "owner", text, (request.form.get("note") or "").strip()[:500], now))
         m._ci_record_usage(conn, u, "negotiation")
+        import ci_team
+        ci_team.log_ref(conn, ref_type, ref_id, u, "negotiation_started", email)
         conn.commit()
         neg = conn.execute("SELECT * FROM ci_negotiations WHERE id=?", (nid,)).fetchone()
         conn.close()
@@ -560,6 +578,11 @@ def _register_negotiations():
         if neg["status"] != "open" or versions[-1]["author"] == side:
             return False
         conn.execute("UPDATE ci_negotiations SET status='agreed', accepted_by=?, updated_at=? WHERE id=?", (side, m.dbm.now(), neg["id"]))
+        try:
+            import ci_team
+            ci_team.log_ref(conn, neg["ref_type"], neg["ref_id"], owner if side == "owner" else None, "negotiation_agreed", "" if side == "owner" else neg["counterparty_email"])
+        except Exception:  # noqa: BLE001
+            pass
         conn.commit()
         _other_side_notice(neg, owner, side, "accept")
         return True
@@ -665,8 +688,10 @@ def _topic_choices(conn):
     return m.contract_engine.topic_catalog(custom), labels
 
 
-def load_playbook(conn, user_id, pid):
+def load_playbook(conn, user_id, pid, email=None):
     pb = conn.execute("SELECT * FROM ci_playbooks WHERE id=? AND user_id=?", (pid, user_id)).fetchone()
+    if not pb and email:   # playbook partagé par une équipe dont je suis membre
+        pb = conn.execute("SELECT p.* FROM ci_playbooks p JOIN ci_team_members tm ON tm.team_id=p.team_id WHERE p.id=? AND lower(tm.email)=?", (pid, email.lower())).fetchone()
     if not pb:
         return None
     pos = conn.execute("SELECT topic_id, stance, note FROM ci_playbook_positions WHERE playbook_id=? ORDER BY id", (pid,)).fetchall()
@@ -727,8 +752,10 @@ def _register_playbooks():
                 conn.close()
                 return m._ci_redirect("playbook", pid=pid)
         rows = conn.execute("SELECT p.*, (SELECT COUNT(*) FROM ci_playbook_positions x WHERE x.playbook_id=p.id) AS n FROM ci_playbooks p WHERE user_id=? ORDER BY id", (u["id"],)).fetchall()
+        team_rows = conn.execute("SELECT p.*, t.name AS team_name, (SELECT COUNT(*) FROM ci_playbook_positions x WHERE x.playbook_id=p.id) AS n FROM ci_playbooks p "
+                                 "JOIN ci_team_members tm ON tm.team_id=p.team_id JOIN ci_teams t ON t.id=p.team_id WHERE lower(tm.email)=? AND p.user_id<>? ORDER BY p.name", ((u["email"] or "").lower(), u["id"])).fetchall()
         conn.close()
-        return m._ci_page("playbooks", **m._ci_ctx("playbooks", playbooks=rows, cap=cap, count=count))
+        return m._ci_page("playbooks", **m._ci_ctx("playbooks", playbooks=rows, team_playbooks=team_rows, cap=cap, count=count))
 
     @m.ci_route("playbook", "/playbooks/<int:pid>", "/playbooks/<int:pid>", ("GET", "POST"))
     def ci_playbook(pid):
@@ -737,11 +764,17 @@ def _register_playbooks():
             return m._ci_need_login()
         conn = m.dbm.get_db()
         pb = conn.execute("SELECT * FROM ci_playbooks WHERE id=? AND user_id=?", (pid, u["id"])).fetchone()
+        is_mine = bool(pb)
+        if not pb:
+            pb = conn.execute("SELECT p.* FROM ci_playbooks p JOIN ci_team_members tm ON tm.team_id=p.team_id WHERE p.id=? AND lower(tm.email)=?", (pid, (u["email"] or "").lower())).fetchone()
         if not pb:
             conn.close()
             abort(404)
         topics, _labels = _topic_choices(conn)
         valid = {t for t, _ in topics}
+        if request.method == "POST" and not is_mine:
+            conn.close()
+            abort(403)
         if request.method == "POST":
             def _int(v):
                 v = (v or "").strip()
@@ -763,8 +796,10 @@ def _register_playbooks():
             conn.close()
             return m._ci_redirect("playbook", pid=pid)
         positions = {r["topic_id"]: r for r in conn.execute("SELECT * FROM ci_playbook_positions WHERE playbook_id=?", (pid,)).fetchall()}
+        import ci_teams
+        write_teams = conn.execute("SELECT t.* FROM ci_teams t JOIN ci_team_members tm ON tm.team_id=t.id WHERE lower(tm.email)=? AND tm.role IN ('admin','juriste') ORDER BY t.name", ((u["email"] or "").lower(),)).fetchall() if is_mine else []
         conn.close()
-        return m._ci_page("playbook", **m._ci_ctx("playbooks", pb=pb, topics=topics, positions=positions))
+        return m._ci_page("playbook", **m._ci_ctx("playbooks", pb=pb, topics=topics, positions=positions, is_mine=is_mine, write_teams=write_teams))
 
     @m.ci_route("playbook_delete", "/playbooks/<int:pid>/supprimer", "/playbooks/<int:pid>/delete", ("POST",))
     def ci_playbook_delete(pid):
@@ -790,7 +825,7 @@ def _register_playbooks():
             pid = int(request.form.get("playbook_id", "0"))
         except ValueError:
             pid = 0
-        pb = load_playbook(conn, u["id"], pid)
+        pb = load_playbook(conn, u["id"], pid, u["email"])
         if not pb:
             conn.close()
             flash(m._T("Playbook introuvable.", "Playbook not found."), "error")
@@ -807,6 +842,14 @@ def _register_playbooks():
 # ---------------------------------------------------------------------------
 
 REGISTRY_EXT = {"pdf", "docx", "doc", "txt", "png", "jpg", "jpeg"}
+
+
+def index_text(data, name):
+    """Texte extrait d'un fichier archivé, pour la recherche (vide si illisible ou image)."""
+    try:
+        return m.contract_engine.extract_text(data, name, max_chars=60000)
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 def _registry_dir(uid):
@@ -851,8 +894,10 @@ def _register_registry():
                 now = m.dbm.now()
                 cur = conn.execute("INSERT INTO ci_registry (user_id, title, counterparty, status, created_at, updated_at) VALUES (?,?,?,?,?,?)",
                                    (u["id"], title, (request.form.get("counterparty") or "").strip()[:120], "brouillon", now, now))
-                conn.commit()
                 rid = cur.lastrowid
+                import ci_team
+                ci_team.log(conn, rid, u, "created")
+                conn.commit()
                 conn.close()
                 return m._ci_redirect("registry_entry", rid=rid)
         q = (request.args.get("q") or "").strip()
@@ -870,8 +915,10 @@ def _register_registry():
         params.append(1 if show_archived else 0)
         sql += " ORDER BY (end_date IS NULL), end_date, id DESC"
         rows = conn.execute(sql, params).fetchall()
+        import ci_team
+        shared = ci_team.shared_with_me(conn, u)
         conn.close()
-        return m._ci_page("registry", **m._ci_ctx("registry", entries=rows, status_labels=statuses(), q=q, status=status,
+        return m._ci_page("registry", **m._ci_ctx("registry", entries=rows, shared=shared, status_labels=statuses(), q=q, status=status,
                                                   show_archived=show_archived, cap=cap, count=count, can_add=ok,
                                                   today=datetime.utcnow().date().isoformat()))
 
@@ -895,8 +942,10 @@ def _register_registry():
         now = m.dbm.now()
         cur = conn.execute("INSERT INTO ci_registry (user_id, title, status, analysis_id, draft_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)",
                            (u["id"], title, "brouillon", ref_id if ref_type == "analysis" else None, ref_id if ref_type == "draft" else None, now, now))
-        conn.commit()
         rid = cur.lastrowid
+        import ci_team
+        ci_team.log(conn, rid, u, "created")
+        conn.commit()
         conn.close()
         flash(m._T("Ajouté au registre. Complétez la fiche.", "Added to the registry. Complete the record."), "success")
         return m._ci_redirect("registry_entry", rid=rid)
@@ -907,7 +956,9 @@ def _register_registry():
         if not u:
             return m._ci_need_login()
         conn = m.dbm.get_db()
-        row = _reg_row(conn, u, rid)
+        import ci_team
+        row, role = ci_team.reg_access(conn, u, rid, "editor" if request.method == "POST" else "read")
+        owner = u if role == "owner" else conn.execute("SELECT * FROM users WHERE id=?", (row["user_id"],)).fetchone()
         if request.method == "POST":
             f = request.form
             status = f.get("status") if f.get("status") in statuses() else row["status"]
@@ -928,17 +979,15 @@ def _register_registry():
                     data = upload.read()
                     digest = hashlib.sha256(data).hexdigest()
                     name = secure_filename(upload.filename) or ("contrat." + ext)
-                    path = os.path.join(_registry_dir(u["id"]), "%s_%s" % (digest[:16], name))
-                    with open(path, "wb") as fh:
-                        fh.write(data)
+                    path = os.path.join(_registry_dir(row["user_id"]), "%s_%s" % (digest[:16], name))
+                    ci_crypto.write(path, data)
                     if row["file_path"] and row["file_path"] != path and os.path.exists(row["file_path"]):
-                        try:
-                            os.remove(row["file_path"])
-                        except OSError:
-                            pass
-                    conn.execute("UPDATE ci_registry SET file_name=?, file_path=?, file_sha256=? WHERE id=?", (name, path, digest, rid))
+                        ci_crypto.erase(row["file_path"])
+                    conn.execute("UPDATE ci_registry SET file_name=?, file_path=?, file_sha256=?, file_text=? WHERE id=?", (name, path, digest, index_text(data, name), rid))
                     msgs.append(m._T("Fichier archivé (empreinte SHA-256 enregistrée).", "File archived (SHA-256 fingerprint stored)."))
-            if f.get("track_end") and end:
+                    ci_team.log(conn, rid, u, "file", name)
+            ci_team.log(conn, rid, u, "edited")
+            if f.get("track_end") and end and role == "owner":
                 label = (m._T("Fin du contrat : ", "End of contract: ") + title)[:200]
                 dup = conn.execute("SELECT 1 FROM contract_obligations WHERE user_id=? AND label=? AND due_date=?", (u["id"], label, end)).fetchone()
                 if not dup:
@@ -950,17 +999,21 @@ def _register_registry():
             flash(" ".join(msgs), "success")
             return m._ci_redirect("registry_entry", rid=rid)
         links = {}
-        if row["analysis_id"]:
+        if row["analysis_id"] and role == "owner":
             links["analysis"] = m.ci_url("analysis", aid=row["analysis_id"])
-        if row["draft_id"]:
+        if row["draft_id"] and role == "owner":
             links["draft"] = m.ci_url("draft", did=row["draft_id"])
         import ci_extras
-        sigctx = ci_extras.registry_signature_context(conn, u, row)
-        flow = _stage_state(conn, u, row)
-        ref = ("analysis", row["analysis_id"]) if row["analysis_id"] else (("draft", row["draft_id"]) if row["draft_id"] else None)
+        sigctx = ci_extras.registry_signature_context(conn, owner, row)
+        flow = _stage_state(conn, owner, row)
+        if role != "owner":
+            ci_team.log_view(conn, rid, u)
+        team = ci_team.entry_context(conn, u, row, role)
+        ref = None if role != "owner" else ("analysis", row["analysis_id"]) if row["analysis_id"] else (("draft", row["draft_id"]) if row["draft_id"] else None)
         conn.close()
         return m._ci_page("registry_entry", **m._ci_ctx("registry", e=row, status_labels=statuses(), links=links, flow=flow, ref=ref,
-                                                        neg_status=NEG_STATUS[g.lang], **sigctx,
+                                                        neg_status=NEG_STATUS[g.lang], **sigctx, **team, can_edit=role in ("owner", "editor"),
+                                                        has_text=bool(sigctx["sig_has_text"]),
                                                         appr_status={"pending": m._T("en cours", "in progress"), "approved": m._T("approuvée", "approved"),
                                                                      "rejected": m._T("refusée", "rejected"), "cancelled": m._T("annulée", "cancelled")}))
 
@@ -970,11 +1023,12 @@ def _register_registry():
         if not u:
             return m._ci_need_login()
         conn = m.dbm.get_db()
-        row = _reg_row(conn, u, rid)
+        import ci_team
+        row, _role = ci_team.reg_access(conn, u, rid, "read")
         conn.close()
         if not row["file_path"] or not os.path.exists(row["file_path"]):
             abort(404)
-        return send_file(row["file_path"], as_attachment=True, download_name=row["file_name"] or "contrat")
+        return ci_crypto.send(row["file_path"], row["file_name"] or "contrat")
 
     @m.ci_route("registry_archive", "/registre/<int:rid>/archiver", "/registry/<int:rid>/archive", ("POST",))
     def ci_registry_archive(rid):
@@ -983,6 +1037,8 @@ def _register_registry():
             return m._ci_need_login()
         conn = m.dbm.get_db()
         row = _reg_row(conn, u, rid)
+        import ci_team
+        ci_team.log(conn, rid, u, "unarchived" if row["archived"] else "archived")
         conn.execute("UPDATE ci_registry SET archived=?, updated_at=? WHERE id=?", (0 if row["archived"] else 1, m.dbm.now(), rid))
         conn.commit()
         conn.close()
@@ -996,10 +1052,7 @@ def _register_registry():
         conn = m.dbm.get_db()
         row = _reg_row(conn, u, rid)
         if row["file_path"] and os.path.exists(row["file_path"]):
-            try:
-                os.remove(row["file_path"])
-            except OSError:
-                pass
+            ci_crypto.erase(row["file_path"])
         conn.execute("DELETE FROM ci_registry WHERE id=? AND user_id=?", (rid, u["id"]))
         conn.commit()
         conn.close()
@@ -1272,9 +1325,11 @@ def _register_dashboard():
         for d_ in drafts:
             recent.append({"kind": m._T("Brouillon", "Draft"), "title": d_["title"], "level": None, "url": m.ci_url("draft", did=d_["id"]), "date": d_["created_at"][:10]})
         recent.sort(key=lambda x: x["date"], reverse=True)
+        import ci_team
+        activity = ci_team.home_activity(conn, u)
         conn.close()
         smtp_ok = notifications.is_configured()
-        return m._ci_page("home", **m._ci_ctx("home", todo=todo[:12], todo_more=max(0, len(todo) - 12), recent=recent[:6], empty=empty,
+        return m._ci_page("home", **m._ci_ctx("home", todo=todo[:12], todo_more=max(0, len(todo) - 12), recent=recent[:6], empty=empty, activity=activity,
                                               kpi={"analyses": len(analyses), "high": high, "active": len(active), "due30": due30,
                                                    "approvals": pending_appr, "negotiations": open_neg},
                                               reminders_on=bool(pref["enabled"]) if pref else True, smtp_ok=smtp_ok, user=u))

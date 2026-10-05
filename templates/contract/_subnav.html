@@ -9,4 +9,87 @@
   <a href="{{ ci_url('deadlines') }}" class="{{ 'active' if ci_active == 'deadlines' }}">{{ 'Deadlines' if lang == 'en' else 'Échéances' }}</a>
   <a href="{{ ci_url('registry') }}" class="{{ 'active' if ci_active == 'registry' }}">{{ 'Registry' if lang == 'en' else 'Registre' }}</a>
   <a href="{{ ci_url('playbooks') }}" class="{{ 'active' if ci_active == 'playbooks' }}">Playbooks</a>
+  <a href="{{ ci_url('teams') }}" class="{{ 'active' if ci_active == 'teams' }}">{{ 'Teams' if lang == 'en' else 'Équipes' }}</a>
+  <a href="{{ ci_url('trust') }}" class="{{ 'active' if ci_active == 'trust' }}">{{ 'Your data' if lang == 'en' else 'Vos données' }}</a>
 </nav>
+<div class="ci-tools">
+  <form class="ci-search" action="{{ ci_url('search') }}" method="GET" role="search"><input type="search" name="q" id="ci-q" placeholder="{{ 'Search contracts  ( / )' if lang == 'en' else 'Rechercher un contrat  ( / )' }}" aria-label="{{ 'Search contracts' if lang == 'en' else 'Rechercher dans les contrats' }}" minlength="2"></form>
+  <button type="button" class="ci-icon-btn" id="ci-theme" aria-label="{{ 'Dark mode' if lang == 'en' else 'Mode sombre' }}" title="{{ 'Dark / light mode' if lang == 'en' else 'Mode sombre / clair' }}">◐</button>
+  <button type="button" class="ci-icon-btn" id="ci-keys" aria-label="{{ 'Keyboard shortcuts' if lang == 'en' else 'Raccourcis clavier' }}" title="{{ 'Keyboard shortcuts (?)' if lang == 'en' else 'Raccourcis clavier (?)' }}">⌨</button>
+</div>
+<dialog id="ci-keys-dlg" class="ci-dlg"><h3 style="margin-top:0;">{{ 'Keyboard shortcuts' if lang == 'en' else 'Raccourcis clavier' }}</h3>
+  <table class="ci-keytable">
+    <tr><td><kbd>/</kbd></td><td>{{ 'Search' if lang == 'en' else 'Rechercher' }}</td></tr>
+    <tr><td><kbd>g</kbd> <kbd>h</kbd></td><td>{{ 'My workspace' if lang == 'en' else 'Mon espace' }}</td></tr>
+    <tr><td><kbd>g</kbd> <kbd>a</kbd></td><td>{{ 'Analyse' if lang == 'en' else 'Analyser' }}</td></tr>
+    <tr><td><kbd>g</kbd> <kbd>r</kbd></td><td>{{ 'Registry' if lang == 'en' else 'Registre' }}</td></tr>
+    <tr><td><kbd>g</kbd> <kbd>d</kbd></td><td>{{ 'Deadlines' if lang == 'en' else 'Échéances' }}</td></tr>
+    <tr><td><kbd>g</kbd> <kbd>s</kbd></td><td>Signatures</td></tr>
+    <tr><td><kbd>d</kbd></td><td>{{ 'Dark / light mode' if lang == 'en' else 'Mode sombre / clair' }}</td></tr>
+    <tr><td><kbd>?</kbd></td><td>{{ 'This help' if lang == 'en' else 'Cette aide' }}</td></tr>
+  </table>
+  <form method="dialog"><button class="btn btn-ghost btn-sm">{{ 'Close' if lang == 'en' else 'Fermer' }}</button></form></dialog>
+<script>
+(function(){
+  var go={h:"{{ ci_url('home') }}",a:"{{ ci_url('analyze') }}",r:"{{ ci_url('registry') }}",d:"{{ ci_url('deadlines') }}",s:"{{ ci_url('signatures') }}"};
+  function theme(t){try{document.documentElement.setAttribute('data-theme',t);localStorage.setItem('mct-theme',t);}catch(e){document.documentElement.setAttribute('data-theme',t);}}
+  function toggle(){theme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');}
+  var tb=document.getElementById('ci-theme'); if(tb) tb.addEventListener('click',toggle);
+  var dlg=document.getElementById('ci-keys-dlg'), kb=document.getElementById('ci-keys');
+  function help(){ if(dlg && dlg.showModal && !dlg.open) dlg.showModal(); }
+  if(kb) kb.addEventListener('click',help);
+  var pending=false, timer=null;
+  document.addEventListener('keydown',function(e){
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var t=e.target, tag=(t&&t.tagName)||''; if(/INPUT|TEXTAREA|SELECT/.test(tag)||(t&&t.isContentEditable)) return;
+    if(pending){ pending=false; clearTimeout(timer); if(go[e.key]){e.preventDefault(); location.href=go[e.key];} return; }
+    if(e.key==='/'){e.preventDefault(); var q=document.getElementById('ci-q'); if(q){q.focus();q.select();}}
+    else if(e.key==='g'){pending=true; timer=setTimeout(function(){pending=false;},1200);}
+    else if(e.key==='d'){toggle();}
+    else if(e.key==='?'){e.preventDefault(); help();}
+  });
+})();
+</script>
+<script>
+(function(){
+  document.addEventListener('submit', function(ev){
+    var f = ev.target;
+    if (!f.hasAttribute || !f.hasAttribute('data-busy') || ev.defaultPrevented) return;
+    var b = f.querySelector('button[type=submit]');
+    if (!b || b.disabled) return;
+    setTimeout(function(){
+      b.disabled = true; b.classList.add('is-busy');
+      b.setAttribute('data-label', b.textContent); b.textContent = '…';
+    }, 0);
+    setTimeout(function(){ if (b.getAttribute('data-label')) { b.disabled = false; b.classList.remove('is-busy'); b.textContent = b.getAttribute('data-label'); } }, 15000);
+  });
+  window.addEventListener('pageshow', function(e){ if (e.persisted) document.querySelectorAll('button.is-busy').forEach(function(b){ b.disabled=false; b.classList.remove('is-busy'); b.textContent=b.getAttribute('data-label')||b.textContent; }); });
+})();
+</script>
+<div id="ci-preview-tpl" hidden data-lang="{{ lang }}" data-url="{{ url_for('ci_preview_en' if lang == 'en' else 'ci_preview') }}"></div>
+<script>
+(function(){
+  var cfg=document.getElementById('ci-preview-tpl'); if(!cfg) return;
+  var en=cfg.getAttribute('data-lang')==='en', url=cfg.getAttribute('data-url');
+  document.querySelectorAll('input[type=file][accept*=".pdf"]').forEach(function(inp){
+    if(inp.closest('form') && inp.closest('form').getAttribute('data-nopreview')!==null) return;
+    var box=document.createElement('div'); box.className='ci-preview'; box.hidden=true; inp.parentNode.appendChild(box);
+    inp.addEventListener('change', function(){
+      var f=inp.files&&inp.files[0]; box.innerHTML=''; if(!f){box.hidden=true;return;}
+      box.hidden=false; var head=document.createElement('div'); head.className='ci-preview-head';
+      head.textContent=(en?'Preview — ':'Aperçu — ')+f.name; box.appendChild(head);
+      var ext=(f.name.split('.').pop()||'').toLowerCase();
+      if(ext==='pdf'){
+        var fr=document.createElement('iframe'); fr.className='ci-preview-pdf'; fr.title=f.name; fr.src=URL.createObjectURL(f); box.appendChild(fr);
+      }
+      var info=document.createElement('div'); info.className='helptext'; info.textContent=en?'Reading the text…':'Lecture du texte…'; box.appendChild(info);
+      var fd=new FormData(); fd.append('file',f);
+      fetch(url,{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json();}).then(function(d){
+        if(!d.ok){info.textContent=d.error||(en?'Preview unavailable.':'Aperçu indisponible.');info.className='callout';return;}
+        info.textContent=d.words+(en?' words · ':' mots · ')+d.clauses+(en?' sections detected — this extracted text is what will be analysed.':' sections détectées — ce texte extrait est celui qui sera analysé.');
+        if(ext!=='pdf'){var pre=document.createElement('pre'); pre.className='ci-preview-text'; pre.textContent=d.text+(d.truncated?'\n…':''); box.appendChild(pre);}
+      }).catch(function(){info.textContent=en?'Preview unavailable.':'Aperçu indisponible.';});
+    });
+  });
+})();
+</script>

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% set en = lang == 'en' %}
+{% block title %}{{ 'Lawyer reviews' if en else 'Relectures par un avocat' }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'Lawyer reviews' if en else 'Relectures par un avocat' }}</h1>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;max-width:860px;">
+  {% for r in reviews %}
+  <div class="card" style="margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;"><strong>{{ r['title'] }}</strong><span class="status-pill {{ 'done' if r['status'] in ('accepted','done') else '' }}">{{ status_labels[r['status']] }}</span></div>
+    <p class="helptext" style="margin:4px 0;">{{ scope_labels.get(r['scope'], r['scope']) }} · {{ r['words'] }} {{ 'words' if en else 'mots' }} · {{ r['created_at'][:10] }}</p>
+    {% if r['quote_amount'] %}<div class="callout"><strong>{{ 'Quote' if en else 'Devis' }} : {{ r['quote_amount'] }}</strong>{% if r['quote_note'] %}<br>{{ r['quote_note'] }}{% endif %}</div>{% endif %}
+    {% if r['status'] == 'quoted' %}
+    <form method="POST" action="{{ ci_url('review_decide', rid=r['id']) }}" class="inline-form">
+      <button class="btn btn-primary btn-sm" name="decision" value="accept" type="submit">{{ 'Accept the quote' if en else 'Accepter le devis' }}</button>
+      <button class="btn btn-ghost btn-sm" name="decision" value="decline" type="submit">{{ 'Decline' if en else 'Refuser' }}</button>
+    </form>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="card ci-empty"><strong>{{ 'No request yet' if en else 'Aucune demande pour l\'instant' }}</strong><p class="helptext" style="margin:6px 0 0;">{{ 'Open an analysis or a contract record and choose “Have a lawyer review it”.' if en else 'Ouvrez une analyse ou une fiche contrat et choisissez « Faire relire par un avocat ».' }}</p></div>
+  {% endfor %}
+</section>
+{% endblock %}

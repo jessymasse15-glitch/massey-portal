@@ -625,3 +625,90 @@ footer.site{border-top:1px solid var(--line);padding:56px 0 28px;background:var(
 .ci-stages li.skipped { opacity: .55; text-decoration: line-through; }
 .legal-list { display: grid; gap: 10px; padding-left: 20px; }
 .legal-list li { line-height: 1.55; }
+
+/* --- Contract Intelligence : équipe, journal, finitions --- */
+.ci-comment{padding:10px 0;border-top:1px solid var(--line, #e6dfdc);}
+.ci-comment:first-of-type{border-top:0;}
+.ci-comment div{margin-top:3px;white-space:pre-wrap;}
+.ci-log{list-style:none;margin:10px 0 0;padding:0;font-size:.9rem;}
+.ci-log li{padding:5px 0;border-top:1px solid var(--line, #e6dfdc);}
+.ci-empty{text-align:center;padding:26px 18px;color:var(--ink-soft);}
+button.is-busy{opacity:.65;cursor:progress;}
+.btn:focus-visible,.ci-kpi:focus-visible,.doc-row:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+@media print{
+  header,footer,.revue-subnav,.ci-actions,.btn,form,.site-header,.site-footer,nav{display:none !important;}
+  body{background:#fff !important;color:#000 !important;}
+  .page-hero{padding:0 0 10px !important;}
+  .card,.callout{box-shadow:none !important;border:1px solid #ccc !important;break-inside:avoid;}
+  a[href]:after{content:"" !important;}
+}
+
+/* --- Contrat annoté, aperçu --- */
+.ci-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:4px 0 22px;}
+.btn-lawyer{background:#0B1E36;color:#fff;border:1px solid #0B1E36;}
+.btn-lawyer:hover{background:#13304f;color:#fff;}
+.ci-doc{background:var(--surface, #fff);border:1px solid var(--line);border-radius:10px;padding:8px 22px;max-width:860px;font-family:Georgia,'Times New Roman',serif;line-height:1.65;}
+.ci-clause{padding:10px 0;border-top:1px solid var(--line);scroll-margin-top:90px;}
+.ci-clause:first-child{border-top:0;}
+.ci-clause p{margin:.35rem 0;}
+.ci-clause .ci-head{font-weight:700;}
+.ci-clause.lv-eleve{border-left:3px solid #B23A2E;padding-left:12px;margin-left:-15px;}
+.ci-clause.lv-moyen{border-left:3px solid #C9A227;padding-left:12px;margin-left:-15px;}
+mark.hl,a.hl{padding:1px 2px;border-radius:3px;color:inherit;text-decoration:none;}
+.hl-eleve{background:rgba(178,58,46,.22);box-shadow:inset 0 -2px 0 #B23A2E;}
+.hl-moyen{background:rgba(201,162,39,.28);box-shadow:inset 0 -2px 0 #C9A227;}
+.hl-info{background:rgba(30,142,90,.18);box-shadow:inset 0 -2px 0 #1E8E5A;}
+a.hl:hover{filter:brightness(.92);}
+.hl-legend{margin-left:10px;white-space:nowrap;}
+.ci-notes{margin:6px 0 2px;font-family:system-ui,sans-serif;font-size:.9rem;}
+.ci-note{background:rgba(11,30,54,.05);border-radius:8px;padding:7px 10px;margin:5px 0;}
+.ci-notes summary{cursor:pointer;color:var(--gold);font-size:.85rem;}
+.finding{scroll-margin-top:90px;}
+.finding:target{box-shadow:0 0 0 2px var(--gold);}
+.ci-preview{margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:10px;background:rgba(11,30,54,.03);}
+.ci-preview-head{font-weight:600;margin-bottom:6px;font-size:.9rem;}
+.ci-preview-pdf{width:100%;height:340px;border:1px solid var(--line);border-radius:6px;background:#fff;}
+.ci-preview-text{max-height:260px;overflow:auto;white-space:pre-wrap;font-size:.82rem;background:#fff;border:1px solid var(--line);border-radius:6px;padding:10px;margin:8px 0 0;}
+
+/* --- Outils CI : recherche, thème, aide clavier --- */
+.ci-tools{display:flex;gap:8px;align-items:center;justify-content:flex-end;max-width:1180px;margin:8px auto 0;padding:0 28px;}
+.ci-search input{width:240px;max-width:100%;padding:7px 12px;font-size:.85rem;border-radius:20px;}
+.ci-icon-btn{background:transparent;border:1px solid var(--line-strong);color:var(--ink);border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:1rem;line-height:1;}
+.ci-icon-btn:hover{border-color:var(--gold);color:var(--gold);}
+.ci-dlg{border:1px solid var(--line-strong);border-radius:12px;background:var(--surface);color:var(--ink);padding:22px 26px;max-width:420px;}
+.ci-dlg::backdrop{background:rgba(0,0,0,.45);}
+.ci-keytable{width:100%;border-collapse:collapse;margin-bottom:14px;}
+.ci-keytable td{padding:6px 4px;border-top:1px solid var(--line);}
+kbd{font-family:var(--mono);font-size:.8rem;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:4px;padding:1px 6px;background:var(--surface-2);}
+mark{background:rgba(201,162,39,.35);color:inherit;border-radius:2px;padding:0 1px;}
+
+/* --- Mobile : navigation CI défilante, rendu différé des longues listes --- */
+@media (max-width:760px){
+  .revue-subnav{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;scrollbar-width:none;}
+  .revue-subnav::-webkit-scrollbar{display:none;}
+  .revue-subnav a{flex:0 0 auto;scroll-snap-align:start;white-space:nowrap;}
+  .ci-tools{padding:0 16px;}
+  .ci-search{flex:1;} .ci-search input{width:100%;}
+  .ci-doc{padding:6px 14px;}
+  .ci-preview-pdf{height:240px;}
+}
+.finding,.ci-clause{content-visibility:auto;contain-intrinsic-size:auto 90px;}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto !important;animation:none !important;transition:none !important;}}
+
+/* --- Mode sombre (variables) --- */
+html[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#14100F; --bg-2:#1B1615; --bg-3:#272020; --surface:#1E1817; --surface-2:#251E1D;
+  --line:rgba(255,232,226,0.13); --line-strong:rgba(255,232,226,0.26);
+  --ink:#EFE8E6; --ink-soft:#BFB0AE; --ink-faint:#8F7F7E;
+  --gold:#E58A97; --gold-2:#F0A3AD; --gold-rgb:229,138,151;
+  --good:#4CC38A; --warn:#E0B24A; --danger:#EE7B6E;
+  --shadow-sm:0 1px 8px -3px rgba(0,0,0,.6); --shadow-md:0 14px 34px -18px rgba(0,0,0,.7);
+}
+html[data-theme="dark"] .ci-doc,html[data-theme="dark"] .ci-preview-text{background:var(--surface);color:var(--ink);}
+html[data-theme="dark"] .ci-preview-pdf{background:#fff;}
+html[data-theme="dark"] .btn-lawyer{background:#13304f;border-color:#2a5a8c;}
+html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea{background:var(--bg-2);color:var(--ink);border-color:var(--line-strong);}
+html[data-theme="dark"] .hl-eleve{background:rgba(238,123,110,.28);}
+html[data-theme="dark"] .hl-moyen{background:rgba(224,178,74,.28);}
+html[data-theme="dark"] .hl-info{background:rgba(76,195,138,.22);}

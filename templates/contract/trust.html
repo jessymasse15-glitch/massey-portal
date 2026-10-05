@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% set en = lang == 'en' %}
+{% block title %}{{ 'Your data, privacy and AI' if en else 'Vos données, confidentialité et IA' }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'Your data, privacy and AI' if en else 'Vos données, confidentialité et IA' }}</h1>
+  <p class="lede">{{ 'What we keep, who can see it, when it leaves this site, and how to take it away or erase it.' if en else 'Ce que nous conservons, qui peut le voir, quand cela quitte ce site, et comment le récupérer ou l\'effacer.' }}</p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;max-width:860px;">
+  <h2>{{ 'What is stored in your account' if en else 'Ce qui est stocké dans votre compte' }}</h2>
+  <div class="ci-kpis">
+    <div class="ci-kpi"><span class="n">{{ counts.analyses }}</span><span class="l">{{ 'analyses' }}</span></div>
+    <div class="ci-kpi"><span class="n">{{ counts.drafts }}</span><span class="l">{{ 'drafts' if en else 'brouillons' }}</span></div>
+    <div class="ci-kpi"><span class="n">{{ counts.registry }}</span><span class="l">{{ 'registry records' if en else 'fiches du registre' }}</span></div>
+    <div class="ci-kpi"><span class="n">{{ counts.signatures }}</span><span class="l">{{ 'signature requests' if en else 'demandes de signature' }}</span></div>
+    <div class="ci-kpi"><span class="n">{{ counts.obligations }}</span><span class="l">{{ 'deadlines' if en else 'échéances' }}</span></div>
+  </div>
+
+  <h2 style="margin-top:34px;">{{ 'Who can see it' if en else 'Qui peut le voir' }}</h2>
+  <ul class="legal-list">
+    {% if en %}
+    <li>Only you, by default. Your contracts are not used to train any model and are not shown to other users.</li>
+    <li>People you explicitly share a record with (read & comment, or edit) see that record only, and the activity log shows who did what.</li>
+    <li>Signatories and approvers see the text you send them through their private link, and nothing else.</li>
+    <li>The site administrators can technically access the database for maintenance and support; they do not browse contracts.</li>
+    {% else %}
+    <li>Vous seul, par défaut. Vos contrats ne servent pas à entraîner un modèle et ne sont montrés à aucun autre utilisateur.</li>
+    <li>Les personnes avec qui vous partagez explicitement une fiche (lecture et commentaires, ou modification) voient cette fiche uniquement ; le journal d'activité indique qui a fait quoi.</li>
+    <li>Les signataires et approbateurs voient le texte que vous leur envoyez par leur lien privé, et rien d'autre.</li>
+    <li>Les administrateurs du site peuvent techniquement accéder à la base pour la maintenance et l'assistance ; ils ne parcourent pas les contrats.</li>
+    {% endif %}
+  </ul>
+
+  <h2 style="margin-top:34px;">{{ 'Encryption and deletion' if en else 'Chiffrement et suppression' }}</h2>
+  <ul class="legal-list">
+    {% if en %}
+    <li>Files archived in the registry, signed PDFs and signature certificates are <strong>encrypted at rest</strong> (AES with an integrity check) before being written to disk{% if key_env %}; the key is held outside the data disk{% else %}; the key is stored on the server's data disk (the site operator can move it to an environment variable to keep it apart){% endif %}.</li>
+    <li>The text extracted from archived files is kept in the database so the global search can find it; the original files themselves stay encrypted.</li>
+    <li>Deleting a record or all your data overwrites then removes the files and removes the database rows. Backups made by the host before the deletion may persist for a limited time.</li>
+    {% else %}
+    <li>Les fichiers archivés au registre, les PDF signés et les certificats de signature sont <strong>chiffrés au repos</strong> (AES avec contrôle d'intégrité) avant d'être écrits sur le disque{% if key_env %} ; la clé est conservée hors du disque de données{% else %} ; la clé est conservée sur le disque de données du serveur (l'exploitant du site peut la déplacer dans une variable d'environnement pour la garder à part){% endif %}.</li>
+    <li>Le texte extrait des fichiers archivés est conservé dans la base pour que la recherche globale puisse le trouver ; les fichiers d'origine, eux, restent chiffrés.</li>
+    <li>Supprimer une fiche ou toutes vos données écrase puis supprime les fichiers et retire les lignes de la base. Les sauvegardes faites par l'hébergeur avant la suppression peuvent subsister un temps limité.</li>
+    {% endif %}
+  </ul>
+
+  <h2 style="margin-top:34px;">{{ 'Artificial intelligence' if en else 'Intelligence artificielle' }}</h2>
+  <div class="callout" {% if not ai_on %}style="border-left-color:#2e7d32;"{% endif %}>
+    {% if ai_on %}
+      {% if en %}The optional AI layer is <strong>enabled</strong> on this site. It runs only when you tick the consent box on an analysis or draft: only then is the text of that contract (plus excerpts of the legal corpus and your playbook) sent to Anthropic's Claude API to produce the review. Nothing is sent otherwise, and the standard analysis runs on this server with rules only.
+      {% else %}La couche d'IA optionnelle est <strong>activée</strong> sur ce site. Elle ne s'exécute que si vous cochez la case de consentement sur une analyse ou un brouillon : le texte de ce contrat (avec des extraits du corpus juridique et votre playbook) est alors envoyé à l'API Claude d'Anthropic pour produire la revue. Rien n'est envoyé autrement, et l'analyse standard s'exécute sur ce serveur, avec des règles seulement.{% endif %}
+    {% else %}
+      {% if en %}The AI layer is <strong>not enabled</strong> on this site: no contract text leaves this server. Analyses run with rules only.
+      {% else %}La couche d'IA n'est <strong>pas activée</strong> sur ce site : aucun texte de contrat ne quitte ce serveur. Les analyses s'exécutent avec des règles seulement.{% endif %}
+    {% endif %}
+  </div>
+  <p class="helptext"><a href="{{ ci_url('method') }}">{{ 'How the analysis works and its limits' if en else "Comment fonctionne l'analyse et ses limites" }}</a></p>
+  <p class="helptext">{{ 'AI output can be wrong or incomplete: it is a review aid, not legal advice. Have a lawyer check any important contract.' if en else 'La sortie de l\'IA peut être erronée ou incomplète : c\'est une aide à la relecture, pas un avis juridique. Faites vérifier tout contrat important par un juriste.' }}</p>
+
+  <h2 style="margin-top:34px;">{{ 'Signed documents and verification' if en else 'Documents signés et vérification' }}</h2>
+  <p>{{ 'When a signature is completed, the signed PDF and its SHA-256 fingerprint are archived, and anyone holding the document can check it on the public verification page. That page shows only the title, method, date and signers\' names (emails masked).' if en else 'Quand une signature est terminée, le PDF signé et son empreinte SHA-256 sont archivés, et toute personne qui détient le document peut le vérifier sur la page publique de vérification. Cette page n\'affiche que le titre, la méthode, la date et les noms des signataires (courriels masqués).' }}
+    <a href="{{ url_for('ci_verify_en' if en else 'ci_verify') }}">{{ 'Verify a signed document' if en else 'Vérifier un document signé' }}</a></p>
+
+  <h2 style="margin-top:34px;">{{ 'Take your data' if en else 'Récupérer vos données' }}</h2>
+  <p>{{ 'Download everything you created here (analyses, drafts, registry, signatures, deadlines, comments, activity) as a ZIP with a JSON file. Uploaded files stay downloadable from each record.' if en else 'Téléchargez tout ce que vous avez créé ici (analyses, brouillons, registre, signatures, échéances, commentaires, journal) dans un ZIP contenant un fichier JSON. Les fichiers téléversés restent téléchargeables depuis chaque fiche.' }}</p>
+  <a class="btn btn-primary btn-sm" href="{{ ci_url('data_export') }}">{{ 'Download my data' if en else 'Télécharger mes données' }}</a>
+
+  <h2 style="margin-top:34px;">{{ 'Erase your data' if en else 'Effacer vos données' }}</h2>
+  <div class="callout" style="border-left-color:var(--danger);">
+    {% if en %}This permanently deletes your analyses, drafts, registry records and their files, signature requests (including the archived signed PDFs and their verification entries), negotiations, approvals, playbooks and deadlines. It cannot be undone. Your account and your monthly usage counters are kept. People you shared records with lose access.
+    {% else %}Cela supprime définitivement vos analyses, brouillons, fiches du registre et leurs fichiers, demandes de signature (y compris les PDF signés archivés et leur entrée de vérification), négociations, approbations, playbooks et échéances. Impossible à annuler. Votre compte et vos compteurs d'usage mensuels sont conservés. Les personnes avec qui vous aviez partagé des fiches perdent l'accès.{% endif %}
+  </div>
+  <form method="POST" action="{{ ci_url('data_delete') }}" class="inline-form" style="margin-top:12px;" onsubmit="return confirm('{{ 'Erase all your Contract Intelligence data?' if en else 'Effacer toutes vos données Contract Intelligence ?' }}');">
+    <input name="confirm" placeholder="{{ 'Type DELETE' if en else 'Tapez SUPPRIMER' }}" autocomplete="off" required style="width:200px;">
+    <button class="btn btn-danger btn-sm" type="submit">{{ 'Erase my data' if en else 'Effacer mes données' }}</button>
+  </form>
+</section>
+{% endblock %}

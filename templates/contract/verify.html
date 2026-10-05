@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% set en = lang == 'en' %}
+{% block title %}{{ 'Verify a signed document' if en else 'Vérifier un document signé' }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'Verify a signed document' if en else 'Vérifier un document signé' }}</h1>
+  <p class="lede">{{ 'Drop the PDF you received. We compare its fingerprint with the signed originals archived on this site. Your file is not stored.' if en else "Déposez le PDF que vous avez reçu. Nous comparons son empreinte avec les originaux signés archivés sur ce site. Votre fichier n'est pas conservé." }}</p>
+</section>
+<section class="block" style="border-top:none;padding-top:0;max-width:760px;">
+  {% if error %}<div class="callout" style="border-left-color:var(--warn);">{{ error }}</div>{% endif %}
+
+  {% if checked and result %}
+  <div class="callout" style="border-left-color:#2e7d32;">
+    <strong>✔ {{ 'Match found: this is an original signed document.' if not en else 'Match found: this is an original signed document.' }}</strong>
+    {% if result.kind == 'text' %}<br>{{ "L'empreinte correspond au texte du contrat signé (et non au fichier PDF). Le PDF a peut-être été régénéré ou modifié." if not en else 'The fingerprint matches the signed contract text, not the PDF file. The PDF may have been regenerated or altered.' }}{% endif %}
+    {% if result.kind == 'certificate' %}<br>{{ "Cette empreinte correspond au certificat de signature." if not en else 'This fingerprint matches the signature certificate.' }}{% endif %}
+  </div>
+  <dl class="legal-list" style="margin:1rem 0;">
+    <dt>{{ 'Document' }}</dt><dd>{{ result.title }}</dd>
+    <dt>{{ 'Reference' if en else 'Référence' }}</dt><dd>{{ result.ref }}</dd>
+    <dt>{{ 'Method' if en else 'Méthode' }}</dt><dd>{{ ('DocuSign (certified)' if en else 'DocuSign (certifiée)') if result.method == 'certified' else ('Simple electronic signature' if en else 'Signature électronique simple') }}</dd>
+    <dt>{{ 'Completed (UTC)' if en else 'Terminée le (UTC)' }}</dt><dd>{{ result.completed_at }}</dd>
+    <dt>{{ 'Signers' if en else 'Signataires' }}</dt>
+    <dd>{% for s in result.signers %}{{ s.name }} <small>({{ s.email }}{% if s.signed_at %}, {{ s.signed_at }}{% endif %})</small>{% if not loop.last %}<br>{% endif %}{% endfor %}</dd>
+    <dt>SHA-256</dt><dd><code style="word-break:break-all;">{{ digest }}</code></dd>
+  </dl>
+  {% elif checked %}
+  <div class="callout" style="border-left-color:var(--warn);">
+    <strong>✖ {{ 'No match.' if en else 'Aucune correspondance.' }}</strong>
+    {{ 'This file is not a signed original archived here. It may have been modified, may come from another system, or may be a copy re-saved by another program. This does not by itself prove forgery.' if en else "Ce fichier n'est pas un original signé archivé ici. Il a pu être modifié, provenir d'un autre système ou avoir été réenregistré par un autre logiciel. Cela ne prouve pas à lui seul une falsification." }}
+    {% if digest %}<br><small>SHA-256 : <code style="word-break:break-all;">{{ digest }}</code>{% if source %} ({{ source }}){% endif %}</small>{% endif %}
+  </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="card" style="padding:1.25rem;margin-top:1rem;">
+    <label for="vf"><strong>{{ 'PDF file' if en else 'Fichier PDF' }}</strong></label>
+    <input id="vf" type="file" name="file" accept="application/pdf,.pdf" style="display:block;margin:.5rem 0 1rem;">
+    <label for="vh"><strong>{{ 'or SHA-256 fingerprint' if en else 'ou empreinte SHA-256' }}</strong></label>
+    <input id="vh" type="text" name="hash" value="{{ digest or '' }}" placeholder="64 hex" autocomplete="off" style="width:100%;margin:.5rem 0 1rem;">
+    <button class="btn" type="submit">{{ 'Verify' if en else 'Vérifier' }}</button>
+  </form>
+
+  <p style="margin-top:1.5rem;font-size:.9rem;opacity:.8;">
+    {{ 'A match proves the document is identical to the one archived when signing finished. It does not decide the legal value of the signature.' if en else "Une correspondance prouve que le document est identique à celui archivé à la fin de la signature. Elle ne tranche pas la valeur juridique de la signature." }}
+    <a href="{{ legal_url }}">{{ 'Legal value in Haiti' if en else 'Valeur juridique en Haïti' }}</a>
+  </p>
+</section>
+{% endblock %}

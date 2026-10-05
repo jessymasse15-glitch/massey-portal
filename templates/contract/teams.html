@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% set en = lang == 'en' %}
+{% block title %}{{ 'Teams' if en else 'Équipes' }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'Team spaces' if en else "Espaces d'équipe" }}</h1>
+  <p class="lede">{{ 'Work on contracts together: roles, shared contract records, shared playbooks and company templates.' if en else 'Travaillez à plusieurs sur les contrats : rôles, fiches partagées, playbooks partagés et modèles d\'entreprise.' }}</p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;max-width:860px;">
+  <form method="POST" class="card" style="margin-bottom:26px;" data-busy>
+    <h3 style="margin-top:0;">{{ 'Create a team' if en else 'Créer une équipe' }}</h3>
+    {% if premium %}
+    <div class="inline-form"><input name="name" maxlength="80" required placeholder="{{ 'e.g. Legal department' if en else 'ex. Service juridique' }}" style="width:280px;"><button class="btn btn-primary btn-sm" type="submit">{{ 'Create' if en else 'Créer' }}</button></div>
+    {% else %}
+    <p class="helptext" style="margin:0;">{{ 'Creating a team space is part of the Premium plan. You can join a team for free when someone invites you.' if en else "Créer un espace d'équipe fait partie du plan Premium. Vous pouvez rejoindre une équipe gratuitement quand quelqu'un vous y invite." }} <a href="{{ url_for('membership_en' if en else 'membership') }}">{{ 'See Premium' if en else 'Voir Premium' }}</a></p>
+    {% endif %}
+  </form>
+  {% for t in teams %}
+    <a class="doc-row" href="{{ ci_url('team', tid=t['id']) }}" style="text-decoration:none;color:inherit;">
+      <span><strong>{{ t['name'] }}</strong><br><span class="helptext">{{ t['n'] }} {{ 'member(s)' if en else 'membre(s)' }}</span></span>
+      <span class="status-pill">{{ role_label(t['my_role']) }}</span>
+    </a>
+  {% else %}
+    <div class="card ci-empty"><strong>{{ 'You are not in any team yet' if en else "Vous n'êtes dans aucune équipe pour l'instant" }}</strong></div>
+  {% endfor %}
+</section>
+{% endblock %}

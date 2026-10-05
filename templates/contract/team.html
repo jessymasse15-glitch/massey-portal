@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% set en = lang == 'en' %}
+{% block title %}{{ team['name'] }} — {{ 'Team' if en else 'Équipe' }}{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">{{ 'Team space' if en else "Espace d'équipe" }} · {{ role_label(my_role) }}</div>
+  <h1>{{ team['name'] }}</h1>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;max-width:900px;">
+  <h2 id="membres">{{ 'Members and roles' if en else 'Membres et rôles' }}</h2>
+  <ul class="legal-list">{% for r in roles %}<li><strong>{{ role_label(r) }}</strong> — {{ role_help[r] }}</li>{% endfor %}</ul>
+  {% for mb in members %}
+    <div class="doc-row"><span>{{ mb['email'] }}</span>
+      <span style="display:flex;gap:8px;align-items:center;"><span class="status-pill">{{ role_label(mb['role']) }}</span>
+      {% if my_role == 'admin' or mb['email']|lower == (current_user['email']|lower if current_user else '') %}
+        <form method="POST" action="{{ ci_url('team_member_remove', tid=team['id'], mid=mb['id']) }}" onsubmit="return confirm('{{ 'Remove this member?' if en else 'Retirer ce membre ?' }}');"><button class="btn btn-ghost btn-sm" type="submit">{{ 'Remove' if en else 'Retirer' }}</button></form>
+      {% endif %}</span></div>
+  {% endfor %}
+  {% if my_role == 'admin' %}
+  <form method="POST" action="{{ ci_url('team_member_add', tid=team['id']) }}" class="inline-form" style="margin-top:12px;" data-busy>
+    <input type="email" name="email" required placeholder="{{ 'Email' if en else 'Courriel' }}" style="width:250px;">
+    <select name="role" style="width:auto;">{% for r in roles %}<option value="{{ r }}" {{ 'selected' if r == 'lecteur' }}>{{ role_label(r) }}</option>{% endfor %}</select>
+    <button class="btn btn-ghost btn-sm" type="submit">{{ 'Add / change role' if en else 'Ajouter / changer le rôle' }}</button>
+  </form>
+  {% endif %}
+
+  <h2 style="margin-top:40px;">{{ 'Team contract records' if en else "Fiches contrat de l'équipe" }}</h2>
+  {% for e in entries %}
+    <a class="doc-row" href="{{ ci_url('registry_entry', rid=e['id']) }}" style="text-decoration:none;color:inherit;">
+      <span><strong>{{ e['title'] }}</strong><br><span class="helptext">{{ e['owner_name'] }}{% if e['counterparty'] %} · {{ e['counterparty'] }}{% endif %}{% if e['end_date'] %} · {{ 'ends' if en else 'fin' }} {{ e['end_date'] }}{% endif %}</span></span>
+      <span class="status-pill {{ 'done' if e['status']=='actif' else '' }}">{{ status_labels.get(e['status'], e['status']) }}</span>
+    </a>
+  {% else %}<p class="helptext">{{ 'No record yet. Open one of your records and attach it to this team.' if en else "Aucune fiche pour l'instant. Ouvrez une de vos fiches et rattachez-la à cette équipe." }}</p>{% endfor %}
+
+  <h2 style="margin-top:40px;">{{ 'Shared playbooks' if en else 'Playbooks partagés' }}</h2>
+  {% for p in playbooks %}<a class="doc-row" href="{{ ci_url('playbook', pid=p['id']) }}" style="text-decoration:none;color:inherit;"><span><strong>{{ p['name'] }}</strong></span></a>
+  {% else %}<p class="helptext">{{ 'None yet. Open one of your playbooks and share it with this team.' if en else 'Aucun pour l\'instant. Ouvrez un de vos playbooks et partagez-le avec cette équipe.' }}</p>{% endfor %}
+
+  <h2 style="margin-top:40px;" id="modeles">{{ 'Company templates' if en else "Modèles d'entreprise" }}</h2>
+  <p class="helptext">{{ 'Your standard contracts. Any member can start a draft from a template; lawyers and administrators maintain them.' if en else 'Vos contrats types. Tout membre peut démarrer un brouillon à partir d\'un modèle ; les juristes et administrateurs les entretiennent.' }}</p>
+  {% for x in templates %}
+    <div class="doc-row"><span><strong>{{ x['title'] }}</strong><br><span class="helptext">{{ x['body_text'].split()|length }} {{ 'words' if en else 'mots' }} · {{ x['created_at'][:10] }}</span></span>
+      <span style="display:flex;gap:8px;">
+        <form method="POST" action="{{ ci_url('team_template_use', tid=team['id'], xid=x['id']) }}"><button class="btn btn-primary btn-sm" type="submit">{{ 'Start a draft' if en else 'Démarrer un brouillon' }}</button></form>
+        {% if can_write %}<form method="POST" action="{{ ci_url('team_template_delete', tid=team['id'], xid=x['id']) }}" onsubmit="return confirm('{{ 'Delete this template?' if en else 'Supprimer ce modèle ?' }}');"><button class="btn btn-ghost btn-sm" type="submit">{{ 'Delete' if en else 'Supprimer' }}</button></form>{% endif %}
+      </span></div>
+  {% else %}<p class="helptext">{{ 'No template yet.' if en else 'Aucun modèle pour l\'instant.' }}</p>{% endfor %}
+  {% if can_write %}
+  <form method="POST" action="{{ ci_url('team_template_add', tid=team['id']) }}" enctype="multipart/form-data" class="card" style="margin-top:14px;" data-busy>
+    <h4 style="margin-top:0;">{{ 'Add a template' if en else 'Ajouter un modèle' }}</h4>
+    <div class="form-group"><label>{{ 'Title' if en else 'Titre' }}</label><input name="title" maxlength="120"></div>
+    <div class="form-group"><label>{{ 'Text' if en else 'Texte' }}</label><textarea name="body" rows="6" placeholder="{{ 'Paste the contract text…' if en else 'Collez le texte du contrat…' }}"></textarea></div>
+    <div class="form-group"><label>{{ 'or a file (.docx, .pdf, .txt)' if en else 'ou un fichier (.docx, .pdf, .txt)' }}</label><input type="file" name="file" accept=".docx,.pdf,.txt"></div>
+    <button class="btn btn-primary btn-sm" type="submit">{{ 'Add' if en else 'Ajouter' }}</button>
+  </form>
+  {% endif %}
+
+  {% if my_role == 'admin' and team['owner_id'] == current_user['id'] %}
+  <form method="POST" action="{{ ci_url('team_delete', tid=team['id']) }}" style="margin-top:40px;" onsubmit="return confirm('{{ 'Delete this team? Records and playbooks stay with their owners.' if en else 'Supprimer cette équipe ? Les fiches et playbooks restent à leurs propriétaires.' }}');"><button class="btn btn-danger btn-sm" type="submit">{{ 'Delete the team' if en else "Supprimer l'équipe" }}</button></form>
+  {% endif %}
+</section>
+{% endblock %}

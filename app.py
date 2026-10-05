@@ -39,6 +39,11 @@ MAX_CONTENT_LENGTH = 15 * 1024 * 1024  # 15 Mo par fichier
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH
+if os.environ.get("TRUST_PROXY", "1") == "1":
+    # Derrière le proxy de Render : sans ceci, request.remote_addr serait l'IP du proxy
+    # et la piste d'audit des signatures enregistrerait une adresse interne.
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 with app.app_context():
@@ -634,8 +639,12 @@ def ci_analyze():
         "SELECT id, title, overall, language, created_at FROM contract_analyses WHERE user_id=? ORDER BY id DESC LIMIT 30",
         (u["id"],),
     ).fetchall()
+    shared_analyses = conn.execute(
+        "SELECT a.id, a.title, a.overall, a.created_at, o.full_name AS owner_name, o.email AS owner_email FROM ci_analysis_shares s "
+        "JOIN contract_analyses a ON a.id=s.analysis_id JOIN users o ON o.id=a.user_id WHERE lower(s.email)=? ORDER BY a.id DESC LIMIT 30",
+        ((u["email"] or "").lower(),)).fetchall()
     conn.close()
-    return _ci_page("analyze", **_ci_ctx("analyze", history=history, limit=limit, used=used, allowed=allowed))
+    return _ci_page("analyze", **_ci_ctx("analyze", history=history, shared_analyses=shared_analyses, limit=limit, used=used, allowed=allowed))
 
 
 def _ci_get_analysis(conn, u, aid):
@@ -651,10 +660,15 @@ def ci_analysis(aid):
     u = _ci_user()
     if not u:
         return _ci_need_login()
+    import ci_review
     conn = dbm.get_db()
-    row = _ci_get_analysis(conn, u, aid)
+    row, role = ci_review.analysis_access(conn, u, aid, "viewer")
+    notes = ci_review.clause_notes(conn, aid)
+    shares = conn.execute("SELECT * FROM ci_analysis_shares WHERE analysis_id=? ORDER BY id", (aid,)).fetchall() if role == "owner" else []
+    owner = conn.execute("SELECT full_name, email FROM users WHERE id=?", (row["user_id"],)).fetchone()
     conn.close()
     result = json.loads(row["result_json"])
+    clauses, unplaced = ci_review.annotate(row["text_content"], result.get("findings", []))
     effective = _ci_iso_date(request.args.get("effective"))
     eff_date = datetime.strptime(effective, "%Y-%m-%d").date() if effective else None
     obligations = contract_engine.extract_obligations(row["text_content"], result["language"], eff_date)
@@ -666,17 +680,26 @@ def ci_analysis(aid):
     flat = contract_engine.extract_party_obligations(row["text_content"], result["language"])
     index_of = {(o["party"], o["action"]): i for i, o in enumerate(flat)}
     conn = dbm.get_db()
-    my_playbooks = conn.execute("SELECT id, name, is_default FROM ci_playbooks WHERE user_id=? ORDER BY id", (u["id"],)).fetchall()
+    my_playbooks = conn.execute("SELECT id, name, is_default FROM ci_playbooks WHERE user_id=? OR id IN (SELECT p.id FROM ci_playbooks p JOIN ci_team_members tm ON tm.team_id=p.team_id WHERE lower(tm.email)=?) ORDER BY id",
+                                (u["id"], (u["email"] or "").lower())).fetchall() if role == "owner" else []
     conn.close()
     ai = json.loads(row["ai_json"]) if row["ai_json"] else None
     ai_sources = {str(x["id"]): x for x in (ai or {}).get("sources_used", [])}
+    used_sources = {}
+    for f_ in result.get("findings", []) + result.get("missing", []):
+        for r_ in f_.get("refs") or []:
+            used_sources[(r_["title"], r_.get("reference", ""))] = r_
     return _ci_page("analysis", **_ci_ctx("analyze", analysis=row, result=result, obligations=obligations,
                                           effective=effective, kind_labels=kind_labels,
                                           today=datetime.utcnow().date().isoformat(),
                                           party_obligations=party_obligations, party_index=index_of, my_playbooks=my_playbooks,
                                           ai=ai, ai_sources=ai_sources, ai_configured=ci_ai.is_configured(),
                                           ai_limit=ai_limit, ai_used=ai_used, ai_allowed=ai_allowed,
-                                          is_premium_user=_access_info(u)["is_premium"]))
+                                          is_premium_user=_access_info(u)["is_premium"],
+                                          role=role, is_owner=(role == "owner"), can_note=role in ("owner", "commenter"),
+                                          clauses=clauses, unplaced=unplaced, notes=notes, shares=shares,
+                                          owner_name=(owner["full_name"] or owner["email"]) if owner else "",
+                                          used_sources=list(used_sources.values())))
 
 
 @ci_route("analysis_ai", "/analyse/<int:aid>/ia", "/analysis/<int:aid>/ai", ("POST",))

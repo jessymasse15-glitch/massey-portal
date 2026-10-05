@@ -7,14 +7,15 @@
 </section>
 {% include "contract/_subnav.html" %}
 <section class="block" style="border-top:none;padding-top:0;">
+  {% if role != 'owner' %}<div class="callout" style="margin-bottom:18px;">{{ 'Shared with you by' if lang == 'en' else 'Partagé avec vous par' }} <strong>{{ owner_name }}</strong> — {{ role_labels[role] }}{% if team %} ({{ 'team' if lang == 'en' else 'équipe' }} « {{ team['name'] }} » · {{ team_role_label }}){% endif %}.</div>{% endif %}
   <ol class="ci-stages">{% for st in flow.stages %}<li class="{{ st.state }}">{{ st.label }}</li>{% endfor %}</ol>
   {% if flow.next %}<div class="ci-next"><strong>{{ 'Next step' if lang == 'en' else 'Prochaine étape' }}</strong><br>{{ flow.next[1] }}</div>{% endif %}
 
   <div class="ci-linked">
     {% if links.analysis %}<div class="card"><h4 style="margin:0 0 6px;">{{ 'Analysis' if lang == 'en' else 'Analyse' }}</h4><a href="{{ links.analysis }}">{{ 'Open the analysis' if lang == 'en' else 'Ouvrir l\'analyse' }}</a></div>{% endif %}
     {% if links.draft %}<div class="card"><h4 style="margin:0 0 6px;">{{ 'Draft' if lang == 'en' else 'Brouillon' }}</h4><a href="{{ links.draft }}">{{ 'Open the draft' if lang == 'en' else 'Ouvrir le brouillon' }}</a></div>{% endif %}
-    {% for n in flow.negotiations %}<div class="card"><h4 style="margin:0 0 6px;">{{ 'Negotiation' if lang == 'en' else 'Négociation' }} — {{ neg_status[n['status']] }}</h4><a href="{{ ci_url('negotiation', nid=n['id']) }}">{{ n['counterparty_name'] or n['counterparty_email'] }}</a></div>{% endfor %}
-    {% for a in flow.approvals %}<div class="card"><h4 style="margin:0 0 6px;">{{ 'Approval' if lang == 'en' else 'Approbation' }} — {{ appr_status.get(a['status'], a['status']) }}</h4><a href="{{ ci_url('approval', aid=a['id']) }}">#{{ a['id'] }} · {{ a['created_at'][:10] }}</a></div>{% endfor %}
+    {% for n in (flow.negotiations if role == 'owner' else []) %}<div class="card"><h4 style="margin:0 0 6px;">{{ 'Negotiation' if lang == 'en' else 'Négociation' }} — {{ neg_status[n['status']] }}</h4><a href="{{ ci_url('negotiation', nid=n['id']) }}">{{ n['counterparty_name'] or n['counterparty_email'] }}</a></div>{% endfor %}
+    {% for a in (flow.approvals if role == 'owner' else []) %}<div class="card"><h4 style="margin:0 0 6px;">{{ 'Approval' if lang == 'en' else 'Approbation' }} — {{ appr_status.get(a['status'], a['status']) }}</h4><a href="{{ ci_url('approval', aid=a['id']) }}">#{{ a['id'] }} · {{ a['created_at'][:10] }}</a></div>{% endfor %}
     {% if e['file_name'] %}<div class="card"><h4 style="margin:0 0 6px;">{{ 'Signed file' if lang == 'en' else 'Fichier signé' }}</h4><a href="{{ ci_url('registry_file', rid=e['id']) }}">{{ e['file_name'] }}</a></div>{% endif %}
   </div>
   {% if ref %}
@@ -32,6 +33,20 @@
   </div>
   {% endif %}
 
+  {% if has_text %}
+  <div class="card" style="max-width:820px;margin-bottom:26px;" id="document">
+    <h3 style="margin-top:0;">{{ 'Contract document' if lang == 'en' else 'Document du contrat' }}</h3>
+    <p class="helptext" style="margin-top:0;">{{ 'A clean, paginated copy of the contract text: headings in bold, justified, with a signature block.' if lang == 'en' else 'Une copie propre et paginée du texte du contrat : intertitres en gras, texte justifié, bloc de signatures.' }}</p>
+    <div class="ci-actions">
+      <a class="btn btn-primary btn-sm" href="{{ ci_url('registry_render', rid=e['id'], fmt='pdf') }}">PDF</a>
+      <a class="btn btn-ghost btn-sm" href="{{ ci_url('registry_render', rid=e['id'], fmt='docx') }}">Word (.docx)</a>
+      <a class="btn btn-ghost btn-sm" href="{{ ci_url('registry_render', rid=e['id'], fmt='txt') }}">{{ 'Text' if lang == 'en' else 'Texte' }}</a>
+      {% if role == 'owner' %}<a class="btn btn-lawyer btn-sm" href="{{ ci_url('review_request') }}?ref_type=registry&ref_id={{ e['id'] }}">⚖ {{ 'Have a lawyer review it — get a quote' if lang == 'en' else 'Faire relire par un avocat — obtenir un devis' }}</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if role == 'owner' %}
   <div class="card" style="max-width:820px;margin-bottom:26px;" id="signature">
     <h3 style="margin-top:0;">{{ 'Electronic signature' if lang == 'en' else 'Signature électronique' }}</h3>
     {% if sig_req and sig_req['status'] in ('pending', 'completed') %}
@@ -84,7 +99,12 @@
       <p class="helptext">{{ 'Attach an analysis or a draft to this record (from its page, "Add to the contract registry") to be able to send it for signature.' if lang == 'en' else 'Rattachez une analyse ou un brouillon à cette fiche (depuis sa page, « Ajouter au registre des contrats ») pour pouvoir l\'envoyer en signature.' }}</p>
     {% endif %}
   </div>
-  <form method="POST" enctype="multipart/form-data" class="card" style="max-width:820px;">
+  {% elif sig_req and sig_req['status'] == 'completed' %}
+  <div class="card" style="max-width:820px;margin-bottom:26px;"><h3 style="margin-top:0;">{{ 'Electronic signature' if lang == 'en' else 'Signature électronique' }}</h3>
+    <p><span class="status-pill done">{{ sig_status[sig_req['status']] }}</span> {{ sig_req['completed_at'][:10] }}</p></div>
+  {% endif %}
+  <form method="POST" enctype="multipart/form-data" class="card" style="max-width:820px;" data-busy>
+    <fieldset {{ 'disabled' if not can_edit }} style="border:0;padding:0;margin:0;min-width:0;">
     <div class="grid-2">
       <div class="form-group"><label>{{ 'Title' if lang == 'en' else 'Titre' }}</label><input name="title" value="{{ e['title'] }}" maxlength="160"></div>
       <div class="form-group"><label>{{ 'Counterparty' if lang == 'en' else 'Contrepartie' }}</label><input name="counterparty" value="{{ e['counterparty'] or '' }}" maxlength="120"></div>
@@ -93,16 +113,71 @@
       <div class="form-group"><label>{{ 'Start date' if lang == 'en' else 'Date de début' }}</label><input type="date" name="start_date" value="{{ e['start_date'] or '' }}"></div>
       <div class="form-group"><label>{{ 'End date' if lang == 'en' else 'Date de fin' }}</label><input type="date" name="end_date" value="{{ e['end_date'] or '' }}"></div>
     </div>
-    <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-bottom:14px;"><input type="checkbox" name="track_end" value="1" style="width:auto;"> {{ 'Add the end date to my deadlines (with email reminders)' if lang == 'en' else 'Ajouter la date de fin à mes échéances (avec rappels par courriel)' }}</label>
+    {% if role == 'owner' %}<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-bottom:14px;"><input type="checkbox" name="track_end" value="1" style="width:auto;"> {{ 'Add the end date to my deadlines (with email reminders)' if lang == 'en' else 'Ajouter la date de fin à mes échéances (avec rappels par courriel)' }}</label>{% endif %}
     <div class="form-group"><label>Notes</label><textarea name="notes" rows="4" maxlength="2000">{{ e['notes'] or '' }}</textarea></div>
     <div class="form-group"><label>{{ 'Final / signed file (pdf, docx, doc, txt, png, jpg)' if lang == 'en' else 'Fichier final / signé (pdf, docx, doc, txt, png, jpg)' }}</label><input type="file" name="file" accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg">
       {% if e['file_name'] %}<div class="helptext">📎 <a href="{{ ci_url('registry_file', rid=e['id']) }}">{{ e['file_name'] }}</a> · SHA-256 <code style="word-break:break-all;">{{ e['file_sha256'] }}</code></div>{% endif %}</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn btn-primary" type="submit">{{ 'Save' if lang == 'en' else 'Enregistrer' }}</button>
+    </fieldset>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">{% if can_edit %}<button class="btn btn-primary" type="submit">{{ 'Save' if lang == 'en' else 'Enregistrer' }}</button>{% endif %}
       <a class="btn btn-ghost" href="{{ ci_url('registry') }}">{{ 'Back' if lang == 'en' else 'Retour' }}</a></div>
   </form>
-  <div style="display:flex;gap:10px;margin-top:12px;">
+  {% if role == 'owner' %}<div style="display:flex;gap:10px;margin-top:12px;">
     <form method="POST" action="{{ ci_url('registry_archive', rid=e['id']) }}"><button class="btn btn-ghost btn-sm" type="submit">{{ ('Unarchive' if lang == 'en' else 'Désarchiver') if e['archived'] else ('Archive' if lang == 'en' else 'Archiver') }}</button></form>
     <form method="POST" action="{{ ci_url('registry_delete', rid=e['id']) }}" onsubmit="return confirm('{{ 'Delete this record and its file?' if lang == 'en' else 'Supprimer cette fiche et son fichier ?' }}');"><button class="btn btn-danger btn-sm" type="submit">{{ 'Delete' if lang == 'en' else 'Supprimer' }}</button></form>
+  </div>{% endif %}
+
+  <div class="card" style="max-width:820px;margin-top:30px;" id="equipe">
+    <h3 style="margin-top:0;">{{ 'Team' if lang == 'en' else 'Équipe' }}</h3>
+    {% if role == 'owner' %}
+      <form method="POST" action="{{ ci_url('registry_share', rid=e['id']) }}" class="inline-form" data-busy>
+        <input type="email" name="email" placeholder="{{ 'Colleague email' if lang == 'en' else 'Courriel du collègue' }}" required style="width:250px;">
+        <select name="role" style="width:auto;"><option value="viewer">{{ role_labels['viewer'] }}</option><option value="editor">{{ role_labels['editor'] }}</option></select>
+        <button class="btn btn-ghost btn-sm" type="submit">{{ 'Share' if lang == 'en' else 'Partager' }}</button>
+      </form>
+      {% for sh in shares %}
+        <div class="doc-row"><span>{{ sh['email'] }} <span class="helptext">· {{ role_labels[sh['role']] }}</span></span>
+          <form method="POST" action="{{ ci_url('registry_unshare', rid=e['id'], shid=sh['id']) }}"><button class="btn btn-ghost btn-sm" type="submit">{{ 'Remove' if lang == 'en' else 'Retirer' }}</button></form></div>
+      {% else %}
+        <p class="helptext">{{ 'Not shared. People you add can open this record after signing in with that email address.' if lang == 'en' else 'Non partagé. Les personnes ajoutées pourront ouvrir cette fiche après connexion avec cette adresse courriel.' }}</p>
+      {% endfor %}
+    {% endif %}
+
+    {% if role == 'owner' and my_teams %}
+      <form method="POST" action="{{ ci_url('registry_team', rid=e['id']) }}" class="inline-form" style="margin-top:14px;" data-busy>
+        <label class="helptext" style="margin:0 8px 0 0;">{{ 'Team space' if lang == 'en' else "Espace d'équipe" }}</label>
+        <select name="team_id" style="width:auto;"><option value="">{{ 'None (private)' if lang == 'en' else 'Aucune (privé)' }}</option>{% for t in my_teams %}<option value="{{ t['id'] }}" {{ 'selected' if e['team_id'] == t['id'] }}>{{ t['name'] }}</option>{% endfor %}</select>
+        <button class="btn btn-ghost btn-sm" type="submit">{{ 'Apply' if lang == 'en' else 'Appliquer' }}</button>
+      </form>
+    {% elif team %}<p class="helptext" style="margin-top:14px;">{{ 'Team space:' if lang == 'en' else "Espace d'équipe :" }} <a href="{{ ci_url('team', tid=team['id']) }}">{{ team['name'] }}</a></p>{% endif %}
+
+    {% if team %}
+      <h4 style="margin:22px 0 8px;">{{ 'Internal sign-off' if lang == 'en' else 'Validation interne' }}</h4>
+      {% for so in signoffs %}<div class="ci-comment"><strong>{{ so['user_name'] }}</strong> — <span class="status-pill {{ 'done' if so['decision'] == 'approved' else '' }}">{{ ('Approved' if lang == 'en' else 'Validé') if so['decision'] == 'approved' else ('Changes requested' if lang == 'en' else 'Changements demandés') }}</span> <span class="helptext">{{ so['created_at'][:16].replace('T', ' ') }}</span>{% if so['comment'] %}<div>{{ so['comment'] }}</div>{% endif %}</div>
+      {% else %}<p class="helptext">{{ 'No sign-off yet.' if lang == 'en' else 'Aucune validation pour l\'instant.' }}</p>{% endfor %}
+      {% if can_signoff %}
+      <form method="POST" action="{{ ci_url('registry_signoff', rid=e['id']) }}" data-busy>
+        <input name="comment" maxlength="500" placeholder="{{ 'Comment (required to request changes)' if lang == 'en' else 'Commentaire (obligatoire pour demander des changements)' }}">
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn btn-primary btn-sm" name="decision" value="approved" type="submit">{{ 'Approve' if lang == 'en' else 'Valider' }}</button>
+          <button class="btn btn-ghost btn-sm" name="decision" value="changes" type="submit">{{ 'Request changes' if lang == 'en' else 'Demander des changements' }}</button>
+        </div>
+      </form>
+      {% endif %}
+    {% endif %}
+
+    <h4 style="margin:22px 0 8px;">{{ 'Comments' if lang == 'en' else 'Commentaires' }}</h4>
+    {% if can_comment %}
+    <form method="POST" action="{{ ci_url('registry_comment', rid=e['id']) }}" data-busy>
+      <textarea name="body" rows="2" maxlength="1000" placeholder="{{ 'Write a comment — participants are notified by email.' if lang == 'en' else 'Écrire un commentaire — les participants sont prévenus par courriel.' }}" required></textarea>
+      <button class="btn btn-ghost btn-sm" type="submit" style="margin-top:8px;">{{ 'Post' if lang == 'en' else 'Publier' }}</button>
+    </form>
+    {% endif %}
+    {% for c in comments %}<div class="ci-comment"><strong>{{ c['author_name'] }}</strong> <span class="helptext">{{ c['created_at'][:16].replace('T', ' ') }}</span><div>{{ c['body'] }}</div></div>
+    {% else %}<p class="helptext">{{ 'No comment yet.' if lang == 'en' else 'Aucun commentaire pour l\'instant.' }}</p>{% endfor %}
+
+    <details style="margin-top:22px;"><summary style="cursor:pointer;font-weight:600;">{{ 'Activity log' if lang == 'en' else 'Journal d\'activité' }} ({{ activity|length }})</summary>
+      <ul class="ci-log">{% for a in activity %}<li><span class="helptext">{{ a.when }}</span> <strong>{{ a.who }}</strong> — {{ a.what }}</li>{% endfor %}</ul>
+    </details>
   </div>
 </section>
 {% endblock %}

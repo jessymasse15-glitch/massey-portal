@@ -20,7 +20,15 @@
       {% if p['is_default'] %}<span class="status-pill done">{{ 'default' if lang == 'en' else 'par défaut' }}</span>{% endif %}
     </a>
   {% else %}
-    <p class="helptext">{{ 'No playbook yet.' if lang == 'en' else 'Aucun playbook pour l\'instant.' }}</p>
+    <div class="card ci-empty"><strong>{{ 'No playbook yet' if lang == 'en' else 'Aucun playbook pour l\'instant' }}</strong><p class="helptext" style="margin:6px 0 0;">{{ 'Create one above: it will be checked on every analysis.' if lang == 'en' else 'Créez-en un ci-dessus : il sera vérifié à chaque analyse.' }}</p></div>
   {% endfor %}
+  {% if team_playbooks %}
+  <h2 style="margin-top:34px;">{{ 'Shared by your teams' if lang == 'en' else 'Partagés par vos équipes' }}</h2>
+  {% for p in team_playbooks %}
+    <a class="doc-row" href="{{ ci_url('playbook', pid=p['id']) }}" style="text-decoration:none;color:inherit;">
+      <span><strong>{{ p['name'] }}</strong><br><span class="helptext">{{ p['team_name'] }} · {{ p['n'] }} {{ 'position(s)' if lang == 'en' else 'position(s)' }}</span></span>
+    </a>
+  {% endfor %}
+  {% endif %}
 </section>
 {% endblock %}

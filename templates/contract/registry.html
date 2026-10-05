@@ -9,7 +9,7 @@
 {% include "contract/_subnav.html" %}
 <section class="block" style="border-top:none;padding-top:0;">
   <div class="grid-2">
-    <form method="POST" class="card">
+    <form method="POST" class="card" data-busy>
       <h3 style="margin-top:0;">{{ 'Add a contract' if lang == 'en' else 'Ajouter un contrat' }}</h3>
       <div class="form-group"><label for="title">{{ 'Title' if lang == 'en' else 'Titre' }} *</label><input id="title" name="title" required maxlength="160"></div>
       <div class="form-group"><label for="counterparty">{{ 'Counterparty' if lang == 'en' else 'Contrepartie' }}</label><input id="counterparty" name="counterparty" maxlength="120"></div>
@@ -24,6 +24,14 @@
       <button class="btn btn-ghost btn-sm" type="submit" style="margin-top:10px;">{{ 'Filter' if lang == 'en' else 'Filtrer' }}</button>
     </form>
   </div>
+  <details class="card" style="margin-top:18px;">
+    <summary style="cursor:pointer;font-weight:600;">{{ 'Import several contracts at once' if lang == 'en' else 'Importer plusieurs contrats d\'un coup' }}</summary>
+    <form method="POST" action="{{ ci_url('registry_import') }}" enctype="multipart/form-data" data-busy data-nopreview style="margin-top:12px;">
+      <input type="file" name="files" multiple accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg" required>
+      <p class="helptext">{{ 'Up to 20 files, 5 MB each. One record is created per file (title taken from the file name) and the file is archived with its fingerprint. Complete each record afterwards.' if lang == 'en' else 'Jusqu\'à 20 fichiers de 5 Mo. Une fiche est créée par fichier (titre tiré du nom du fichier) et le fichier est archivé avec son empreinte. Complétez ensuite chaque fiche.' }}</p>
+      <button class="btn btn-primary btn-sm" type="submit">{{ 'Import' if lang == 'en' else 'Importer' }}</button>
+    </form>
+  </details>
   <div style="margin-top:28px;">
   {% for e in entries %}
     <a class="doc-row" href="{{ ci_url('registry_entry', rid=e['id']) }}" style="text-decoration:none;color:inherit;">
@@ -31,8 +39,17 @@
       <span class="status-pill {{ 'done' if e['status']=='actif' else '' }}">{{ status_labels.get(e['status'], e['status']) }}</span>
     </a>
   {% else %}
-    <p class="helptext">{{ 'No contract in the registry yet.' if lang == 'en' else 'Aucun contrat dans le registre pour l\'instant.' }}</p>
+    <div class="card ci-empty"><strong>{{ 'No contract here yet' if lang == 'en' else 'Aucun contrat ici pour l\'instant' }}</strong><p class="helptext" style="margin:6px 0 0;">{{ 'Add one with the form above, or open an analysis or a draft and choose “Add to the contract registry”.' if lang == 'en' else 'Ajoutez-en un avec le formulaire ci-dessus, ou ouvrez une analyse ou un brouillon et choisissez « Ajouter au registre des contrats ».' }}</p></div>
   {% endfor %}
   </div>
+  {% if shared %}
+  <h2 style="margin-top:36px;">{{ 'Shared with me' if lang == 'en' else 'Partagés avec moi' }}</h2>
+  {% for e in shared %}
+    <a class="doc-row" href="{{ ci_url('registry_entry', rid=e['id']) }}" style="text-decoration:none;color:inherit;">
+      <span><strong>{{ e['title'] }}</strong><br><span class="helptext">{{ e['owner_name'] or e['owner_email'] }}{% if e['via'] %} · {{ e['via'] }}{% endif %} · {{ {'editor': ('can edit' if lang == 'en' else 'peut modifier'), 'viewer': ('read & comment' if lang == 'en' else 'lecture et commentaires'), 'reader': ('read only' if lang == 'en' else 'lecture seule')}[e['my_role']] }}</span></span>
+      <span class="status-pill {{ 'done' if e['status']=='actif' else '' }}">{{ status_labels.get(e['status'], e['status']) }}</span>
+    </a>
+  {% endfor %}
+  {% endif %}
 </section>
 {% endblock %}

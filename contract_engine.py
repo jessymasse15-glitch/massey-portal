@@ -861,38 +861,168 @@ def validate_values(variables, values):
     return missing
 
 
-def build_docx(title, text, footer_note=None):
-    """Retourne les octets d'un .docx, ou None si python-docx est absent."""
+_ART_RX = re.compile(r"^(?:ARTICLE|Article|CLAUSE|Clause|SECTION|Section)\s+[0-9IVXivx]+\b")
+_NUM_RX = re.compile(r"^(\d{1,2}(?:\.\d{1,2})*)[.)]\s+(.*)$")
+_NUMHEAD_RX = re.compile(r"^([^.:;]{2,70}\.)\s+(\S.*)$")
+
+
+def render_blocks(text):
+    """Découpe un contrat en blocs de mise en page : ('blank',), ('title', ligne),
+    ('head', numéro, intitulé, suite), ('para', ligne). Sert au Word et au PDF."""
+    blocks = []
+    for raw in (text or "").replace("\r", "").split("\n"):
+        line = raw.strip()
+        if not line:
+            if blocks and blocks[-1][0] != "blank":
+                blocks.append(("blank",))
+            continue
+        if _ART_RX.match(line) and len(line) < 140:
+            blocks.append(("title", line))
+            continue
+        mt = _NUM_RX.match(line)
+        if mt:
+            num, rest = mt.group(1), mt.group(2)
+            mh = _NUMHEAD_RX.match(rest)
+            if mh:
+                blocks.append(("head", num, mh.group(1), mh.group(2)))
+            else:
+                blocks.append(("head", num, rest if len(rest) < 70 and not rest.endswith(".") else "", "" if len(rest) < 70 and not rest.endswith(".") else rest))
+            continue
+        if line.isupper() and len(line) < 100:
+            blocks.append(("title", line))
+            continue
+        blocks.append(("para", line))
+    while blocks and blocks[-1][0] == "blank":
+        blocks.pop()
+    return blocks
+
+
+def build_docx(title, text, footer_note=None, subtitle=None, parties=None, lang="fr"):
+    """Retourne les octets d'un .docx mis en page (A4, texte justifié, intertitres en gras,
+    pagination « Page X / Y », bloc de signatures), ou None si python-docx est absent."""
     try:
         import docx
         from docx.enum.text import WD_ALIGN_PARAGRAPH
-        from docx.shared import Pt
+        from docx.oxml import OxmlElement
+        from docx.oxml.ns import qn
+        from docx.shared import Cm, Pt, RGBColor
     except ImportError:
         return None
+    en = lang == "en"
     document = docx.Document()
-    style = document.styles["Normal"]
-    style.font.name = "Times New Roman"
-    style.font.size = Pt(11)
+    sec = document.sections[0]
+    sec.page_width, sec.page_height = Cm(21), Cm(29.7)
+    sec.left_margin = sec.right_margin = Cm(2.5)
+    sec.top_margin, sec.bottom_margin = Cm(2.3), Cm(2.2)
+    document.core_properties.title = title[:200]
+    document.core_properties.author = "Massey Contracts & Tax"
+    normal = document.styles["Normal"]
+    normal.font.name = "Times New Roman"
+    normal.element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+    normal.font.size = Pt(11)
+    normal.paragraph_format.line_spacing = 1.25
+
+    def bottom_rule(par):
+        ppr = par._p.get_or_add_pPr()
+        bdr = OxmlElement("w:pBdr")
+        bt = OxmlElement("w:bottom")
+        for k, v in (("w:val", "single"), ("w:sz", "8"), ("w:space", "6"), ("w:color", "7A1F2B")):
+            bt.set(qn(k), v)
+        bdr.append(bt)
+        ppr.append(bdr)
+
+    def field(par, code):
+        for kind, txt in (("begin", None), (None, code), ("end", None)):
+            r = par.add_run()
+            r.font.size = Pt(8.5)
+            if kind:
+                el = OxmlElement("w:fldChar")
+                el.set(qn("w:fldCharType"), kind)
+            else:
+                el = OxmlElement("w:instrText")
+                el.set(qn("xml:space"), "preserve")
+                el.text = txt
+            r._r.append(el)
+
     heading = document.add_paragraph()
     heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    heading.paragraph_format.space_before = Pt(6)
+    heading.paragraph_format.space_after = Pt(4)
     run = heading.add_run(title.upper())
     run.bold = True
-    run.font.size = Pt(14)
-    document.add_paragraph()
-    for block in text.split("\n"):
-        stripped = block.strip()
-        if not stripped:
-            document.add_paragraph()
+    run.font.size = Pt(15)
+    if subtitle:
+        sp = document.add_paragraph()
+        sp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = sp.add_run(subtitle)
+        r.italic = True
+        r.font.size = Pt(9.5)
+        r.font.color.rgb = RGBColor(0x5B, 0x4A, 0x4C)
+        bottom_rule(sp)
+    else:
+        bottom_rule(heading)
+    document.add_paragraph().paragraph_format.space_after = Pt(2)
+
+    for blk in render_blocks(text):
+        kind = blk[0]
+        if kind == "blank":
             continue
         p = document.add_paragraph()
-        if re.match(r"^(?:ARTICLE|Article)\s+\d+\b", stripped) or stripped.isupper():
-            r = p.add_run(stripped)
+        pf = p.paragraph_format
+        pf.space_after = Pt(6)
+        if kind == "title":
+            r = p.add_run(blk[1])
             r.bold = True
+            pf.space_before = Pt(12)
+            pf.keep_with_next = True
+        elif kind == "head":
+            p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            pf.space_before = Pt(8)
+            r = p.add_run(("%s. %s" % (blk[1], blk[2])).strip())
+            r.bold = True
+            if blk[3]:
+                p.add_run(" " + blk[3])
+            else:
+                pf.keep_with_next = True
         else:
-            p.add_run(stripped)
-        p.paragraph_format.space_after = Pt(4)
+            p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            p.add_run(blk[1])
+
+    names = [x for x in (parties or []) if x] or [("Partie A" if not en else "Party A"), ("Partie B" if not en else "Party B")]
+    names = names[:6]
+    intro = document.add_paragraph()
+    intro.paragraph_format.space_before = Pt(22)
+    intro.paragraph_format.keep_with_next = True
+    ri = intro.add_run("Fait en autant d'exemplaires que de parties, le ____ / ____ / ________." if not en else "Made in as many originals as there are parties, on ____ / ____ / ________.")
+    ri.italic = True
+    tbl = document.add_table(rows=1, cols=2 if len(names) > 1 else 1)
+    cells = tbl.rows[0].cells
+    ncols = len(cells)
+    for i, nm in enumerate(names):
+        if i >= ncols:
+            cells = tbl.add_row().cells
+        cell = cells[i % ncols]
+        cp = cell.paragraphs[0]
+        cp.paragraph_format.keep_with_next = True
+        rr = cp.add_run(nm)
+        rr.bold = True
+        for line in ("", "", "_______________________________", ("Signature" if en else "Signature") + " / " + ("Date" if en else "Date")):
+            q = cell.add_paragraph(line)
+            q.paragraph_format.space_after = Pt(2)
+            for r_ in q.runs:
+                r_.font.size = Pt(9)
+    footer = sec.footer.paragraphs[0]
+    footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if footer_note:
-        document.sections[0].footer.paragraphs[0].text = footer_note
+        rn = footer.add_run(footer_note + "   ")
+        rn.font.size = Pt(8)
+        rn.font.color.rgb = RGBColor(0x5B, 0x4A, 0x4C)
+    pr = footer.add_run("Page " if not en else "Page ")
+    pr.font.size = Pt(8.5)
+    field(footer, "PAGE")
+    mid = footer.add_run(" / ")
+    mid.font.size = Pt(8.5)
+    field(footer, "NUMPAGES")
     buf = io.BytesIO()
     document.save(buf)
     return buf.getvalue()

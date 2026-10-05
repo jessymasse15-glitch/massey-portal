@@ -60,6 +60,13 @@
     <a href="{{ ci_url('deadlines') }}">{{ 'Change' if lang == 'en' else 'Modifier' }}</a>
   </p>
 
+  {% if activity %}
+  <h2 style="margin-top:36px;">{{ 'Team activity' if lang == 'en' else 'Activité de l\'équipe' }}</h2>
+  <div class="ci-recent">
+    {% for a in activity %}<a class="doc-row" href="{{ a.url }}"><span><strong>{{ a.title }}</strong><br><span class="helptext">{{ a.who }} — {{ a.what }} · {{ a.when }}</span></span></a>{% endfor %}
+  </div>
+  {% endif %}
+
   {% if recent %}
   <h2 style="margin-top:36px;">{{ 'Recent work' if lang == 'en' else 'Travaux récents' }}</h2>
   <div class="ci-recent">
@@ -70,5 +77,6 @@
   </div>
   {% endif %}
 {% endif %}
+  <p class="helptext" style="margin-top:30px;"><a href="{{ ci_url('trust') }}">{{ 'Your data, privacy and AI: what we keep and how to delete it' if lang == 'en' else 'Vos données, confidentialité et IA : ce que nous conservons et comment le supprimer' }}</a></p>
 </section>
 {% endblock %}

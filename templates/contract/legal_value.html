@@ -62,5 +62,6 @@
   <h2>{{ 'Sources' }}</h2>
   <ul class="legal-list">{% for label, url in sources %}<li><a href="{{ url }}" rel="noopener" target="_blank">{{ label }}</a></li>{% endfor %}</ul>
   <p class="helptext">{{ 'Press and law-firm articles are secondary sources; the official texts prevail.' if lang == 'en' else 'Les articles de presse et de cabinets sont des sources secondaires ; les textes officiels prévalent.' }}</p>
+  <p><a href="{{ url_for('ci_verify_en' if lang == 'en' else 'ci_verify') }}">{{ 'Verify a signed document' if lang == 'en' else 'Vérifier un document signé' }}</a></p>
 </section>
 {% endblock %}

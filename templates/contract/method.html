@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% set en = lang == 'en' %}
+{% block title %}{{ 'How the analysis works and its limits' if en else "Comment fonctionne l'analyse et ses limites" }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'How the analysis works, and where it stops' if en else "Comment fonctionne l'analyse, et où elle s'arrête" }}</h1>
+  <p class="lede">{{ 'What each result is based on, what it cannot see, and how to check it.' if en else "Sur quoi repose chaque résultat, ce qu'il ne peut pas voir, et comment le vérifier." }}</p>
+</section>
+{% if logged %}{% include "contract/_subnav.html" %}{% endif %}
+<section class="block" style="border-top:none;padding-top:0;max-width:860px;">
+  <h2>{{ 'Two layers' if en else 'Deux couches' }}</h2>
+  <ul class="legal-list">
+    {% if en %}
+    <li><strong>Rules (always on).</strong> {{ n_rules }} risk patterns (for example unilateral termination, unlimited indemnity, automatic renewal, foreign jurisdiction, long payment terms) and {{ n_topics }} expected clause topics (governing law, dispute resolution, termination, term, price, liability, confidentiality, force majeure) are looked for with explicit text patterns in French and English. The same contract always gives the same result, and each finding quotes the exact passage that triggered it. This is not a language model.</li>
+    <li><strong>AI layer (optional, Premium).</strong> {% if ai_on %}Enabled on this site.{% else %}Not enabled on this site.{% endif %} When you ask for it and tick the consent box, a language model reads the whole contract and the rule results and writes contract-specific explanations. Its citations are checked: any source it cites that was not provided to it is removed.</li>
+    {% else %}
+    <li><strong>Règles (toujours actives).</strong> {{ n_rules }} motifs de risque (par exemple résiliation unilatérale, indemnisation illimitée, renouvellement tacite, juridiction étrangère, délais de paiement longs) et {{ n_topics }} sujets de clauses attendues (droit applicable, règlement des différends, résiliation, durée, prix, responsabilité, confidentialité, force majeure) sont recherchés par des motifs de texte explicites, en français et en anglais. Un même contrat donne toujours le même résultat, et chaque constat cite le passage exact qui l'a déclenché. Ce n'est pas un modèle de langage.</li>
+    <li><strong>Couche d'IA (optionnelle, Premium).</strong> {% if ai_on %}Activée sur ce site.{% else %}Non activée sur ce site.{% endif %} Quand vous la demandez et cochez le consentement, un modèle de langage lit tout le contrat et les résultats des règles, puis rédige des explications propres à ce contrat. Ses citations sont vérifiées : toute source citée qui ne lui avait pas été fournie est retirée.</li>
+    {% endif %}
+  </ul>
+
+  <h2 style="margin-top:34px;">{{ 'How the risk level is computed' if en else 'Comment le niveau de risque est calculé' }}</h2>
+  <p>{{ 'Each finding has a level (high, medium, note). Levels are weighted 3, 2 and 1, summed into a score, and the overall level (high, medium, low) follows thresholds on that score. A contract with no flagged pattern is not necessarily balanced: the rules only see what they were written to see.' if en else "Chaque constat a un niveau (élevé, moyen, à noter). Les niveaux sont pondérés 3, 2 et 1, additionnés en un score, et le niveau global (élevé, moyen, faible) découle de seuils sur ce score. Un contrat sans motif signalé n'est pas forcément équilibré : les règles ne voient que ce pour quoi elles ont été écrites." }}</p>
+
+  <h2 style="margin-top:34px;">{{ 'Limits you should know' if en else 'Limites à connaître' }}</h2>
+  <ul class="legal-list">
+    {% if en %}
+    <li>It reads text, not intent: a clause can be risky for reasons that depend on the deal, the parties' relative power or facts outside the document.</li>
+    <li>Scanned PDFs without a text layer cannot be read; tables, headers and images may be lost in extraction. Check the preview before analysing.</li>
+    <li>French and English only. Other languages give unreliable results.</li>
+    <li>Legal rules change. The sources below were loaded by this site's administrators and may be incomplete or out of date; check the current text (for Haiti, <em>Le Moniteur</em>).</li>
+    <li>"Missing clause" means the topic was not detected, not that it is absent: it may be worded in an unusual way.</li>
+    <li>Nothing here is legal advice, and no result replaces a lawyer's review of an important contract.</li>
+    {% else %}
+    <li>Il lit du texte, pas des intentions : une clause peut être risquée pour des raisons qui dépendent de l'opération, du rapport de force ou de faits extérieurs au document.</li>
+    <li>Les PDF numérisés sans couche texte ne peuvent pas être lus ; tableaux, en-têtes et images peuvent être perdus à l'extraction. Vérifiez l'aperçu avant d'analyser.</li>
+    <li>Français et anglais seulement. Les autres langues donnent des résultats peu fiables.</li>
+    <li>Le droit change. Les sources ci-dessous ont été chargées par les administrateurs de ce site et peuvent être incomplètes ou dépassées ; vérifiez le texte en vigueur (pour Haïti, <em>Le Moniteur</em>).</li>
+    <li>« Clause absente » signifie que le sujet n'a pas été détecté, pas qu'il est absent : il peut être formulé de façon inhabituelle.</li>
+    <li>Rien ici ne constitue un avis juridique, et aucun résultat ne remplace la relecture d'un avocat pour un contrat important.</li>
+    {% endif %}
+  </ul>
+
+  <h2 style="margin-top:34px;">{{ 'Legal sources behind the findings' if en else 'Sources juridiques derrière les constats' }}</h2>
+  <p class="helptext">{{ 'Each finding shows the sources it relies on. This is the full list currently enabled:' if en else 'Chaque constat indique les sources sur lesquelles il s\'appuie. Voici la liste complète actuellement activée :' }}</p>
+  {% if sources %}<div class="source-chips">{% for s in sources %}<span class="source-chip" title="{{ s.kind }}">{{ s.title }}{% if s.reference %} — {{ s.reference }}{% endif %}</span>{% endfor %}</div>
+  {% else %}<p class="helptext">{{ 'No source enabled yet: findings then rely only on the built-in rules.' if en else 'Aucune source activée pour l\'instant : les constats reposent alors uniquement sur les règles intégrées.' }}</p>{% endif %}
+
+  <div class="callout" style="margin-top:30px;">
+    {{ 'For a contract that matters, have a lawyer review it.' if en else 'Pour un contrat qui compte, faites-le relire par un avocat.' }}
+    {% if logged %}<a href="{{ ci_url('reviews') }}">{{ 'Your review requests' if en else 'Vos demandes de relecture' }}</a>{% endif %}
+  </div>
+</section>
+{% endblock %}

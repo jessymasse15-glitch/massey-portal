@@ -22,6 +22,8 @@
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">
     {% if req['status'] == 'completed' %}
       <a class="btn btn-primary btn-sm" href="{{ ci_url('signature_pdf', sid=req['id']) }}">{{ 'Download the signed PDF' if lang == 'en' else 'Télécharger le PDF signé' }}</a>
+      {% if req['method'] == 'certified' %}<a class="btn btn-ghost btn-sm" href="{{ ci_url('signature_cert', sid=req['id']) }}">{{ 'Certificate of completion' if lang == 'en' else 'Certificat de signature' }}</a>{% endif %}
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('ci_verify_en' if lang == 'en' else 'ci_verify') }}?t={{ req['final_sha256'] or req['body_sha256'] }}">{{ 'Verification page' if lang == 'en' else 'Page de vérification' }}</a>
       <a class="btn btn-ghost btn-sm" href="{{ ci_url('registry_entry', rid=req['registry_id']) }}">{{ 'Open the contract record' if lang == 'en' else 'Ouvrir la fiche du contrat' }}</a>
     {% endif %}
     {% if req['method'] == 'certified' and req['status'] in ('pending', 'completed') %}

@@ -4,11 +4,14 @@ Enregistré par ci_features.init() ; réutilise ses aides (courriel, jetons, reg
 import hashlib
 import json
 import os
+import re
 import secrets
+import time
 from datetime import datetime, timedelta
 
 from flask import abort, flash, g, redirect, render_template, request, send_file, Response, url_for
 
+import ci_crypto
 import ci_esign
 import ci_legal
 import ci_pdf
@@ -48,6 +51,7 @@ def init(app_module, features_module):
     _register_signatures()
     _register_report()
     _register_calendar()
+    _register_verify()
 
 
 def _now():
@@ -65,7 +69,8 @@ def _register_report():
         if not u:
             return m._ci_need_login()
         conn = m.dbm.get_db()
-        row = m._ci_get_analysis(conn, u, aid)
+        import ci_review
+        row, _role = ci_review.analysis_access(conn, u, aid, "viewer")
         conn.close()
         result = json.loads(row["result_json"])
         lang = "en" if g.lang == "en" else "fr"
@@ -269,21 +274,39 @@ def _archive_name(req):
     return base % req["id"]
 
 
+def _verify_url(req):
+    return F._site_link("/contract-intelligence/verifier?t=" + req["body_sha256"])
+
+
+def _store_certificate(conn, req, cert_bytes):
+    digest = hashlib.sha256(cert_bytes).hexdigest()
+    base = "certificat-realisation-%d.pdf" if req["lang"] == "fr" else "completion-certificate-%d.pdf"
+    path = os.path.join(F._registry_dir(req["owner_id"]), "%s_%s" % (digest[:16], base % req["id"]))
+    ci_crypto.write(path, cert_bytes)
+    conn.execute("UPDATE ci_signature_requests SET cert_path=?, cert_sha256=? WHERE id=?", (path, digest, req["id"]))
+    conn.commit()
+
+
+def _archive_certified(conn, req):
+    """Télécharge chez DocuSign le PDF signé (laissé intact pour conserver le sceau numérique) et le certificat (à part)."""
+    combined = ci_esign.download(req["provider_ref"], "combined")
+    cert = ci_esign.download(req["provider_ref"], "certificate")
+    _archive_pdf(conn, req, combined)
+    _store_certificate(conn, req, cert)
+
+
 def _archive_pdf(conn, req, data):
     """Écrit le PDF final dans le registre (empreinte SHA-256), passe le contrat à « Actif »."""
     digest = hashlib.sha256(data).hexdigest()
     entry = conn.execute("SELECT * FROM ci_registry WHERE id=?", (req["registry_id"],)).fetchone()
     name = _archive_name(req)
     path = os.path.join(F._registry_dir(req["owner_id"]), "%s_%s" % (digest[:16], name))
-    with open(path, "wb") as fh:
-        fh.write(data)
+    ci_crypto.write(path, data)
     if entry["file_path"] and entry["file_path"] != path and os.path.exists(entry["file_path"]):
-        try:
-            os.remove(entry["file_path"])
-        except OSError:
-            pass
-    conn.execute("UPDATE ci_registry SET file_name=?, file_path=?, file_sha256=?, status='actif', start_date=COALESCE(NULLIF(start_date,''), ?), updated_at=? WHERE id=?",
-                 (name, path, digest, datetime.utcnow().strftime("%Y-%m-%d"), _now(), req["registry_id"]))
+        ci_crypto.erase(entry["file_path"])
+    conn.execute("UPDATE ci_registry SET file_name=?, file_path=?, file_sha256=?, file_text=?, status='actif', start_date=COALESCE(NULLIF(start_date,''), ?), updated_at=? WHERE id=?",
+                 (name, path, digest, req["body_snapshot"][:60000], datetime.utcnow().strftime("%Y-%m-%d"), _now(), req["registry_id"]))
+    conn.execute("UPDATE ci_signature_requests SET final_sha256=? WHERE id=?", (digest, req["id"]))
     conn.commit()
 
 
@@ -307,6 +330,15 @@ def _notify_completed(conn, req):
     m.dbm.log_activity(req["owner_id"], "ci_signature_completed", "signature #%s" % req["id"])
 
 
+def _log_sig(conn, req, action):
+    try:
+        import ci_team
+        ci_team.log(conn, req["registry_id"], None, action, "SIG-%d" % req["id"])
+        conn.commit()
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def _complete(conn, req):
     """Finalise une signature simple quand tous ont signé : PDF archivé dans le registre, courriels."""
     cur = conn.execute("UPDATE ci_signature_requests SET status='completed', completed_at=? WHERE id=? AND status='pending'", (_now(), req["id"]))
@@ -314,10 +346,11 @@ def _complete(conn, req):
     if not cur.rowcount:
         return False
     req = conn.execute("SELECT * FROM ci_signature_requests WHERE id=?", (req["id"],)).fetchone()
+    _log_sig(conn, req, "sig_completed")
     signers = [{"name": s["signer_name"], "email": s["signer_email"], "signed_name": s["signed_name"], "signed_at": s["signed_at"], "ip": s["ip_address"]}
                for s in conn.execute("SELECT * FROM ci_signers WHERE request_id=? ORDER BY id", (req["id"],)).fetchall()]
     try:
-        data = ci_pdf.signed_contract(req["title"], req["body_snapshot"], req["lang"], req["body_sha256"], signers, "SIG-%d" % req["id"], req["completed_at"])
+        data = ci_pdf.signed_contract(req["title"], req["body_snapshot"], req["lang"], req["body_sha256"], signers, "SIG-%d" % req["id"], req["completed_at"], _verify_url(req))
         _archive_pdf(conn, req, data)
     except Exception as exc:  # noqa: BLE001 — la signature reste valide ; le PDF se régénère à la demande
         m.app.logger.warning("PDF signé non archivé (%s)", exc)
@@ -362,9 +395,9 @@ def refresh_certified(conn, req):
         conn.commit()
         if claimed.rowcount:
             fresh = conn.execute("SELECT * FROM ci_signature_requests WHERE id=?", (req["id"],)).fetchone()
+            _log_sig(conn, fresh, "sig_completed")
             try:
-                data = _merge_pdfs(ci_esign.download(req["provider_ref"], "combined"), ci_esign.download(req["provider_ref"], "certificate"))
-                _archive_pdf(conn, fresh, data)
+                _archive_certified(conn, fresh)
             except Exception as exc:  # noqa: BLE001 — réessayé à la demande depuis la page de la demande
                 m.app.logger.warning("PDF certifié non archivé (%s)", exc)
             _notify_completed(conn, fresh)
@@ -373,6 +406,7 @@ def refresh_certified(conn, req):
         reason = next((r["declined_reason"] for r in env["recipients"] if r["status"] == "declined" and r["declined_reason"]), "")
         if conn.execute("UPDATE ci_signature_requests SET status='declined' WHERE id=? AND status='pending'", (req["id"],)).rowcount:
             conn.commit()
+            _log_sig(conn, req, "sig_declined")
             if owner:
                 F._notify(owner["email"], ("Signature declined: " if en else "Signature refusée : ") + req["title"],
                           ("A signatory declined to sign \"%s\".\n%s\n" if en else "Un signataire a refusé de signer « %s ».\n%s\n") % (req["title"], reason)
@@ -491,6 +525,8 @@ def _register_signatures():
                          (sid, name, email, F._fresh_token(), "pending", now))
         conn.execute("UPDATE ci_registry SET status='signature', updated_at=? WHERE id=?", (now, rid))
         m._ci_record_usage(conn, u, "signature")
+        import ci_team
+        ci_team.log(conn, rid, u, "sig_requested", "(%s, %d)" % (method, len(people)))
         conn.commit()
         sent = len(people)
         if method == "simple":
@@ -588,7 +624,7 @@ def _register_signatures():
             entry = conn.execute("SELECT file_name FROM ci_registry WHERE id=?", (req["registry_id"],)).fetchone()
             if not entry or entry["file_name"] != _archive_name(req):
                 try:
-                    _archive_pdf(conn, req, _merge_pdfs(ci_esign.download(req["provider_ref"], "combined"), ci_esign.download(req["provider_ref"], "certificate")))
+                    _archive_certified(conn, req)
                     flash(m._T("PDF signé archivé dans le registre.", "Signed PDF archived in the registry."), "success")
                 except Exception as exc:  # noqa: BLE001
                     m.app.logger.warning("Archivage PDF certifié échoué (%s)", exc)
@@ -629,6 +665,28 @@ def _register_signatures():
         return render_template("contract/legal_value.html", lang=g.lang, ci_active="", level_labels={}, certified_available=ci_esign.is_configured(),
                                sources=LEGAL_SOURCES)
 
+    @m.ci_route("signature_cert", "/signatures/<int:sid>/certificat", "/signatures/<int:sid>/certificate")
+    def ci_signature_cert(sid):
+        u = m._ci_user()
+        if not u:
+            return m._ci_need_login()
+        conn = m.dbm.get_db()
+        req = _owned_request(conn, u, sid)
+        if req["status"] != "completed" or req["method"] != "certified":
+            conn.close()
+            abort(404)
+        name = "certificat-realisation-%d.pdf" % sid if req["lang"] == "fr" else "completion-certificate-%d.pdf" % sid
+        if req["cert_path"] and os.path.exists(req["cert_path"]):
+            conn.close()
+            return ci_crypto.send(req["cert_path"], name, "application/pdf")
+        try:
+            data = ci_esign.download(req["provider_ref"], "certificate")
+        except ci_esign.ESignError:
+            conn.close()
+            abort(503)
+        conn.close()
+        return Response(data, mimetype="application/pdf", headers={"Content-Disposition": 'attachment; filename="%s"' % name})
+
     @m.ci_route("signature_pdf", "/signatures/<int:sid>/pdf", "/signatures/<int:sid>/pdf")
     def ci_signature_pdf(sid):
         u = m._ci_user()
@@ -664,6 +722,7 @@ def _register_signatures():
                 else:
                     conn.execute("UPDATE ci_signers SET status='declined', decline_reason=?, signed_at=? WHERE id=?", (reason, _now(), signer["id"]))
                     conn.execute("UPDATE ci_signature_requests SET status='declined' WHERE id=? AND status='pending'", (req["id"],))
+                    _log_sig(conn, req, "sig_declined")
                     conn.commit()
                     F._notify(owner["email"], ("Signature declined: " if en else "Signature refusée : ") + req["title"],
                               ("%s declined to sign \"%s\".\nReason: %s\n" if en else "%s a refusé de signer « %s ».\nMotif : %s\n")
@@ -714,15 +773,98 @@ def _signed_pdf_response(conn, req):
     entry = conn.execute("SELECT file_path, file_name FROM ci_registry WHERE id=?", (req["registry_id"],)).fetchone()
     name = _archive_name(req)
     if entry and entry["file_path"] and os.path.exists(entry["file_path"]) and (entry["file_name"] or "") == name:
-        return send_file(entry["file_path"], mimetype="application/pdf", as_attachment=True, download_name=name)
+        return ci_crypto.send(entry["file_path"], name, "application/pdf")
     if req["method"] == "certified":
         try:
-            data = _merge_pdfs(ci_esign.download(req["provider_ref"], "combined"), ci_esign.download(req["provider_ref"], "certificate"))
+            data = ci_esign.download(req["provider_ref"], "combined")
         except ci_esign.ESignError:
             conn.close()
             abort(503)
         return Response(data, mimetype="application/pdf", headers={"Content-Disposition": 'attachment; filename="%s"' % name})
     signers = [{"name": s["signer_name"], "email": s["signer_email"], "signed_name": s["signed_name"], "signed_at": s["signed_at"], "ip": s["ip_address"]}
                for s in conn.execute("SELECT * FROM ci_signers WHERE request_id=? ORDER BY id", (req["id"],)).fetchall()]
-    data = ci_pdf.signed_contract(req["title"], req["body_snapshot"], req["lang"], req["body_sha256"], signers, "SIG-%d" % req["id"], req["completed_at"])
+    data = ci_pdf.signed_contract(req["title"], req["body_snapshot"], req["lang"], req["body_sha256"], signers, "SIG-%d" % req["id"], req["completed_at"], _verify_url(req))
     return Response(data, mimetype="application/pdf", headers={"Content-Disposition": 'attachment; filename="%s"' % name})
+
+
+# ---------------------------------------------------------------------------
+# Vérification publique d'un document signé
+# ---------------------------------------------------------------------------
+
+_verify_hits = {}
+VERIFY_MAX = 30          # vérifications
+VERIFY_WINDOW = 600      # par fenêtre de 10 minutes et par adresse IP
+HEX64 = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _throttled(ip):
+    now = time.time()
+    hits = [t for t in _verify_hits.get(ip, []) if now - t < VERIFY_WINDOW]
+    if len(hits) >= VERIFY_MAX:
+        _verify_hits[ip] = hits
+        return True
+    hits.append(now)
+    _verify_hits[ip] = hits
+    if len(_verify_hits) > 5000:   # borne mémoire
+        for k in [k for k, v in _verify_hits.items() if not v or now - v[-1] > VERIFY_WINDOW]:
+            _verify_hits.pop(k, None)
+    return False
+
+
+def _mask_email(addr):
+    local, _, domain = (addr or "").partition("@")
+    return (local[:1] + "***@" + domain) if domain else "***"
+
+
+def normalize_hash(raw):
+    h = re.sub(r"\s+", "", (raw or "")).lower()
+    if h.startswith("sha256:"):
+        h = h[7:]
+    return h if HEX64.match(h) else None
+
+
+def verify_digest(conn, digest):
+    """Retrouve une signature terminée à partir d'une empreinte (PDF final, certificat ou texte)."""
+    req = conn.execute("SELECT * FROM ci_signature_requests WHERE status='completed' AND (final_sha256=? OR cert_sha256=? OR body_sha256=?) ORDER BY id LIMIT 1",
+                       (digest, digest, digest)).fetchone()
+    if not req:
+        return None
+    kind = "file" if req["final_sha256"] == digest else ("certificate" if req["cert_sha256"] == digest else "text")
+    signers = [{"name": x["signed_name"] or x["signer_name"] or "", "email": _mask_email(x["signer_email"]), "signed_at": (x["signed_at"] or "")[:16].replace("T", " ")}
+               for x in conn.execute("SELECT * FROM ci_signers WHERE request_id=? AND status='signed' ORDER BY id", (req["id"],)).fetchall()]
+    return {"kind": kind, "title": req["title"], "method": req["method"], "ref": "SIG-%d" % req["id"], "completed_at": (req["completed_at"] or "")[:16].replace("T", " "),
+            "signers": signers, "body_sha256": req["body_sha256"], "final_sha256": req["final_sha256"]}
+
+
+def _register_verify():
+    app = m.app
+
+    m.LANG_COUNTERPART["ci_verify"] = "ci_verify_en"
+    m.LANG_COUNTERPART["ci_verify_en"] = "ci_verify"
+
+    @app.route("/contract-intelligence/verifier", methods=["GET", "POST"], endpoint="ci_verify")
+    @app.route("/en/contract-intelligence/verify", methods=["GET", "POST"], endpoint="ci_verify_en")
+    def ci_verify():
+        en = request.path.startswith("/en/")
+        g.lang = "en" if en else "fr"
+        result, digest, error, checked, source = None, None, None, False, None
+        if request.method == "POST" or request.args.get("t") or request.args.get("h"):
+            if _throttled(request.remote_addr or "?"):
+                error = m._T("Trop de vérifications depuis cette adresse. Réessayez dans quelques minutes.", "Too many checks from this address. Try again in a few minutes.")
+            else:
+                upload = request.files.get("file") if request.method == "POST" else None
+                if upload and upload.filename:
+                    digest = hashlib.sha256(upload.read()).hexdigest()
+                    source = upload.filename[:120]
+                else:
+                    raw = (request.form.get("hash") if request.method == "POST" else (request.args.get("t") or request.args.get("h"))) or ""
+                    digest = normalize_hash(raw)
+                    if not digest:
+                        error = m._T("Déposez un fichier PDF, ou collez une empreinte SHA-256 de 64 caractères (0-9, a-f).", "Drop a PDF file, or paste a 64-character SHA-256 fingerprint (0-9, a-f).")
+                if digest:
+                    conn = m.dbm.get_db()
+                    result = verify_digest(conn, digest)
+                    conn.close()
+                    checked = True
+        return render_template("contract/verify.html", lang=g.lang, ci_active="", level_labels={}, result=result, digest=digest, error=error, checked=checked,
+                               source=source, legal_url=url_for("ci_legal_en" if en else "ci_legal"))

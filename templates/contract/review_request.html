@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% set en = lang == 'en' %}
+{% block title %}{{ 'Have a lawyer review it' if en else 'Faire relire par un avocat' }} — Contract Intelligence{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Massey AI — Contract Intelligence</div>
+  <h1>{{ 'Have a lawyer review this contract' if en else 'Faire relire ce contrat par un avocat' }}</h1>
+  <p class="lede">{{ 'Tell us what you need. A lawyer sends you a quote by email; you accept or decline it here. Nothing is charged until you accept.' if en else "Dites-nous ce dont vous avez besoin. Un avocat vous envoie un devis par courriel ; vous l'acceptez ou le refusez ici. Rien n'est facturé avant votre acceptation." }}</p>
+</section>
+{% include "contract/_subnav.html" %}
+<section class="block" style="border-top:none;padding-top:0;max-width:760px;">
+  <div class="card">
+    <p><strong>{{ title }}</strong> <span class="helptext">· {{ words }} {{ 'words' if en else 'mots' }}</span></p>
+    <form method="POST" data-busy>
+      <input type="hidden" name="ref_type" value="{{ ref_type }}"><input type="hidden" name="ref_id" value="{{ ref_id }}">
+      <div class="form-group"><label>{{ 'What should the lawyer do?' if en else "Que doit faire l'avocat ?" }}</label>
+        <select name="scope">{% for k, lab in scopes %}<option value="{{ k }}">{{ lab }}</option>{% endfor %}</select></div>
+      <div class="form-group"><label>{{ 'Urgency' if en else 'Urgence' }}</label>
+        <select name="urgency">{% for k, lab in urgencies %}<option value="{{ k }}">{{ lab }}</option>{% endfor %}</select></div>
+      <div class="form-group"><label>{{ 'Context and questions (optional)' if en else 'Contexte et questions (optionnel)' }}</label><textarea name="message" rows="4" maxlength="1500"></textarea></div>
+      <div class="form-group"><label>{{ 'Phone (optional)' if en else 'Téléphone (optionnel)' }}</label><input name="phone" maxlength="40"></div>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;margin-bottom:14px;"><input type="checkbox" name="consent" value="1" style="width:auto;margin-top:4px;" required>
+        <span>{{ 'I allow the Massey team to read this contract to prepare the quote and carry out the review.' if en else "J'autorise l'équipe Massey à lire ce contrat pour préparer le devis et réaliser la relecture." }}</span></label>
+      <button class="btn btn-primary" type="submit">{{ 'Request a quote' if en else 'Demander un devis' }}</button>
+      <a class="btn btn-ghost" href="{{ back }}">{{ 'Back' if en else 'Retour' }}</a>
+    </form>
+  </div>
+</section>
+{% endblock %}
