@@ -89,6 +89,7 @@
             <a href="{{ url_for('admin_revue_articles') }}"><b>{% if lang=='en' %}Review (admin){% else %}Revue (admin){% endif %}</b></a>
             <a href="{{ url_for('admin_corpus_list') }}"><b>{% if lang=='en' %}Legal corpus{% else %}Corpus juridique{% endif %}</b></a>
             <a href="{{ url_for('admin_clauses_list') }}"><b>Clauses</b></a>
+            <a href="{{ url_for('admin_rules_list') }}"><b>{% if lang=='en' %}CI rules{% else %}Règles CI{% endif %}</b></a>
             <a href="{{ url_for('admin_contact_messages') }}"><b>Messages</b></a>
             {% if current_user['role'] == 'admin' %}<a href="{{ url_for('admin_users') }}"><b>{% if lang=='en' %}Users{% else %}Utilisateurs{% endif %}</b></a>{% endif %}
             {% if current_user['role'] == 'admin' %}<a href="{{ url_for('admin_settings') }}"><b>{% if lang=='en' %}Settings{% else %}Paramètres{% endif %}</b></a>{% endif %}

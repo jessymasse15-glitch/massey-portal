@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Règles Contract Intelligence — Administration{% endblock %}
+{% block content %}
+<h1>Règles Contract Intelligence</h1>
+<p class="helptext" style="max-width:74ch;margin-bottom:20px;">
+  Règles personnalisées ajoutées au moteur d'analyse, en plus des règles intégrées. Chaque règle repère des mots-clés ou un motif
+  dans un contrat et affiche votre explication et votre piste de correction. Rattachez-y des sources dans le
+  <a href="{{ url_for('admin_corpus_list') }}">corpus juridique</a> pour qu'elles s'affichent sous l'alerte.
+</p>
+<p style="margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap;">
+  <a href="{{ url_for('admin_rule_new') }}" class="btn btn-primary btn-sm">+ Ajouter une règle</a>
+  <a href="{{ url_for('admin_corpus_list') }}" class="btn btn-ghost btn-sm">Corpus juridique</a>
+</p>
+<table>
+  <tr><th>Sujet</th><th>Niveau</th><th>Langue</th><th>Mots-clés</th><th>État</th><th></th></tr>
+  {% for r in rules %}
+  <tr>
+    <td>{{ r['topic'] }}</td>
+    <td><span class="risk-badge {{ r['level'] }}">{{ level_labels.get(r['level'], r['level']) }}</span></td>
+    <td>{{ lang_labels.get(r['language'], r['language']) }}</td>
+    <td style="max-width:260px;">{{ (r['keywords'] or '')[:80] }}{% if r['pattern'] %} <span class="helptext">+ motif</span>{% endif %}</td>
+    <td><span class="status-pill {{ 'done' if r['active'] }}">{{ 'active' if r['active'] else 'désactivée' }}</span></td>
+    <td style="display:flex;gap:6px;flex-wrap:wrap;">
+      <a href="{{ url_for('admin_rule_edit', rule_id=r['id']) }}" class="btn btn-sm">Modifier</a>
+      <form method="POST" action="{{ url_for('admin_rule_toggle', rule_id=r['id']) }}"><button class="btn btn-sm btn-ghost" type="submit">{{ 'Désactiver' if r['active'] else 'Activer' }}</button></form>
+      {% if current_user['role'] == 'admin' %}
+      <form method="POST" action="{{ url_for('admin_rule_delete', rule_id=r['id']) }}" onsubmit="return confirm('Supprimer cette règle ?');"><button class="btn btn-sm btn-danger" type="submit">Supprimer</button></form>
+      {% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6" class="helptext">Aucune règle personnalisée pour l'instant.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

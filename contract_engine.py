@@ -81,9 +81,9 @@ def _pdf_text(data):
         raise ExtractionError("unreadable")
 
 
-def extract_text(data, filename):
+def extract_text(data, filename, max_chars=MAX_CHARS, max_bytes=MAX_BYTES):
     """Texte brut d'un fichier .txt/.md/.docx/.pdf (octets en entrée)."""
-    if len(data) > MAX_BYTES:
+    if len(data) > max_bytes:
         raise ExtractionError("too_large")
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     if ext in ("txt", "md"):
@@ -98,7 +98,7 @@ def extract_text(data, filename):
     if len(text) < MIN_CHARS:
         # PDF numérisé (images) ou document vide : rien à analyser.
         raise ExtractionError("empty")
-    return text[:MAX_CHARS]
+    return text[:max_chars]
 
 
 # ---------------------------------------------------------------------------
@@ -494,18 +494,62 @@ def _compile_rules():
 _compile_rules()
 
 
-def analyze_contract(text, lang=None):
+_NESTED_QUANT = re.compile(r"\([^)]*[+*][^)]*\)[+*{]")
+
+
+def compile_custom_rule(row):
+    """Transforme une règle personnalisée (ligne de ci_custom_rules ou dict) en règle
+    exécutable. Lève ValueError si elle est vide, invalide ou dangereuse."""
+    parts = []
+    for k in re.split(r"[,\n;]", row["keywords"] or ""):
+        k = k.strip()
+        if k:
+            parts.append(re.escape(fold(k)))
+    pat = (row["pattern"] or "").strip()
+    if pat:
+        if len(pat) > 300:
+            raise ValueError("pattern_too_long")
+        if _NESTED_QUANT.search(pat):
+            raise ValueError("pattern_unsafe")
+        try:
+            re.compile(pat)
+        except re.error:
+            raise ValueError("pattern_invalid")
+        parts.append(pat)
+    if not parts:
+        raise ValueError("empty")
+    rx = re.compile("|".join("(?:%s)" % p for p in parts))
+    topic, why, fix = row["topic"], row["why"], row["fix"]
+    return {
+        "id": "custom_%s" % row["id"], "level": row["level"] if row["level"] in LEVEL_ORDER else "moyen",
+        "language": row["language"] if "language" in row.keys() else "all",
+        "_re": [rx], "fr": (topic, why, fix), "en": (topic, why, fix), "custom": True,
+    }
+
+
+def topic_catalog(custom_rules=()):
+    """[(id, libellé)] des sujets auxquels une source peut être rattachée."""
+    out = [(r["id"], r["fr"][0]) for r in RULES]
+    out += [(r["id"], r["fr"][0] + " (clause attendue)") for r in EXPECTED]
+    out += [(r["id"], r["fr"][0] + " (règle perso)") for r in custom_rules]
+    return out
+
+
+def analyze_contract(text, lang=None, custom_rules=(), sources=()):
     """Analyse un contrat. Retourne un dict sérialisable en JSON :
     {language, clause_count, word_count, clauses:[...], findings:[...],
-     missing:[...], summary:{counts, score, overall}}."""
+     missing:[...], summary:{counts, score, overall}}.
+    custom_rules : règles issues de compile_custom_rule ; sources : liste de dicts
+    {id, title, kind, reference, tags:[ids de sujets]} rattachées aux alertes."""
     lang = lang or detect_language(text)
+    active_rules = RULES + [r for r in custom_rules if r.get("language", "all") in ("all", lang)]
     clauses = split_clauses(text)
     findings = []
     seen = set()
     for clause in clauses:
         original = clause["text"]
         folded = fold(original)
-        for rule in RULES:
+        for rule in active_rules:
             for rx in rule["_re"]:
                 for m in rx.finditer(folded):
                     check = rule.get("check")
@@ -535,6 +579,11 @@ def analyze_contract(text, lang=None):
                             "why": why, "fix": fix, "library": rule["library"]})
     findings.sort(key=lambda f: (LEVEL_ORDER[f["level"]], f["clause_index"]))
     missing.sort(key=lambda f: LEVEL_ORDER[f["level"]])
+    for item in findings + missing:
+        item["refs"] = [
+            {"id": src["id"], "title": src["title"], "kind": src.get("kind", ""), "reference": src.get("reference", "")}
+            for src in sources if item["rule"] in src.get("tags", ())
+        ][:3]
     counts = {"eleve": 0, "moyen": 0, "info": 0}
     score = 0
     for f in findings + missing:
@@ -918,3 +967,62 @@ def compare_texts(old, new):
         "identical": changed == added == removed == 0,
     }
     return {"blocks": blocks, "stats": stats}
+
+
+# ---------------------------------------------------------------------------
+# Sélection d'extraits de sources (contexte de l'IA)
+# ---------------------------------------------------------------------------
+
+_PARA_SPLIT = re.compile(r"\n\s*\n|\n(?=\s*(?:Article|Art\.|ARTICLE)\s+\d)")
+
+
+def _terms(*chunks):
+    words = set()
+    for chunk in chunks:
+        for w in re.findall(r"[a-z]{5,}", fold(chunk or "")):
+            words.add(w)
+    return words
+
+
+def select_excerpts(sources, target_ids, terms_text, budget=14000, per_source=2600):
+    """Choisit, parmi les sources du corpus, les passages les plus pertinents.
+    sources : dicts {id,title,kind,reference,full_text,tags}. Les sources rattachées
+    à un sujet détecté passent d'abord ; au sein d'une source, les paragraphes sont
+    classés par recoupement de mots avec les sujets/titres du contrat."""
+    terms = _terms(terms_text)
+    ranked = []
+    for src in sources:
+        paras = [p.strip() for p in _PARA_SPLIT.split(src["full_text"]) if p.strip()]
+        if not paras:
+            continue
+        scored = []
+        for i, p in enumerate(paras):
+            fp = fold(p)
+            scored.append((sum(1 for t in terms if t in fp), -i, p))
+        scored.sort(reverse=True)
+        tagged = 1 if set(src.get("tags", ())) & set(target_ids) else 0
+        ranked.append((tagged, scored[0][0], src, scored))
+    ranked.sort(key=lambda r: (r[0], r[1]), reverse=True)
+    out, used = [], 0
+    for tagged, best, src, scored in ranked:
+        if not tagged and best == 0:
+            continue  # source sans lien avec ce contrat : on ne dépense pas de budget
+        picked, size = [], 0
+        for score, neg_i, para in scored:
+            if size >= per_source or (score == 0 and picked):
+                break
+            chunk = para[: per_source - size]
+            picked.append((-neg_i, chunk))
+            size += len(chunk)
+        picked.sort()
+        excerpt = "\n".join(c for _, c in picked)
+        if used + len(excerpt) > budget:
+            excerpt = excerpt[: max(0, budget - used)]
+        if not excerpt:
+            break
+        out.append({"id": src["id"], "title": src["title"], "kind": src.get("kind", ""),
+                    "reference": src.get("reference", ""), "excerpt": excerpt})
+        used += len(excerpt)
+        if used >= budget:
+            break
+    return out

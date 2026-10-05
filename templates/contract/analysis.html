@@ -14,6 +14,50 @@
 <section class="block" style="border-top:none;padding-top:0;">
   {{ disclaimer('analysis') }}
 
+  <div class="ai-box" id="ia">
+    <h2>{{ 'In-depth analysis' if lang == 'en' else 'Analyse approfondie' }}<span class="ai-tag">IA</span></h2>
+    {% if ai %}
+      <p class="helptext">{{ 'AI-generated' if lang == 'en' else 'Généré par IA' }} ({{ ai.model }}) · {{ analysis['ai_created_at'][:10] }} — {{ 'it can be wrong: check every point and source, and have a lawyer review before relying on it.' if lang == 'en' else 'il peut se tromper : vérifiez chaque point et chaque source, et faites relire par un avocat avant de vous y fier.' }}</p>
+      {% if ai.overall %}<p>{{ 'AI overall assessment' if lang == 'en' else 'Appréciation globale de l\'IA' }} : <span class="risk-badge {{ {'eleve':'eleve','moyen':'moyen','faible':'info'}[ai.overall] }}">{{ overall_label(ai.overall) }}</span></p>{% endif %}
+      <p>{{ ai.summary }}</p>
+      {% for it in ai.issues %}
+        <div class="finding {{ it.severity }}">
+          <div class="head"><h4>{{ it.title }}</h4>{{ level_pill(it.severity) }}</div>
+          {% if it.clause_ref %}<div class="where">{{ it.clause_ref }}</div>{% endif %}
+          {% if it.quote %}<blockquote>{{ it.quote }}</blockquote>{% endif %}
+          <p>{{ it.explanation }}</p>
+          {% if it.suggestion %}<p><strong>{{ 'Suggestion' if lang == 'en' else 'Suggestion' }} :</strong> {{ it.suggestion }}</p>{% endif %}
+          {% if it.rewrite %}<div class="ai-rewrite">{{ it.rewrite }}</div>{% endif %}
+          {% if it.verify %}<p class="helptext"><strong>{{ 'To verify' if lang == 'en' else 'À vérifier' }} :</strong> {{ it.verify }}</p>{% endif %}
+          {% if it.sources %}<div class="source-chips"><span class="helptext" style="margin:0;">{{ 'Sources:' if lang == 'en' else 'Sources :' }}</span>{% for sid in it.sources %}{% set src = ai_sources.get(sid) %}<span class="source-chip">{{ src.title if src else 'S' ~ sid }}{% if src and src.reference %} — {{ src.reference }}{% endif %}</span>{% endfor %}</div>{% endif %}
+        </div>
+      {% endfor %}
+      {% if ai.missing %}
+        <h3>{{ 'Missing clauses (AI)' if lang == 'en' else 'Clauses absentes (IA)' }}</h3>
+        {% for m in ai.missing %}<div class="finding info"><h4 style="margin:0;">{{ m.title }}</h4><p>{{ m.explanation }}</p>{% if m.suggested_clause %}<div class="ai-rewrite">{{ m.suggested_clause }}</div>{% endif %}</div>{% endfor %}
+      {% endif %}
+      {% for c in ai.caveats %}<p class="helptext">• {{ c }}</p>{% endfor %}
+      {% if ai.dropped_citations %}<p class="helptext">{{ ai.dropped_citations }} {{ 'citation(s) removed: not backed by a provided source.' if lang == 'en' else 'citation(s) retirée(s) : non appuyée(s) par une source fournie.' }}</p>{% endif %}
+    {% else %}
+      <p>{{ 'A language model reads the whole contract, weighs the automatic alerts, and proposes contract-specific explanations and rewritten clauses, relying on the legal texts, doctrine and case law your administrators have loaded.' if lang == 'en' else 'Un modèle de langage lit tout le contrat, évalue les alertes automatiques, puis propose des explications propres à ce contrat et des clauses reformulées, en s\'appuyant sur les textes, la doctrine et la jurisprudence chargés par les administrateurs.' }}</p>
+    {% endif %}
+
+    {% if not ai_configured %}
+      <p class="helptext">{{ 'Not enabled on this site yet.' if lang == 'en' else 'Pas encore activée sur ce site.' }}</p>
+    {% elif not is_premium_user %}
+      <div class="callout">{{ 'In-depth AI analysis is part of the Premium plan.' if lang == 'en' else 'L\'analyse approfondie par IA fait partie du plan Premium.' }} <a href="{{ url_for('membership_en' if lang == 'en' else 'membership') }}">{{ 'See Premium' if lang == 'en' else 'Voir Premium' }}</a></div>
+    {% else %}
+      <form method="POST" action="{{ ci_url('analysis_ai', aid=analysis['id']) }}">
+        <label style="display:flex;gap:10px;align-items:flex-start;font-weight:400;font-size:0.86rem;margin-bottom:12px;">
+          <input type="checkbox" name="consent" value="1" style="width:auto;margin-top:3px;" required>
+          <span>{{ 'I agree that the text of this contract is sent to a third-party AI provider (Anthropic) to produce this analysis. Do not send contracts you are not allowed to share.' if lang == 'en' else 'J\'accepte que le texte de ce contrat soit envoyé à un fournisseur d\'IA tiers (Anthropic) pour produire cette analyse. N\'envoyez pas de contrat que vous n\'avez pas le droit de partager.' }}</span>
+        </label>
+        <button class="btn btn-primary" type="submit" {{ 'disabled' if not ai_allowed }}>{{ ('Run again' if lang == 'en' else 'Relancer l\'analyse IA') if ai else ('Run in-depth analysis' if lang == 'en' else 'Lancer l\'analyse approfondie') }}</button>
+        <p class="helptext ci-quota">{{ 'This month: ' if lang == 'en' else 'Ce mois-ci : ' }}{{ ai_used }} / {{ ai_limit }}</p>
+      </form>
+    {% endif %}
+  </div>
+
   <h2>{{ 'Points to review' if lang == 'en' else 'Points à examiner' }} ({{ result.findings|length }})</h2>
   {% if not result.findings %}
     <p class="helptext">{{ 'No risky wording pattern detected. This does not mean the contract is balanced.' if lang == 'en' else 'Aucune formulation à risque détectée. Cela ne signifie pas que le contrat soit équilibré.' }}</p>
@@ -25,6 +69,7 @@
       <blockquote>{{ f.excerpt }}</blockquote>
       <p><strong>{{ 'Why it matters' if lang == 'en' else 'Pourquoi c\'est important' }} :</strong> {{ f.why }}</p>
       <p><strong>{{ 'Suggested fix' if lang == 'en' else 'Piste de correction' }} :</strong> {{ f.fix }}</p>
+      {% if f.refs %}<div class="source-chips"><span class="helptext" style="margin:0;">{{ 'Sources:' if lang == 'en' else 'Sources :' }}</span>{% for r in f.refs %}<span class="source-chip" title="{{ r.kind }}">{{ r.title }}{% if r.reference %} — {{ r.reference }}{% endif %}</span>{% endfor %}</div>{% endif %}
     </div>
   {% endfor %}
 
@@ -38,6 +83,7 @@
       <p>{{ m.why }}</p>
       <p><strong>{{ 'Suggested fix' if lang == 'en' else 'Piste de correction' }} :</strong> {{ m.fix }}
         {% if lang == 'fr' %}<a href="{{ url_for('pillar_contract_intelligence', category=m.library) }}#bibliotheque">→ Voir la bibliothèque</a>{% endif %}</p>
+      {% if m.refs %}<div class="source-chips"><span class="helptext" style="margin:0;">{{ 'Sources:' if lang == 'en' else 'Sources :' }}</span>{% for r in m.refs %}<span class="source-chip" title="{{ r.kind }}">{{ r.title }}{% if r.reference %} — {{ r.reference }}{% endif %}</span>{% endfor %}</div>{% endif %}
     </div>
   {% endfor %}
 

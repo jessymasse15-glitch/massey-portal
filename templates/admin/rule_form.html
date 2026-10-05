@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifier' if rule else 'Nouvelle' }} règle — Contract Intelligence{% endblock %}
+{% block content %}
+{% set v = form if form else (rule if rule else {}) %}
+<h1>{{ 'Modifier la règle' if rule else 'Nouvelle règle' }}</h1>
+<form method="POST" class="card" style="max-width:820px;">
+  <div class="form-group"><label for="topic">Sujet (titre de l'alerte)</label>
+    <input id="topic" name="topic" required maxlength="140" value="{{ v.get('topic','') }}" placeholder="Ex. Clause léonine"></div>
+  <div class="grid-2">
+    <div class="form-group"><label for="level">Niveau</label>
+      <select id="level" name="level">{% for k, lab in levels %}<option value="{{ k }}" {{ 'selected' if v.get('level','moyen')==k }}>{{ lab }}</option>{% endfor %}</select></div>
+    <div class="form-group"><label for="language">S'applique aux contrats en</label>
+      <select id="language" name="language">{% for k, lab in languages %}<option value="{{ k }}" {{ 'selected' if v.get('language','all')==k }}>{{ lab }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="form-group"><label for="keywords">Mots-clés ou expressions (séparés par des virgules)</label>
+    <textarea id="keywords" name="keywords" rows="2" placeholder="clause léonine, pénalité unilatérale">{{ v.get('keywords','') or '' }}</textarea>
+    <div class="helptext">Insensible aux majuscules et aux accents. Une alerte se déclenche si l'un d'eux apparaît dans une section.</div></div>
+  <div class="form-group"><label for="pattern">Motif avancé (expression régulière, optionnel)</label>
+    <input id="pattern" name="pattern" maxlength="300" value="{{ v.get('pattern','') or '' }}" placeholder="resili\w+[^.;]{0,60}sans preavis">
+    <div class="helptext">Écrit en minuscules et sans accents (le texte du contrat est normalisé de la même façon). Les motifs à quantificateurs imbriqués sont refusés.</div></div>
+  <div class="form-group"><label for="why">Pourquoi c'est important</label>
+    <textarea id="why" name="why" rows="3" required>{{ v.get('why','') or '' }}</textarea></div>
+  <div class="form-group"><label for="fix">Piste de correction</label>
+    <textarea id="fix" name="fix" rows="3" required>{{ v.get('fix','') or '' }}</textarea></div>
+  <div class="form-group"><label for="test_text">Tester sur un extrait de contrat (optionnel)</label>
+    <textarea id="test_text" name="test_text" rows="4" class="ci-textarea">{{ form.get('test_text','') if form else '' }}</textarea></div>
+  {% if test %}
+    <div class="callout" style="border-left-color:{{ 'var(--good)' if test.hits else 'var(--warn)' }};">
+      {% if not test.ran %}Collez un extrait pour tester.
+      {% elif test.hits %}{{ test.hits|length }} correspondance(s) :<ul>{% for h in test.hits %}<li>{{ h }}</li>{% endfor %}</ul>
+      {% else %}Aucune correspondance dans cet extrait.{% endif %}
+    </div>
+  {% endif %}
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <button type="submit" name="action" value="test" class="btn btn-ghost">Tester sans enregistrer</button>
+    <a href="{{ url_for('admin_rules_list') }}" class="btn btn-ghost">Annuler</a>
+  </div>
+</form>
+{% endblock %}

@@ -20,6 +20,7 @@ import payments
 import signing
 import notifications
 import contract_engine
+import ci_ai
 
 APP_ROOT = os.path.dirname(__file__)
 # En production (Render), DATA_DIR pointe vers le disque persistant unique
@@ -566,6 +567,32 @@ def _ci_page(name, **ctx):
     return render_template("contract/" + name + ".html", **ctx)
 
 
+# ---- Base de connaissances (corpus + règles personnalisées) ---------------
+
+def _ci_load_knowledge(conn, with_text=False):
+    """Règles personnalisées actives (compilées) et sources du corpus cochées
+    « Contract Intelligence », avec leurs sujets rattachés."""
+    cols = "id, title, source_type, citation_reference, ci_tags" + (", full_text" if with_text else "")
+    sources = []
+    for r in conn.execute(f"SELECT {cols} FROM legal_corpus_documents WHERE ci_enabled=1 ORDER BY id").fetchall():
+        d = {
+            "id": r["id"], "title": r["title"],
+            "kind": dbm.CORPUS_SOURCE_LABELS.get(r["source_type"], r["source_type"]),
+            "reference": r["citation_reference"] or "",
+            "tags": [t for t in (r["ci_tags"] or "").split(",") if t],
+        }
+        if with_text:
+            d["full_text"] = r["full_text"]
+        sources.append(d)
+    custom = []
+    for r in conn.execute("SELECT * FROM ci_custom_rules WHERE active=1 ORDER BY id").fetchall():
+        try:
+            custom.append(contract_engine.compile_custom_rule(r))
+        except ValueError:
+            continue
+    return custom, sources
+
+
 # ---- Analyser ------------------------------------------------------------
 
 @ci_route("analyze", "/analyser", "/analyze", ("GET", "POST"))
@@ -586,7 +613,8 @@ def ci_analyze():
             flash(err, "error")
             return _ci_redirect("analyze")
         title = (request.form.get("title") or "").strip()[:140] or source or _T("Contrat sans titre", "Untitled contract")
-        result = contract_engine.analyze_contract(text)
+        custom_rules, kb_sources = _ci_load_knowledge(conn)
+        result = contract_engine.analyze_contract(text, custom_rules=custom_rules, sources=kb_sources)
         cur = conn.execute(
             "INSERT INTO contract_analyses (user_id, title, language, source_name, text_content, result_json, overall, created_at) "
             "VALUES (?,?,?,?,?,?,?,?)",
@@ -628,9 +656,70 @@ def ci_analysis(aid):
     eff_date = datetime.strptime(effective, "%Y-%m-%d").date() if effective else None
     obligations = contract_engine.extract_obligations(row["text_content"], result["language"], eff_date)
     kind_labels = dict(dbm.CI_OBLIGATION_KINDS_EN if g.lang == "en" else dbm.CI_OBLIGATION_KINDS)
+    conn = dbm.get_db()
+    ai_limit, ai_used, ai_allowed = _ci_quota(conn, u, "ai")
+    conn.close()
+    ai = json.loads(row["ai_json"]) if row["ai_json"] else None
+    ai_sources = {str(x["id"]): x for x in (ai or {}).get("sources_used", [])}
     return _ci_page("analysis", **_ci_ctx("analyze", analysis=row, result=result, obligations=obligations,
                                           effective=effective, kind_labels=kind_labels,
-                                          today=datetime.utcnow().date().isoformat()))
+                                          today=datetime.utcnow().date().isoformat(),
+                                          ai=ai, ai_sources=ai_sources, ai_configured=ci_ai.is_configured(),
+                                          ai_limit=ai_limit, ai_used=ai_used, ai_allowed=ai_allowed,
+                                          is_premium_user=_access_info(u)["is_premium"]))
+
+
+@ci_route("analysis_ai", "/analyse/<int:aid>/ia", "/analysis/<int:aid>/ai", ("POST",))
+def ci_analysis_ai(aid):
+    u = _ci_user()
+    if not u:
+        return _ci_need_login()
+    conn = dbm.get_db()
+    row = _ci_get_analysis(conn, u, aid)
+    if not ci_ai.is_configured():
+        conn.close()
+        flash(_T("L'analyse par IA n'est pas activée sur ce site.", "AI analysis is not enabled on this site."), "error")
+        return _ci_redirect("analysis", aid=aid)
+    limit, used, allowed = _ci_quota(conn, u, "ai")
+    if not allowed:
+        conn.close()
+        if limit == 0:
+            flash(_T("L'analyse approfondie par IA est réservée au plan Premium.", "In-depth AI analysis is reserved for the Premium plan."), "error")
+        else:
+            flash(_ci_quota_message("ai", limit), "error")
+        return _ci_redirect("analysis", aid=aid)
+    if not request.form.get("consent"):
+        conn.close()
+        flash(_T("Cochez la case de consentement pour envoyer le contrat à l'IA.", "Tick the consent box to send the contract to the AI."), "error")
+        return _ci_redirect("analysis", aid=aid)
+    result = json.loads(row["result_json"])
+    custom_rules, sources = _ci_load_knowledge(conn, with_text=True)
+    target = {f["rule"] for f in result["findings"]} | {m["rule"] for m in result["missing"]}
+    terms = " ".join([f["topic"] for f in result["findings"]] + [m["topic"] for m in result["missing"]]
+                     + [c["title"] for c in result["clauses"]])
+    excerpts = contract_engine.select_excerpts(sources, target, terms)
+    try:
+        ai = ci_ai.run_analysis(row["text_content"], result["language"], result, excerpts)
+    except ci_ai.AIError as exc:
+        conn.close()
+        app.logger.warning("Analyse IA échouée (%s) %s", exc.code, exc.detail)
+        msgs = {
+            "unreachable": _T("Le service d'IA est injoignable pour le moment. Réessayez dans quelques minutes.", "The AI service is unreachable right now. Try again in a few minutes."),
+            "rate": _T("Le service d'IA est très sollicité. Réessayez dans une minute.", "The AI service is busy. Try again in a minute."),
+            "unavailable": _T("Le service d'IA est momentanément indisponible. Réessayez plus tard.", "The AI service is temporarily unavailable. Try again later."),
+            "auth": _T("La configuration de l'IA est invalide (clé refusée). Contactez l'administrateur.", "The AI configuration is invalid (key rejected). Contact the administrator."),
+            "bad_output": _T("La réponse de l'IA n'a pas pu être exploitée. Réessayez.", "The AI response could not be used. Try again."),
+        }
+        flash(msgs.get(exc.code, _T("L'analyse par IA a échoué.", "AI analysis failed.")) + _T(" Votre quota n'a pas été décompté.", " Your quota was not used."), "error")
+        return _ci_redirect("analysis", aid=aid)
+    conn.execute("UPDATE contract_analyses SET ai_json=?, ai_created_at=? WHERE id=? AND user_id=?",
+                 (json.dumps(ai, ensure_ascii=False), dbm.now(), aid, u["id"]))
+    _ci_record_usage(conn, u, "ai")
+    conn.commit()
+    conn.close()
+    dbm.log_activity(u["id"], "contract_ai_analysis", f"analyse #{aid}")
+    flash(_T("Analyse approfondie terminée.", "In-depth analysis complete."), "success")
+    return redirect(ci_url("analysis", aid=aid) + "#ia")
 
 
 @ci_route("analysis_delete", "/analyse/<int:aid>/supprimer", "/analysis/<int:aid>/delete", ("POST",))
@@ -2952,7 +3041,7 @@ def admin_corpus_list():
 def admin_corpus_new():
     if request.method == "POST":
         return _save_corpus_document(None)
-    return render_template("admin/corpus_form.html", doc=None, source_types=dbm.CORPUS_SOURCE_TYPES)
+    return render_template("admin/corpus_form.html", **_corpus_form_context(None))
 
 
 @app.route("/admin/corpus/<int:doc_id>/modifier", methods=["GET", "POST"])
@@ -2965,7 +3054,7 @@ def admin_corpus_edit(doc_id):
         abort(404)
     if request.method == "POST":
         return _save_corpus_document(doc_id)
-    return render_template("admin/corpus_form.html", doc=doc, source_types=dbm.CORPUS_SOURCE_TYPES)
+    return render_template("admin/corpus_form.html", **_corpus_form_context(doc))
 
 
 @app.route("/admin/corpus/<int:doc_id>")
@@ -2979,6 +3068,21 @@ def admin_corpus_view(doc_id):
     return render_template("admin/corpus_view.html", doc=doc)
 
 
+def _ci_topic_ids(conn):
+    custom = []
+    for r in conn.execute("SELECT * FROM ci_custom_rules ORDER BY id").fetchall():
+        custom.append({"id": "custom_%s" % r["id"], "fr": (r["topic"],)})
+    return custom
+
+
+def _corpus_form_context(doc):
+    conn = dbm.get_db()
+    topics = contract_engine.topic_catalog(_ci_topic_ids(conn))
+    conn.close()
+    selected = set((doc["ci_tags"] or "").split(",")) if doc else set()
+    return dict(doc=doc, source_types=dbm.CORPUS_SOURCE_TYPES, topics=topics, selected_tags=selected)
+
+
 def _save_corpus_document(doc_id):
     u = current_user()
     title = request.form.get("title", "").strip()
@@ -2987,25 +3091,49 @@ def _save_corpus_document(doc_id):
         source_type = "autre"
     citation_reference = request.form.get("citation_reference", "").strip()
     full_text = request.form.get("full_text", "").strip()
-
-    if not (title and full_text):
-        flash("Titre et texte intégral sont obligatoires.", "error")
-        return redirect(request.referrer or url_for("admin_corpus_list"))
+    language = request.form.get("language", "fr")
+    if language not in ("fr", "en"):
+        language = "fr"
+    ci_enabled = 1 if request.form.get("ci_enabled") else 0
 
     conn = dbm.get_db()
+    valid_topics = {t for t, _ in contract_engine.topic_catalog(_ci_topic_ids(conn))}
+    ci_tags = ",".join(t for t in request.form.getlist("ci_tags") if t in valid_topics)
+
+    upload = request.files.get("source_file")
+    if upload and upload.filename and not full_text:
+        try:
+            full_text = contract_engine.extract_text(
+                upload.read(15 * 1024 * 1024 + 1), secure_filename(upload.filename) or "source",
+                max_chars=2_000_000, max_bytes=15 * 1024 * 1024)
+        except contract_engine.ExtractionError as exc:
+            conn.close()
+            flash({"unsupported": "Format non pris en charge (.docx, .pdf, .txt).",
+                   "empty": "Aucun texte exploitable dans ce fichier (PDF scanné ?). Collez le texte à la place.",
+                   "too_large": "Fichier trop volumineux (15 Mo maximum).",
+                   "missing_dependency": "Lecture de ce format indisponible sur le serveur."}.get(exc.code, "Fichier illisible."), "error")
+            return redirect(request.referrer or url_for("admin_corpus_list"))
+
+    if not (title and full_text):
+        conn.close()
+        flash("Titre et texte intégral (collé ou importé depuis un fichier) sont obligatoires.", "error")
+        return redirect(request.referrer or url_for("admin_corpus_list"))
+
+    if ci_enabled and not citation_reference:
+        flash("Astuce : renseignez la référence de citation, elle est affichée sous les alertes qui s'appuient sur cette source.", "error")
     if doc_id is None:
         conn.execute(
-            "INSERT INTO legal_corpus_documents (title, source_type, citation_reference, full_text, created_by, created_at, updated_at) "
-            "VALUES (?,?,?,?,?,?,?)",
-            (title, source_type, citation_reference, full_text, u["id"], dbm.now(), dbm.now()),
+            "INSERT INTO legal_corpus_documents (title, source_type, citation_reference, full_text, ci_enabled, ci_tags, language, created_by, created_at, updated_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (title, source_type, citation_reference, full_text, ci_enabled, ci_tags, language, u["id"], dbm.now(), dbm.now()),
         )
         conn.commit()
         dbm.log_activity(u["id"], "corpus_document_created", title)
         flash("Texte ajouté au corpus.", "success")
     else:
         conn.execute(
-            "UPDATE legal_corpus_documents SET title=?, source_type=?, citation_reference=?, full_text=?, updated_at=? WHERE id=?",
-            (title, source_type, citation_reference, full_text, dbm.now(), doc_id),
+            "UPDATE legal_corpus_documents SET title=?, source_type=?, citation_reference=?, full_text=?, ci_enabled=?, ci_tags=?, language=?, updated_at=? WHERE id=?",
+            (title, source_type, citation_reference, full_text, ci_enabled, ci_tags, language, dbm.now(), doc_id),
         )
         conn.commit()
         dbm.log_activity(u["id"], "corpus_document_updated", title)
@@ -3023,6 +3151,122 @@ def admin_corpus_delete(doc_id):
     conn.close()
     flash("Texte supprimé du corpus.", "success")
     return redirect(url_for("admin_corpus_list"))
+
+
+# ---------------------------------------------------------------------------
+# Contract Intelligence — administration des règles personnalisées
+# ---------------------------------------------------------------------------
+
+@app.route("/admin/regles")
+@roles_required("expert", "admin")
+def admin_rules_list():
+    conn = dbm.get_db()
+    rules = conn.execute("SELECT * FROM ci_custom_rules ORDER BY id DESC").fetchall()
+    conn.close()
+    return render_template("admin/rules_list.html", rules=rules, level_labels=dict(dbm.CI_RULE_LEVELS),
+                           lang_labels=dict(dbm.CI_RULE_LANGUAGES))
+
+
+def _rule_form_ctx(rule, form=None, test=None):
+    return dict(rule=dict(rule) if rule else None, form=form or {}, test=test, levels=dbm.CI_RULE_LEVELS, languages=dbm.CI_RULE_LANGUAGES)
+
+
+@app.route("/admin/regles/nouvelle", methods=["GET", "POST"])
+@roles_required("expert", "admin")
+def admin_rule_new():
+    if request.method == "POST":
+        return _save_rule(None)
+    return render_template("admin/rule_form.html", **_rule_form_ctx(None))
+
+
+@app.route("/admin/regles/<int:rule_id>/modifier", methods=["GET", "POST"])
+@roles_required("expert", "admin")
+def admin_rule_edit(rule_id):
+    conn = dbm.get_db()
+    rule = conn.execute("SELECT * FROM ci_custom_rules WHERE id=?", (rule_id,)).fetchone()
+    conn.close()
+    if rule is None:
+        abort(404)
+    if request.method == "POST":
+        return _save_rule(rule_id)
+    return render_template("admin/rule_form.html", **_rule_form_ctx(rule))
+
+
+def _save_rule(rule_id):
+    u = current_user()
+    f = request.form
+    data = {
+        "topic": f.get("topic", "").strip()[:140],
+        "level": f.get("level", "moyen") if f.get("level") in dict(dbm.CI_RULE_LEVELS) else "moyen",
+        "language": f.get("language", "all") if f.get("language") in dict(dbm.CI_RULE_LANGUAGES) else "all",
+        "keywords": f.get("keywords", "").strip()[:1000],
+        "pattern": f.get("pattern", "").strip(),
+        "why": f.get("why", "").strip()[:1000],
+        "fix": f.get("fix", "").strip()[:1000],
+        "id": rule_id or 0,
+    }
+    errors = {
+        "empty": "Indiquez au moins un mot-clé ou un motif.",
+        "pattern_too_long": "Motif trop long (300 caractères maximum).",
+        "pattern_unsafe": "Motif refusé : quantificateurs imbriqués (risque de blocage). Simplifiez-le.",
+        "pattern_invalid": "Motif invalide (expression régulière incorrecte).",
+    }
+    if not (data["topic"] and data["why"] and data["fix"]):
+        flash("Sujet, explication et piste de correction sont obligatoires.", "error")
+        return render_template("admin/rule_form.html", **_rule_form_ctx(None, f))
+    try:
+        compiled = contract_engine.compile_custom_rule(data)
+    except ValueError as exc:
+        flash(errors.get(str(exc), "Règle invalide."), "error")
+        return render_template("admin/rule_form.html", **_rule_form_ctx(None, f))
+    if f.get("action") == "test":
+        sample = f.get("test_text", "")[:20000]
+        folded = contract_engine.fold(sample)
+        hits = []
+        for m in compiled["_re"][0].finditer(folded):
+            hits.append(contract_engine._sentence_around(sample, m.start(), m.end())[:240])
+            if len(hits) >= 5:
+                break
+        return render_template("admin/rule_form.html", **_rule_form_ctx(None, f, test={"hits": hits, "ran": bool(sample)}))
+    conn = dbm.get_db()
+    if rule_id is None:
+        conn.execute(
+            "INSERT INTO ci_custom_rules (topic, level, language, keywords, pattern, why, fix, active, created_by, created_at, updated_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            (data["topic"], data["level"], data["language"], data["keywords"], data["pattern"], data["why"], data["fix"], 1, u["id"], dbm.now(), dbm.now()),
+        )
+        flash("Règle ajoutée : elle s'applique aux prochaines analyses.", "success")
+    else:
+        conn.execute(
+            "UPDATE ci_custom_rules SET topic=?, level=?, language=?, keywords=?, pattern=?, why=?, fix=?, updated_at=? WHERE id=?",
+            (data["topic"], data["level"], data["language"], data["keywords"], data["pattern"], data["why"], data["fix"], dbm.now(), rule_id),
+        )
+        flash("Règle mise à jour.", "success")
+    conn.commit()
+    conn.close()
+    dbm.log_activity(u["id"], "ci_rule_saved", data["topic"])
+    return redirect(url_for("admin_rules_list"))
+
+
+@app.route("/admin/regles/<int:rule_id>/basculer", methods=["POST"])
+@roles_required("expert", "admin")
+def admin_rule_toggle(rule_id):
+    conn = dbm.get_db()
+    conn.execute("UPDATE ci_custom_rules SET active=1-active WHERE id=?", (rule_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("admin_rules_list"))
+
+
+@app.route("/admin/regles/<int:rule_id>/supprimer", methods=["POST"])
+@roles_required("admin")
+def admin_rule_delete(rule_id):
+    conn = dbm.get_db()
+    conn.execute("DELETE FROM ci_custom_rules WHERE id=?", (rule_id,))
+    conn.commit()
+    conn.close()
+    flash("Règle supprimée.", "success")
+    return redirect(url_for("admin_rules_list"))
 
 
 # ---------------------------------------------------------------------------

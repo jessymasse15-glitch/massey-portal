@@ -8,6 +8,7 @@
 </p>
 <p style="margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap;">
   <a href="{{ url_for('admin_corpus_new') }}" class="btn btn-primary btn-sm">+ Ajouter un texte</a>
+  <a href="{{ url_for('admin_rules_list') }}" class="btn btn-ghost btn-sm">Règles Contract Intelligence</a>
   <a href="{{ url_for('admin_revue_articles') }}" class="btn btn-ghost btn-sm">Revue (admin)</a>
   <a href="{{ url_for('admin_users') }}" class="btn btn-ghost btn-sm">Utilisateurs</a>
 </p>
@@ -24,12 +25,13 @@
 </form>
 
 <table>
-  <tr><th>Titre</th><th>Type</th><th>Référence</th><th>Ajouté le</th><th></th></tr>
+  <tr><th>Titre</th><th>Type</th><th>Référence</th><th>Contract Intelligence</th><th>Ajouté le</th><th></th></tr>
   {% for d in docs %}
   <tr>
     <td><a href="{{ url_for('admin_corpus_view', doc_id=d['id']) }}">{{ d['title'] }}</a></td>
     <td><span class="tag">{{ source_types|selectattr('0','equalto',d['source_type'])|map(attribute='1')|first or d['source_type'] }}</span></td>
     <td>{{ d['citation_reference'] or '—' }}</td>
+    <td>{% if d['ci_enabled'] %}<span class="status-pill done">actif</span>{% else %}—{% endif %}</td>
     <td>{{ d['created_at'][:10] }}</td>
     <td style="display:flex;gap:6px;">
       <a href="{{ url_for('admin_corpus_edit', doc_id=d['id']) }}" class="btn btn-sm">Modifier</a>
@@ -39,7 +41,7 @@
     </td>
   </tr>
   {% else %}
-  <tr><td colspan="5" class="helptext">Le corpus est vide pour l'instant — commence par ajouter la Constitution ou un code.</td></tr>
+  <tr><td colspan="6" class="helptext">Le corpus est vide pour l'instant — commence par ajouter la Constitution ou un code.</td></tr>
   {% endfor %}
 </table>
 {% endblock %}

@@ -270,6 +270,8 @@ CI_MONTHLY_LIMITS = {
     "analysis": {"anonymous": 0, "free": 3, "premium": None},
     "draft": {"anonymous": 0, "free": 2, "premium": None},
     "compare": {"anonymous": 0, "free": 5, "premium": None},
+    # Analyse approfondie par IA : réservée au Premium, plafonnée pour maîtriser le coût.
+    "ai": {"anonymous": 0, "free": 0, "premium": int(os.environ.get("CI_AI_PREMIUM_LIMIT", "30"))},
 }
 CI_OBLIGATION_KINDS = [
     ("echeance", "Échéance"), ("date_effet", "Date d'effet"), ("terme", "Terme du contrat"),
@@ -396,6 +398,21 @@ CREATE TABLE IF NOT EXISTS contract_obligations (
     status TEXT NOT NULL DEFAULT 'a_faire',
     note TEXT,
     created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ci_custom_rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    topic TEXT NOT NULL,
+    level TEXT NOT NULL DEFAULT 'moyen',
+    language TEXT NOT NULL DEFAULT 'all',
+    keywords TEXT,
+    pattern TEXT,
+    why TEXT NOT NULL,
+    fix TEXT NOT NULL,
+    active INTEGER NOT NULL DEFAULT 1,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS contract_usage (
@@ -798,11 +815,29 @@ def get_db():
     return conn
 
 
+def _ensure_columns(conn, table, columns):
+    """Migration idempotente : ajoute les colonnes manquantes à une table existante
+    (CREATE TABLE IF NOT EXISTS ne modifie pas les tables déjà déployées)."""
+    existing = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+    for name, ddl in columns:
+        if name not in existing:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}")
+
+
 def init_db():
     conn = get_db()
     conn.executescript(SCHEMA)
     conn.executescript(CORPUS_SCHEMA)
     conn.executescript(PLATFORM_SCHEMA)
+    _ensure_columns(conn, "legal_corpus_documents", [
+        ("ci_enabled", "INTEGER NOT NULL DEFAULT 0"),
+        ("ci_tags", "TEXT NOT NULL DEFAULT ''"),
+        ("language", "TEXT NOT NULL DEFAULT 'fr'"),
+    ])
+    _ensure_columns(conn, "contract_analyses", [
+        ("ai_json", "TEXT"),
+        ("ai_created_at", "TEXT"),
+    ])
     conn.commit()
     _seed_review_demo_content(conn)
     _seed_clause_library(conn)
@@ -958,3 +993,7 @@ def log_activity(user_id, action, detail=""):
     )
     conn.commit()
     conn.close()
+
+
+CI_RULE_LEVELS = [("eleve", "Élevé"), ("moyen", "Moyen"), ("info", "À noter")]
+CI_RULE_LANGUAGES = [("all", "FR et EN"), ("fr", "Français"), ("en", "English")]
