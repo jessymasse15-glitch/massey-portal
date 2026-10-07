@@ -837,6 +837,8 @@ CLAUSE_CATEGORIES = [
     ("fiscalite", "Fiscalité et retenues"),
     ("conformite", "Conformité et déclarations"),
 ]
+from clause_library_seed import NEW_CATEGORIES as _NEWCAT
+CLAUSE_CATEGORIES += [(k, fr) for k, fr, _en in _NEWCAT]
 CLAUSE_CATEGORY_LABELS = dict(CLAUSE_CATEGORIES)
 
 CLAUSE_RISK_LEVELS = [
@@ -1026,6 +1028,7 @@ CLAUSE_CATEGORIES_EN = [
     ("fiscalite", "Taxation and withholding"),
     ("conformite", "Compliance and representations"),
 ]
+CLAUSE_CATEGORIES_EN += [(k, en) for k, _fr, en in _NEWCAT]
 
 CLAUSE_RISK_LABELS_EN = {
     "standard": "Standard",
@@ -1141,9 +1144,24 @@ def init_db():
     conn.commit()
     _seed_review_demo_content(conn)
     _seed_clause_library(conn)
+    _seed_extra_clauses(conn)
     from contract_templates_seed import seed_templates
     seed_templates(conn, now())
     conn.close()
+
+
+def _seed_extra_clauses(conn):
+    """Ajoute les clauses de l'extension si leur titre est absent (idempotent)."""
+    from clause_library_seed import CLAUSES
+    editorial = conn.execute("SELECT id FROM users WHERE email='revue@masseylawreview.local'").fetchone()
+    cid = editorial["id"] if editorial else None
+    ts = now()
+    have = {r["title"] for r in conn.execute("SELECT title FROM contract_clauses")}
+    for title, cat, risk, body, guid in CLAUSES:
+        if title not in have:
+            conn.execute("INSERT INTO contract_clauses (title, category, risk_level, body_text, guidance, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)",
+                         (title, cat, risk, body, guid, cid, ts, ts))
+    conn.commit()
 
 
 def _seed_clause_library(conn):

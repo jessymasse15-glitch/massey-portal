@@ -262,8 +262,17 @@ TEMPLATES = [
 ]
 
 
+def _all_templates():
+    from templates_extra_seed import EXTRA_TEMPLATES
+    out = list(TEMPLATES)
+    for key, tfr, ten, dfr, den, variables, bfr, ben in EXTRA_TEMPLATES:
+        out.append((key, "fr", tfr, dfr, variables, bfr))
+        out.append((key, "en", ten, den, variables, ben))
+    return out
+
+
 def seed_templates(conn, now):
-    for key, lang, title, desc, variables, body in TEMPLATES:
+    for key, lang, title, desc, variables, body in _all_templates():
         row = conn.execute("SELECT id FROM contract_templates WHERE key=? AND language=?", (key, lang)).fetchone()
         if row:
             continue

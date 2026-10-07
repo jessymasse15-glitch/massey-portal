@@ -871,7 +871,11 @@ def render_contract(body, variables, values, lang):
     by_key = {v["key"]: v for v in variables}
 
     def truthy(key):
-        return str(values.get(key, "")).lower() in ("1", "on", "true", "oui", "yes")
+        val = str(values.get(key, "")).strip().lower()
+        v = by_key.get(key)
+        if v and v.get("type") != "bool":  # variable texte : « renseignée » = vrai
+            return val not in ("", "0", "false", "non", "no")
+        return val in ("1", "on", "true", "oui", "yes")
 
     def if_sub(m):
         return m.group(2) if truthy(m.group(1)) else ""
