@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Legal assistant' if en else 'Assistant juridique' }} — Massey AI{% endblock %}
+{% block content %}
+<section class="page-hero reveal">
+  <div class="eyebrow">Legal Intelligence</div>
+  <h1>{{ 'Legal assistant' if en else 'Assistant juridique' }}</h1>
+  <p class="lede">{% if en %}Ask a question in plain language. Answers rely only on the texts of our corpus and cite them; when no source supports an answer, the assistant says so.{% else %}Posez votre question en langage naturel. Les réponses s'appuient uniquement sur les textes de notre corpus et les citent ; sans source, l'assistant le dit.{% endif %}</p>
+</section>
+
+<form method="POST" class="card" style="max-width:860px;">
+  <div class="form-group">
+    <label for="question">{{ 'Your question' if en else 'Votre question' }}</label>
+    <textarea id="question" name="question" required minlength="8" maxlength="1500" style="min-height:110px;"
+      placeholder="{{ 'E.g. What are the seller’s main obligations under a sale contract?' if en else 'Ex. Quelles sont les principales obligations du vendeur dans un contrat de vente ?' }}">{{ question }}</textarea>
+  </div>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+    <select name="source_type" style="max-width:260px;">
+      <option value="">{{ 'All sources' if en else 'Toutes les sources' }}</option>
+      {% for k, l in source_types %}<option value="{{ k }}" {% if source_type==k %}selected{% endif %}>{{ l }}</option>{% endfor %}
+    </select>
+    <label style="display:flex;gap:8px;align-items:center;font-weight:400;"><input type="checkbox" name="anciens" value="1" style="width:auto;" {{ 'checked' if include_old }}>
+      {{ 'Include repealed / draft texts' if en else 'Inclure les textes abrogés ou en projet' }}</label>
+    <button class="btn btn-primary" type="submit">{{ 'Ask' if en else 'Poser la question' }}</button>
+  </div>
+  <div class="helptext" style="margin-top:8px;">
+    {% if limit is not none %}{{ used }}/{{ limit }} {{ 'answers used today' if en else 'réponses rédigées aujourd’hui' }}.{% endif %}
+    {{ stats.docs }} {{ 'texts' if en else 'textes' }}, {{ stats.passages }} {{ 'indexed passages' if en else 'passages indexés' }}.
+  </div>
+</form>
+
+{% if result %}
+<section style="max-width:860px;margin-top:24px;">
+  {% if result.outcome == 'quota' %}
+    <div class="callout">{{ 'Daily limit reached. Premium raises it.' if en else 'Limite quotidienne atteinte. L’abonnement Premium l’augmente.' }} <a href="{{ url_for('membership') }}">Premium</a></div>
+  {% elif result.outcome == 'ok' %}
+    <div class="card">
+      <h2 style="margin-top:0;">{{ 'Answer' if en else 'Réponse' }}</h2>
+      <div style="white-space:pre-wrap;line-height:1.7;">{{ result.answer }}</div>
+      {% if result.verify %}
+      <h3 style="margin-top:18px;">{{ 'To verify' if en else 'À vérifier' }}</h3>
+      <ul>{% for v in result.verify %}<li>{{ v }}</li>{% endfor %}</ul>
+      {% endif %}
+    </div>
+    <h3 style="margin-top:22px;">{{ 'Sources cited' if en else 'Sources citées' }}</h3>
+    {% for c in result.cited %}
+    <div class="result-row">
+      <div class="meta">[{{ c.n }}] {{ c.title }} — <b>{{ c.label }}</b>{% if c.citation_reference %} — {{ c.citation_reference }}{% endif %}</div>
+      <div class="meta">{{ status_labels.get(c.status, c.status) }} · {{ juris_labels.get(c.jurisdiction, c.jurisdiction) }}{% if c.effective_date %} · {{ c.effective_date }}{% endif %}{% if c.superseded_title %} · {{ 'replaced by' if en else 'remplacé par' }} {{ c.superseded_title }}{% endif %}</div>
+      <div class="snippet" style="white-space:pre-wrap;">{{ c.snippet }}</div>
+    </div>
+    {% endfor %}
+  {% elif result.outcome == 'no_source' %}
+    <div class="callout"><b>{{ 'No source found in the corpus for this question.' if en else 'Aucune source trouvée dans le corpus pour cette question.' }}</b>
+      {{ 'The assistant does not answer without a source. Rephrase, or ask a lawyer.' if en else 'L’assistant ne répond pas sans source. Reformulez la question, ou consultez un juriste.' }}</div>
+  {% elif result.outcome == 'insufficient' %}
+    <div class="callout"><b>{{ 'The sources found are not sufficient to answer reliably.' if en else 'Les sources retrouvées ne suffisent pas pour répondre de façon fiable.' }}</b>
+      {% if result.answer %}<p style="white-space:pre-wrap;">{{ result.answer }}</p>{% endif %}
+      {% if result.verify %}<ul>{% for v in result.verify %}<li>{{ v }}</li>{% endfor %}</ul>{% endif %}</div>
+  {% elif result.outcome == 'search_only' %}
+    <div class="callout">{{ 'Written answers are not enabled on this server; here are the relevant passages.' if en else 'La rédaction de réponses n’est pas activée sur ce serveur ; voici les passages pertinents.' }}</div>
+  {% else %}
+    <div class="callout">{{ 'The answer service is temporarily unavailable. Try again shortly.' if en else 'Le service de réponse est momentanément indisponible. Réessayez dans un instant.' }}</div>
+  {% endif %}
+
+  {% if result.outcome in ('search_only', 'insufficient') or (result.outcome or '').startswith('error') %}
+    <h3 style="margin-top:22px;">{{ 'Relevant passages' if en else 'Passages pertinents' }}</h3>
+    {% for r in result.passages[:6] %}
+    <div class="result-row">
+      <div class="meta">{{ r.title }} — <b>{{ r.label }}</b>{% if r.citation_reference %} — {{ r.citation_reference }}{% endif %} · {{ status_labels.get(r.status, r.status) }}</div>
+      <div class="snippet" style="white-space:pre-wrap;">{{ r.snippet }}</div>
+    </div>
+    {% endfor %}
+  {% endif %}
+  <p class="helptext" style="margin-top:18px;">{{ 'This assistant does not replace the advice of a lawyer. Always check that the text cited is still in force.' if en else 'Cet assistant ne remplace pas l’avis d’un avocat. Vérifiez toujours que le texte cité est toujours en vigueur.' }}</p>
+</section>
+{% endif %}
+{% endblock %}

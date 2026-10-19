@@ -41,6 +41,50 @@
   </div>
   {% endif %}
   <fieldset class="ci-fieldset">
+    <legend>État de vigueur, juridiction et droits</legend>
+    <div class="form-group">
+      <label for="status">État de vigueur</label>
+      <select id="status" name="status">
+        {% for k, label in statuses %}<option value="{{ k }}" {% if (doc and doc['status']==k) or (not doc and k=='en_vigueur') %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <div class="helptext">Les textes abrogés ou en projet sont exclus par défaut de la recherche publique et des réponses de l'assistant.</div>
+    </div>
+    <div class="form-group" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div><label for="effective_date">Entrée en vigueur (AAAA-MM-JJ)</label>
+        <input type="text" id="effective_date" name="effective_date" value="{{ doc['effective_date'] if doc and doc['effective_date'] else '' }}" placeholder="1825-04-27"></div>
+      <div><label for="repealed_date">Date d'abrogation (si applicable)</label>
+        <input type="text" id="repealed_date" name="repealed_date" value="{{ doc['repealed_date'] if doc and doc['repealed_date'] else '' }}" placeholder="2020-01-01"></div>
+    </div>
+    <div class="form-group">
+      <label for="superseded_by">Remplacé par (texte plus récent du corpus)</label>
+      <select id="superseded_by" name="superseded_by">
+        <option value="">—</option>
+        {% for o in other_docs %}<option value="{{ o['id'] }}" {% if doc and doc['superseded_by']==o['id'] %}selected{% endif %}>{{ o['title'] }}</option>{% endfor %}
+      </select>
+      <div class="helptext">Choisir un texte de remplacement marque automatiquement celui-ci comme abrogé.</div>
+    </div>
+    <div class="form-group">
+      <label for="jurisdiction">Juridiction</label>
+      <select id="jurisdiction" name="jurisdiction">
+        {% for k, label in jurisdictions %}<option value="{{ k }}" {% if (doc and doc['jurisdiction']==k) or (not doc and k=='HT') %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="rights">Droits d'utilisation</label>
+      <select id="rights" name="rights">
+        {% for k, label in rights_list %}<option value="{{ k }}" {% if (doc and (doc['rights'] or 'officiel')==k) or (not doc and k=='officiel') %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <div class="helptext">Doctrine et ouvrages : n'indiquer « licence » que si vous avez l'autorisation de les diffuser ; sinon « fiche de lecture » (votre propre résumé) ou « usage interne ». Les extraits des textes sous licence sont plafonnés.</div>
+    </div>
+    <label style="display:flex;gap:10px;align-items:center;font-weight:500;">
+      <input type="checkbox" name="anonymized" value="1" style="width:auto;" {{ 'checked' if doc and doc['anonymized'] }}>
+      J'ai anonymisé ce texte (aucun nom, adresse ni élément identifiant un client)
+    </label>
+    <div class="helptext">Obligatoire pour un avis juridique : sans cette confirmation, il reste invisible pour le public et pour l'IA.</div>
+    <div class="form-group" style="margin-top:10px;"><label for="rights_note">Note sur les droits (source, éditeur, autorisation)</label>
+      <input type="text" id="rights_note" name="rights_note" value="{{ doc['rights_note'] if doc and doc['rights_note'] else '' }}"></div>
+  </fieldset>
+  <fieldset class="ci-fieldset">
     <legend>Contract Intelligence</legend>
     <label style="display:flex;gap:10px;align-items:center;font-weight:500;">
       <input type="checkbox" name="ci_enabled" value="1" style="width:auto;" {{ 'checked' if doc and doc['ci_enabled'] }}>

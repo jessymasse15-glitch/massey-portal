@@ -788,3 +788,60 @@ details.sec>summary h2{margin:0;}
 .hdr-search.open input,.hdr-search:focus-within input{width:150px;padding:6px 4px 6px 12px;}
 .hdr-search button{border:0;background:transparent;color:#fff;padding:7px 10px;cursor:pointer;display:flex;}
 @media (max-width:760px){.hdr-search.open input,.hdr-search:focus-within input{width:120px;}}
+
+/* ---- Massey Law Review : page Articles (recherche, filtres, Citer, Partager) ---- */
+.rv-searchbar{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--radius);padding:6px 8px 6px 14px;color:var(--ink-faint);}
+.rv-searchbar:focus-within{border-color:var(--gold);box-shadow:0 0 0 3px rgba(var(--gold-rgb),.12);}
+.rv-searchbar input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:.98rem;color:var(--ink);padding:8px 2px;outline:none;}
+.rv-filters{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-top:12px;}
+.rv-filters label{display:flex;flex-direction:column;gap:4px;font-size:.72rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);}
+.rv-filters select{font:inherit;font-size:.86rem;text-transform:none;letter-spacing:0;padding:7px 10px;border:1px solid var(--line-strong);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);min-width:150px;}
+.rv-clear{font-size:.82rem;color:var(--gold);padding-bottom:8px;}
+.rv-count{margin:22px 0 6px;font-size:.84rem;color:var(--ink-faint);font-family:var(--mono);}
+.rv-layout{display:grid;grid-template-columns:210px 1fr;gap:40px;align-items:start;margin-top:12px;}
+.rv-side{position:sticky;top:18px;}
+.rv-side h4{margin:0 0 10px;font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:500;}
+.rv-side ul{list-style:none;margin:0;padding:0;border-left:1px solid var(--line);}
+.rv-side a{display:flex;justify-content:space-between;gap:8px;padding:7px 12px;font-size:.86rem;color:var(--ink-soft);text-decoration:none;margin-left:-1px;border-left:2px solid transparent;}
+.rv-side a span{color:var(--ink-faint);font-family:var(--mono);font-size:.74rem;}
+.rv-side a:hover{color:var(--ink);}
+.rv-side a.on{color:var(--gold);border-left-color:var(--gold);font-weight:500;}
+.rv-issue{font-family:var(--serif);font-weight:500;font-size:1.25rem;margin:30px 0 6px;padding-bottom:8px;border-bottom:2px solid var(--gold);}
+.rv-issue:first-child{margin-top:0;}
+.rv-article{padding:22px 0;border-bottom:1px solid var(--line);}
+.rv-meta{font-family:var(--mono);font-size:.72rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;}
+.rv-article h3{margin:0 0 6px;font-family:var(--serif);font-size:1.28rem;line-height:1.3;font-weight:500;}
+.rv-article h3 a{color:var(--ink);text-decoration:none;}
+.rv-article h3 a:hover{color:var(--gold);}
+.rv-author{font-size:.9rem;color:var(--gold);margin-bottom:8px;}
+.rv-abstract{color:var(--ink-soft);font-size:.9rem;line-height:1.6;margin:0 0 14px;max-width:72ch;}
+.rv-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.rv-btn{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:.8rem;padding:7px 13px;border:1px solid var(--line-strong);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink-soft);cursor:pointer;text-decoration:none;line-height:1.2;}
+.rv-btn:hover{border-color:var(--gold);color:var(--gold);}
+.rv-btn-primary{background:var(--gold);border-color:var(--gold);color:#fff;}
+.rv-btn-primary:hover{background:var(--gold-2);color:#fff;border-color:var(--gold-2);}
+.rv-lock{font-size:.72rem;}
+.rv-pager{display:flex;justify-content:space-between;align-items:center;margin-top:26px;font-size:.88rem;}
+.rv-pager a{color:var(--gold);text-decoration:none;}
+.rv-dialog{border:1px solid var(--line-strong);border-radius:var(--radius);padding:22px 24px;width:min(640px,92vw);background:var(--surface);color:var(--ink);box-shadow:var(--shadow-md);}
+.rv-dialog::backdrop{background:rgba(20,10,12,.5);}
+.rv-dialog-head{display:flex;justify-content:space-between;align-items:center;margin:0;}
+.rv-dialog-head h3{margin:0;font-family:var(--serif);font-weight:500;font-size:1.2rem;}
+.rv-x{border:0;background:transparent;font-size:1.6rem;line-height:1;cursor:pointer;color:var(--ink-faint);}
+.rv-dialog-sub{margin:6px 0 14px;font-size:.88rem;color:var(--ink-soft);}
+.rv-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:12px;}
+.rv-tab{border:0;background:transparent;font:inherit;font-size:.82rem;padding:8px 12px;cursor:pointer;color:var(--ink-faint);border-bottom:2px solid transparent;margin-bottom:-1px;}
+.rv-tab.on{color:var(--gold);border-bottom-color:var(--gold);}
+.rv-cite-text{margin:0 0 14px;padding:12px 14px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);font-family:var(--mono);font-size:.8rem;line-height:1.6;white-space:pre-wrap;word-break:break-word;max-height:240px;overflow:auto;}
+.rv-dialog-foot,.rv-share-grid,.rv-copyrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.rv-copyrow{margin-bottom:14px;}
+.rv-copyrow input{flex:1;min-width:0;font:inherit;font-size:.85rem;padding:8px 10px;border:1px solid var(--line-strong);border-radius:var(--radius-sm);background:var(--surface-2);color:var(--ink);}
+.rv-copied{font-size:.82rem;color:var(--good);margin-left:4px;}
+@media (max-width:800px){
+  .rv-layout{grid-template-columns:1fr;gap:18px;}
+  .rv-side{position:static;}
+  .rv-side ul{display:flex;overflow-x:auto;border-left:0;gap:6px;padding-bottom:6px;}
+  .rv-side a{border:1px solid var(--line);border-radius:999px;white-space:nowrap;margin:0;padding:6px 12px;}
+  .rv-side a.on{border-color:var(--gold);}
+  .rv-filters select{min-width:0;width:100%;} .rv-filters label{flex:1 1 40%;}
+}

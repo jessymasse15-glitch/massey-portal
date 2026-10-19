@@ -5,7 +5,27 @@
 <div class="eyebrow">{{ doc['source_type'] }}</div>
 <h1>{{ doc['title'] }}</h1>
 {% if doc['citation_reference'] %}<p class="lede">{{ doc['citation_reference'] }}</p>{% endif %}
-<p class="helptext">Ajouté le {{ doc['created_at'][:10] }} — modifié le {{ doc['updated_at'][:10] }}</p>
-<div class="card" style="white-space:pre-wrap;font-size:0.92rem;line-height:1.7;max-width:80ch;margin-top:20px;">{{ doc['full_text'] }}</div>
-<p style="margin-top:20px;"><a href="{{ url_for('admin_corpus_edit', doc_id=doc['id']) }}" class="btn btn-primary btn-sm">Modifier</a></p>
+<p style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">
+  <span class="tag">{{ status_labels.get(doc['status'], doc['status']) }}</span>
+  <span class="tag">{{ juris_labels.get(doc['jurisdiction'], doc['jurisdiction']) }}</span>
+  <span class="tag">{{ rights_labels.get(doc['rights'] or 'officiel') }}{% if doc['rights']=='avis' and not doc['anonymized'] %} — non anonymisé : masqué{% endif %}</span>
+  {% if doc['effective_date'] %}<span class="tag">en vigueur depuis {{ doc['effective_date'] }}</span>{% endif %}
+  {% if doc['repealed_date'] %}<span class="tag">abrogé le {{ doc['repealed_date'] }}</span>{% endif %}
+  {% if superseded %}<span class="tag">remplacé par <a href="{{ url_for('admin_corpus_view', doc_id=superseded['id']) }}">{{ superseded['title'] }}</a></span>{% endif %}
+</p>
+<p class="helptext">Ajouté le {{ doc['created_at'][:10] }} — modifié le {{ doc['updated_at'][:10] }} — {{ passages|length }} passage(s) indexé(s)</p>
+<p style="margin:14px 0;display:flex;gap:8px;">
+  <a href="{{ url_for('admin_corpus_edit', doc_id=doc['id']) }}" class="btn btn-primary btn-sm">Modifier</a>
+  <form method="POST" action="{{ url_for('admin_corpus_reindex_one', doc_id=doc['id']) }}"><button class="btn btn-sm" type="submit">Re-découper et réindexer</button></form>
+</p>
+<h2 style="margin-top:22px;">Passages</h2>
+<div class="helptext" style="margin-bottom:10px;">C'est à cette échelle que l'assistant cherche et cite. Si le découpage vous semble mauvais, vérifiez que chaque article commence par « Article N » sur sa propre ligne.</div>
+{% for p in passages %}
+<details class="card" style="margin-bottom:8px;padding:10px 14px;">
+  <summary><b>{{ p['label'] }}</b>{% if p['heading'] %} <span class="helptext">— {{ p['heading'] }}</span>{% endif %} <span class="helptext">({{ p['text']|length }} car.)</span></summary>
+  <div style="white-space:pre-wrap;font-size:0.9rem;line-height:1.65;max-width:80ch;margin-top:8px;">{{ p['text'] }}</div>
+</details>
+{% else %}
+<p class="helptext">Aucun passage — cliquez sur « Re-découper et réindexer ».</p>
+{% endfor %}
 {% endblock %}

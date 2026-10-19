@@ -60,7 +60,7 @@ def _register():
     def ci_method():
         conn = m.dbm.get_db()
         sources = [dict(id=r["id"], title=r["title"], kind=m.dbm.CORPUS_SOURCE_LABELS.get(r["source_type"], r["source_type"]), reference=r["citation_reference"] or "")
-                   for r in conn.execute("SELECT id, title, source_type, citation_reference FROM legal_corpus_documents WHERE ci_enabled=1 ORDER BY title").fetchall()]
+                   for r in conn.execute("SELECT d.id, d.title, d.source_type, d.citation_reference FROM legal_corpus_documents d WHERE d.ci_enabled=1 AND " + __import__("legal_corpus").USABLE_SQL + " AND " + __import__("legal_corpus").ACTIVE_SQL + " ORDER BY d.title").fetchall()]
         conn.close()
         import ci_ai
         n_rules = len(m.contract_engine.RULES)

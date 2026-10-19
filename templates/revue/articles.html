@@ -1,20 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Articles — Massey Law Review{% endblock %}
-{% block meta_description %}Tous les articles publiés par Massey Law Review, du plus récent au plus ancien.{% endblock %}
+{% block meta_description %}Articles publiés par Massey Law Review : recherche, filtres par numéro et par année, téléchargement en PDF, citation et partage.{% endblock %}
 {% block content %}
 <section class="page-hero reveal">
   <div class="eyebrow">Massey Law Review</div>
   <h1>Articles</h1>
-  <p class="lede">Les textes publiés par la revue. Chaque titre ouvre la version web intégrale ; le lien PDF permet le téléchargement.</p>
+  <p class="lede">Les textes publiés par la revue, classés par numéro. Recherchez, lisez en ligne, téléchargez le PDF, citez ou partagez chaque article.</p>
 </section>
 
-{% if not is_premium %}
+{% if not has_access %}
 <section class="block" style="border-top:none;padding-top:0;">
   <div class="upsell-banner reveal">
-    <p><b>Texte intégral et PDF réservés aux abonnés.</b> Inclus dans l'abonnement Premium Massey AI, ou disponible séparément via l'abonnement Massey Law Review.</p>
-    <div class="ctas">
-      <a href="{{ url_for('membership') }}" class="btn btn-primary btn-sm">Voir Premium</a>
-    </div>
+    <p><b>Texte intégral et PDF réservés aux abonnés.</b> Les résumés, la citation et le partage restent ouverts à tous. Inclus dans l'abonnement Premium Massey AI, ou séparément via l'abonnement Massey Law Review.</p>
+    <div class="ctas"><a href="{{ url_for('membership') }}" class="btn btn-primary btn-sm">Voir Premium</a></div>
   </div>
 </section>
 {% endif %}
@@ -22,20 +20,74 @@
 {% include "revue/_subnav.html" %}
 
 <section class="block" style="border-top:none;padding-top:0;">
-  {% if articles %}
-    {% for a in articles %}
-      <div class="article-row">
-        <div class="meta">{{ a['issue_label'] or 'Massey Law Review' }} — {{ (a['published_at'] or a['created_at'])[:10] }}</div>
-        <h3><a href="{{ url_for('revue_article_detail', slug=a['slug']) }}">{{ a['title'] }}</a></h3>
-        <p>{{ a['author_name'] }}{% if a['abstract'] %} — {{ a['abstract'] }}{% endif %}</p>
-        <div class="links">
-          <a href="{{ url_for('revue_article_detail', slug=a['slug']) }}">Lire l'article →</a>
-          {% if a['pdf_stored_name'] %}<a href="{{ url_for('revue_article_pdf', slug=a['slug']) }}">Télécharger le PDF</a>{% endif %}
-        </div>
-      </div>
-    {% endfor %}
-  {% else %}
-    <p class="helptext">Aucun article publié pour l'instant.</p>
-  {% endif %}
+  <form method="get" class="rv-search" role="search" id="rv-filter-form">
+    <div class="rv-searchbar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" name="q" value="{{ q }}" placeholder="Rechercher un titre, un auteur, un sujet{% if has_access %} ou un mot du texte{% endif %}…" aria-label="Rechercher dans les articles">
+      <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
+    </div>
+    <div class="rv-filters">
+      <label>Numéro
+        <select name="numero" data-autosubmit>
+          <option value="">Tous</option>
+          {% for lab, n in issue_list %}<option value="{{ lab }}" {{ 'selected' if issue==lab }}>{{ lab }} ({{ n }})</option>{% endfor %}
+        </select></label>
+      <label>Année
+        <select name="annee" data-autosubmit>
+          <option value="">Toutes</option>
+          {% for y, n in year_list %}<option value="{{ y }}" {{ 'selected' if year==y }}>{{ y }} ({{ n }})</option>{% endfor %}
+        </select></label>
+      <label>Trier par
+        <select name="tri" data-autosubmit>
+          {% for k, l in sorts %}<option value="{{ k }}" {{ 'selected' if sort==k }}>{{ l }}</option>{% endfor %}
+        </select></label>
+      {% if q or issue or year or sort!='recent' %}<a href="{{ url_for('revue_articles') }}" class="rv-clear">Réinitialiser</a>{% endif %}
+    </div>
+  </form>
+
+  <p class="rv-count" role="status">{{ total }} article{{ 's' if total != 1 }}{% if total != n_all %} sur {{ n_all }}{% endif %}{% if q %} pour « {{ q }} »{% endif %}</p>
+
+  <div class="rv-layout">
+    <aside class="rv-side" aria-label="Parcourir par numéro">
+      <h4>Numéros</h4>
+      <ul>
+        <li><a href="{{ url_for('revue_articles', q=q or None, annee=year or None, tri=(sort if sort!='recent' else None)) }}" class="{{ 'on' if not issue }}">Tous les numéros <span>{{ n_all }}</span></a></li>
+        {% for lab, n in issue_list %}
+        <li><a href="{{ url_for('revue_articles', numero=lab, q=q or None, annee=year or None, tri=(sort if sort!='recent' else None)) }}" class="{{ 'on' if issue==lab }}">{{ lab }} <span>{{ n }}</span></a></li>
+        {% endfor %}
+      </ul>
+    </aside>
+
+    <div class="rv-list">
+      {% for label, cards in groups %}
+        {% if label %}<h2 class="rv-issue">{{ label }}</h2>{% endif %}
+        {% for card in cards %}
+        {% set a = card.a %}
+        <article class="rv-article">
+          <div class="rv-meta">{{ a['issue_label'] or 'Massey Law Review' }} · {{ (a['published_at'] or a['created_at'])[:10] }}</div>
+          <h3><a href="{{ url_for('revue_article_detail', slug=a['slug']) }}">{{ a['title'] }}</a></h3>
+          <div class="rv-author">{{ card.author }}</div>
+          {% if a['abstract'] %}<p class="rv-abstract">{{ a['abstract'] }}</p>{% endif %}
+          {% include "revue/_article_actions.html" %}
+        </article>
+        {% endfor %}
+      {% else %}
+        <p class="helptext">Aucun article ne correspond à cette recherche.</p>
+      {% endfor %}
+
+      {% if pages > 1 %}
+      <nav class="rv-pager" aria-label="Pagination">
+        {% if page > 1 %}<a href="{{ url_for('revue_articles', q=q or None, numero=issue or None, annee=year or None, tri=(sort if sort!='recent' else None), page=page-1) }}">← Précédent</a>{% endif %}
+        <span>Page {{ page }} / {{ pages }}</span>
+        {% if page < pages %}<a href="{{ url_for('revue_articles', q=q or None, numero=issue or None, annee=year or None, tri=(sort if sort!='recent' else None), page=page+1) }}">Suivant →</a>{% endif %}
+      </nav>
+      {% endif %}
+    </div>
+  </div>
 </section>
+
+{% include "revue/_cite_share_dialogs.html" %}
+<script>
+document.querySelectorAll('[data-autosubmit]').forEach(function(s){ s.addEventListener('change',function(){ document.getElementById('rv-filter-form').submit(); }); });
+</script>
 {% endblock %}

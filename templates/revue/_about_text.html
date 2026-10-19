@@ -1,16 +1,4 @@
-{% extends "base.html" %}
-{% block title %}À propos — Massey Law Review{% endblock %}
-{% block meta_description %}Mission éditoriale, comité et politique de publication de Massey Law Review.{% endblock %}
-{% block content %}
-<section class="page-hero reveal">
-  <div class="eyebrow">Massey Law Review</div>
-  <h1>Une revue au service de la pratique et de la réflexion juridique</h1>
-</section>
-
-{% include "revue/_subnav.html" %}
-
-<section class="block" style="border-top:none;padding-top:0;">
-  <div class="prose">
+<div class="prose">
     <p>Massey Law Review est la revue juridique de Massey Contracts &amp; Tax. Elle publie des analyses, notes pratiques et études de cas consacrées au droit des contrats, à la fiscalité des affaires et aux transactions transfrontalières, avec un ancrage particulier sur le marché haïtien et ses zones d'échange.</p>
 
     <h2>Mission éditoriale</h2>
@@ -25,5 +13,3 @@
     <h2>Nous joindre</h2>
     <p>Pour toute question relative à la revue, une soumission ou un partenariat éditorial, écrivez-nous via le formulaire de <a href="{{ url_for('revue_submissions') }}" style="color:var(--gold);">soumission</a> ou depuis votre espace client si vous êtes déjà inscrit.</p>
   </div>
-</section>
-{% endblock %}

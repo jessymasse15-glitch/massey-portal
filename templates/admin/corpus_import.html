@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Import en lot — Corpus juridique{% endblock %}
+{% block content %}
+<p style="margin-bottom:16px;"><a href="{{ url_for('admin_corpus_list') }}" class="btn btn-ghost btn-sm">← Corpus juridique</a></p>
+<h1>Import en lot</h1>
+<p class="helptext" style="max-width:70ch;margin-bottom:16px;">Sélectionnez plusieurs fichiers (.docx, .pdf avec texte, .txt, .md) ou une archive .zip qui en contient. Chaque fichier devient un texte du corpus, titré d'après son nom, découpé en passages. Les réglages ci-dessous s'appliquent à tout le lot ; vous affinez ensuite chaque texte (référence de citation, dates) depuis la liste. Un titre déjà présent est ignoré.</p>
+<form method="POST" enctype="multipart/form-data" class="card" style="max-width:820px;">
+  <div class="form-group"><label for="files">Fichiers ou archive .zip</label>
+    <input type="file" id="files" name="files" multiple accept=".docx,.pdf,.txt,.md,.zip" required></div>
+  <div class="form-group"><label for="source_type">Type de source</label>
+    <select id="source_type" name="source_type">{% for k, l in source_types %}<option value="{{ k }}">{{ l }}</option>{% endfor %}</select></div>
+  <div class="form-group"><label for="language">Langue</label>
+    <select id="language" name="language"><option value="fr">Français</option><option value="en">English</option></select></div>
+  <div class="form-group"><label for="jurisdiction">Juridiction</label>
+    <select id="jurisdiction" name="jurisdiction">{% for k, l in jurisdictions %}<option value="{{ k }}">{{ l }}</option>{% endfor %}</select></div>
+  <div class="form-group"><label for="status">État de vigueur</label>
+    <select id="status" name="status">{% for k, l in statuses %}<option value="{{ k }}" {% if k=='inconnu' %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  <div class="form-group"><label for="rights">Droits d'utilisation</label>
+    <select id="rights" name="rights">{% for k, l in rights_list %}<option value="{{ k }}" {% if k=='interne' %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+    <div class="helptext">Par prudence, « usage interne » est présélectionné : rien n'est montré au public tant que vous n'avez pas confirmé les droits texte par texte.</div></div>
+  <label style="display:flex;gap:10px;align-items:center;"><input type="checkbox" name="anonymized" value="1" style="width:auto;"> Les fichiers de ce lot sont anonymisés (avis juridiques)</label>
+  <p style="margin-top:14px;"><button class="btn btn-primary" type="submit">Importer</button></p>
+</form>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Questions posées — Corpus juridique{% endblock %}
+{% block content %}
+<p style="margin-bottom:16px;"><a href="{{ url_for('admin_corpus_list') }}" class="btn btn-ghost btn-sm">← Corpus juridique</a></p>
+<h1>Questions posées à l'assistant</h1>
+<p class="helptext" style="max-width:70ch;margin-bottom:16px;">Les questions restées sans source ou sans réponse suffisante indiquent les textes à ajouter au corpus.</p>
+<table>
+  <tr><th>Date</th><th>Question</th><th>Résultat</th><th>Passages</th></tr>
+  {% for r in rows %}
+  <tr><td>{{ r['created_at'][:16] }}</td><td>{{ r['question'] }}</td>
+    <td>{{ labels.get(r['outcome'], r['outcome']) }}</td><td>{{ r['n_sources'] }}</td></tr>
+  {% else %}<tr><td colspan="4" class="helptext">Aucune question pour l'instant.</td></tr>{% endfor %}
+</table>
+{% endblock %}

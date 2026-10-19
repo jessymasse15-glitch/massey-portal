@@ -1,0 +1,13 @@
+{# Boutons Lire / PDF / Citer / Partager d'un article. Attend : card (a, url, cite), has_access, read=True|False #}
+<div class="rv-actions">
+  {% if read|default(True) %}<a class="rv-btn rv-btn-primary" href="{{ url_for('revue_article_detail', slug=card.a['slug']) }}">Lire l'article</a>{% endif %}
+  <a class="rv-btn" href="{{ url_for('revue_article_pdf', slug=card.a['slug']) }}" title="{{ 'Télécharger le PDF' if has_access else 'PDF réservé aux abonnés' }}">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6m-3-3 3 3 3-3"/></svg>
+    PDF{% if not has_access %} <span class="rv-lock" aria-label="réservé aux abonnés">🔒</span>{% endif %}</a>
+  <button type="button" class="rv-btn" data-rv-cite data-title="{{ card.a['title'] }}" data-slug="{{ card.a['slug'] }}" data-cite='{{ card.cite|tojson }}'>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h4v4c0 3-2 5-4 5M15 7h4v4c0 3-2 5-4 5"/></svg>
+    Citer</button>
+  <button type="button" class="rv-btn" data-rv-share data-title="{{ card.a['title'] }}" data-url="{{ card.url }}">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
+    Partager</button>
+</div>

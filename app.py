@@ -23,6 +23,8 @@ import notifications
 import contract_engine
 import ci_ai
 import ci_reminders
+import legal_corpus
+import revue_tools
 
 APP_ROOT = os.path.dirname(__file__)
 # En production (Render), DATA_DIR pointe vers le disque persistant unique
@@ -370,33 +372,41 @@ def membership_cancel():
 # Plateforme — les 5 piliers Massey AI
 # ---------------------------------------------------------------------------
 
-def _legal_intelligence_context():
+def _legal_intelligence_context(en=False):
+    import legal_corpus as lc
     q = request.args.get("q", "").strip()
     source_type = request.args.get("source_type", "")
+    include_old = request.args.get("anciens") == "1"
     results = []
     tier = _access_info(current_user())["tier"]
     cap = dbm.SEARCH_RESULT_LIMITS[tier]
     total_found = 0
     if q or source_type:
         conn = dbm.get_db()
-        query = "SELECT * FROM legal_corpus_documents WHERE 1=1"
-        params = []
         if q:
-            query += " AND (title LIKE ? OR full_text LIKE ? OR citation_reference LIKE ?)"
-            like = f"%{q}%"
-            params += [like, like, like]
-        if source_type:
-            query += " AND source_type=?"
-            params.append(source_type)
-        query += " ORDER BY created_at DESC LIMIT 50"
-        all_results = conn.execute(query, params).fetchall()
+            found = lc.search(conn, q, source_type=source_type or None, include_inactive=include_old, limit=50, per_doc=3)
+        else:  # filtre seul : documents les plus récents de ce type
+            found = []
+            for d in conn.execute(
+                    "SELECT d.id FROM legal_corpus_documents d WHERE d.source_type=? AND " + lc.USABLE_SQL
+                    + ("" if include_old else " AND " + lc.ACTIVE_SQL) + " ORDER BY d.created_at DESC LIMIT 50", (source_type,)):
+                p = conn.execute(
+                    "SELECT p.id AS pid, p.doc_id, p.label, p.heading, p.text, d.title, d.source_type, d.citation_reference, "
+                    "COALESCE(d.status,'inconnu') AS status, d.effective_date, d.repealed_date, d.superseded_by, "
+                    "COALESCE(d.jurisdiction,'HT') AS jurisdiction, d.language, COALESCE(d.rights,'officiel') AS rights "
+                    "FROM legal_corpus_passages p JOIN legal_corpus_documents d ON d.id=p.doc_id WHERE p.doc_id=? ORDER BY p.ord LIMIT 1",
+                    (d["id"],)).fetchone()
+                if p:
+                    r = dict(p); r["snippet"] = lc.display_text(r["rights"], r["text"]); found.append(r)
         conn.close()
-        total_found = len(all_results)
-        results = all_results[:cap]
+        total_found = len(found)
+        results = found[:cap]
+    labels = lc.STATUS_EN if en else lc.STATUS_FR
     return dict(
         q=q, source_type=source_type, results=results,
         source_types=dbm.CORPUS_SOURCE_TYPES, searched=bool(q or source_type),
-        tier=tier, more_available=total_found > cap,
+        tier=tier, more_available=total_found > cap, include_old=include_old,
+        status_labels=labels, juris_labels=(lc.JURIS_EN if en else lc.JURIS_FR),
     )
 
 
@@ -407,7 +417,7 @@ def pillar_legal_intelligence():
 
 @app.route("/en/legal-intelligence")
 def pillar_legal_intelligence_en():
-    ctx = _legal_intelligence_context()
+    ctx = _legal_intelligence_context(en=True)
     ctx["source_types"] = dbm.CORPUS_SOURCE_TYPES_EN
     return render_template("marketing/en/pillar_legal.html", **ctx)
 
@@ -602,9 +612,9 @@ def _ci_page(name, **ctx):
 def _ci_load_knowledge(conn, with_text=False):
     """Règles personnalisées actives (compilées) et sources du corpus cochées
     « Contract Intelligence », avec leurs sujets rattachés."""
-    cols = "id, title, source_type, citation_reference, ci_tags" + (", full_text" if with_text else "")
+    cols = "d.id, d.title, d.source_type, d.citation_reference, d.ci_tags" + (", d.full_text" if with_text else "")
     sources = []
-    for r in conn.execute(f"SELECT {cols} FROM legal_corpus_documents WHERE ci_enabled=1 ORDER BY id").fetchall():
+    for r in conn.execute(f"SELECT {cols} FROM legal_corpus_documents d WHERE ci_enabled=1 AND " + legal_corpus.USABLE_SQL + " AND " + legal_corpus.ACTIVE_SQL + " ORDER BY id").fetchall():
         d = {
             "id": r["id"], "title": r["title"],
             "kind": dbm.CORPUS_SOURCE_LABELS.get(r["source_type"], r["source_type"]),
@@ -1453,7 +1463,7 @@ def sitemap_xml():
     pages = [
         "/", "/a-propos", "/expertise", "/tarifs", "/espace-client", "/rendez-vous", "/connexion", "/inscription",
         "/legal-intelligence", "/contract-intelligence", "/transaction-intelligence", "/tax-intelligence", "/regulatory-compliance",
-        "/revue", "/revue/articles", "/revue/forum", "/revue/references", "/revue/a-propos",
+        "/revue", "/revue/articles", "/revue/forum",
         "/revue/soumissions", "/revue/abonnement", "/revue/medias",
         "/contact", "/faq", "/securite-conformite", "/mentions-legales", "/confidentialite", "/conditions-utilisation",
         "/en/", "/en/about", "/en/expertise", "/en/pricing",
@@ -1510,14 +1520,86 @@ def revue_newsletter_signup():
     return redirect(request.referrer or url_for("revue_home"))
 
 
+def _revue_article_url(article):
+    return url_for("revue_article_detail", slug=article["slug"], _external=True)
+
+
+def _revue_cards(rows, can_search_body=False):
+    """Articles + données de citation/partage prêtes pour le gabarit."""
+    cards = []
+    for a in rows:
+        url = _revue_article_url(a)
+        cite = revue_tools.citations(a, url)
+        cards.append({"a": a, "url": url, "cite": cite, "year": revue_tools.year_of(a),
+                      "author": revue_tools.clean_author(a["author_name"])})
+    return cards
+
+
+REVUE_PAGE_SIZE = 10
+REVUE_SORTS = [("recent", "Plus récents"), ("ancien", "Plus anciens"), ("titre", "Titre (A–Z)"), ("auteur", "Auteur (A–Z)")]
+
+
 @app.route("/revue/articles")
 def revue_articles():
+    q = request.args.get("q", "").strip()[:120]
+    issue = request.args.get("numero", "").strip()
+    year = request.args.get("annee", "").strip()
+    sort = request.args.get("tri", "recent")
+    if sort not in dict(REVUE_SORTS):
+        sort = "recent"
+    page = max(1, int(request.args.get("page", "1")) if request.args.get("page", "1").isdigit() else 1)
+    has_access = _has_review_access(current_user())
     conn = dbm.get_db()
-    articles = conn.execute(
-        "SELECT * FROM review_articles WHERE published=1 ORDER BY published_at DESC"
-    ).fetchall()
+    all_rows = conn.execute("SELECT * FROM review_articles WHERE published=1 ORDER BY COALESCE(published_at, created_at) DESC").fetchall()
     conn.close()
-    return render_template("revue/articles.html", articles=articles)
+    # Facettes : numéros et années sur l'ensemble des articles publiés
+    issues, years = {}, {}
+    for r in all_rows:
+        lab = r["issue_label"] or "Hors numéro"
+        issues[lab] = issues.get(lab, 0) + 1
+        y = revue_tools.year_of(r)
+        if y:
+            years[y] = years.get(y, 0) + 1
+
+    def norm(t):
+        return unicodedata.normalize("NFKD", (t or "").lower()).encode("ascii", "ignore").decode()
+
+    terms = [norm(t) for t in q.split() if t]
+
+    def matches(r):
+        hay = norm(" ".join([r["title"], r["author_name"], r["abstract"] or "", r["issue_label"] or ""]
+                            + ([re.sub(r"<[^>]+>", " ", r["body_html"] or "")] if has_access else [])))
+        return all(t in hay for t in terms)
+
+    rows = [r for r in all_rows
+            if (not terms or matches(r))
+            and (not issue or (r["issue_label"] or "Hors numéro") == issue)
+            and (not year or revue_tools.year_of(r) == year)]
+    if sort == "ancien":
+        rows = list(reversed(rows))
+    elif sort == "titre":
+        rows.sort(key=lambda r: norm(r["title"]))
+    elif sort == "auteur":
+        rows.sort(key=lambda r: norm(revue_tools.clean_author(r["author_name"])))
+    total = len(rows)
+    pages = max(1, -(-total // REVUE_PAGE_SIZE))
+    page = min(page, pages)
+    cards = _revue_cards(rows[(page - 1) * REVUE_PAGE_SIZE: page * REVUE_PAGE_SIZE])
+    groups = []
+    if sort in ("recent", "ancien"):  # regroupement par numéro, comme un sommaire
+        for c in cards:
+            lab = c["a"]["issue_label"] or "Hors numéro"
+            if not groups or groups[-1][0] != lab:
+                groups.append((lab, []))
+            groups[-1][1].append(c)
+    else:
+        groups = [(None, cards)]
+    issue_list = sorted(issues.items(), key=lambda kv: kv[0], reverse=True)
+    return render_template(
+        "revue/articles.html", groups=groups, total=total, q=q, issue=issue, year=year, sort=sort, sorts=REVUE_SORTS,
+        issue_list=issue_list, year_list=sorted(years.items(), reverse=True), page=page, pages=pages,
+        has_access=has_access, n_all=len(all_rows), cite_styles=revue_tools.CITE_STYLES,
+    )
 
 
 @app.route("/revue/articles/<slug>")
@@ -1530,7 +1612,9 @@ def revue_article_detail(slug):
     if article is None:
         abort(404)
     has_access = _has_review_access(current_user())
-    return render_template("revue/article_detail.html", article=article, has_access=has_access)
+    card = _revue_cards([article])[0]
+    return render_template("revue/article_detail.html", article=article, has_access=has_access, card=card,
+                           cite_styles=revue_tools.CITE_STYLES)
 
 
 @app.route("/revue/articles/<slug>/pdf")
@@ -1540,15 +1624,35 @@ def revue_article_pdf(slug):
         "SELECT * FROM review_articles WHERE slug=? AND published=1", (slug,)
     ).fetchone()
     conn.close()
-    if article is None or not article["pdf_stored_name"]:
+    if article is None:
         abort(404)
     if not _has_review_access(current_user()):
         flash("Le PDF intégral est réservé aux abonnés Premium Massey AI ou à la Revue — créez un compte ou abonnez-vous pour le télécharger.", "error")
         return redirect(url_for("revue_article_detail", slug=slug))
-    return send_from_directory(
-        os.path.join(UPLOAD_DIR, "revue", "articles"), article["pdf_stored_name"],
-        as_attachment=True, download_name=article["pdf_original_name"] or f"{slug}.pdf",
-    )
+    if article["pdf_stored_name"]:  # PDF déposé par la rédaction
+        return send_from_directory(
+            os.path.join(UPLOAD_DIR, "revue", "articles"), article["pdf_stored_name"],
+            as_attachment=True, download_name=article["pdf_original_name"] or f"{slug}.pdf",
+        )
+    url = _revue_article_url(article)  # sinon : PDF mis en page à partir du texte de l'article
+    data = revue_tools.article_pdf(article, url, revue_tools.citations(article, url)["massey"])
+    return Response(data, mimetype="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{slug}.pdf"'})
+
+
+@app.route("/revue/articles/<slug>/citation.<fmt>")
+def revue_article_citation(slug, fmt):
+    if fmt not in ("ris", "bib"):
+        abort(404)
+    conn = dbm.get_db()
+    article = conn.execute("SELECT * FROM review_articles WHERE slug=? AND published=1", (slug,)).fetchone()
+    conn.close()
+    if article is None:
+        abort(404)
+    cites = revue_tools.citations(article, _revue_article_url(article))
+    body = cites["ris"] if fmt == "ris" else cites["bibtex"] + "\n"
+    mime = "application/x-research-info-systems" if fmt == "ris" else "application/x-bibtex"
+    return Response(body, mimetype=mime, headers={"Content-Disposition": f'attachment; filename="{slug}.{fmt}"'})
 
 
 @app.route("/revue/rss.xml")
@@ -1619,13 +1723,15 @@ def revue_forum_hide(post_id):
 
 
 @app.route("/revue/references")
-def revue_references():
-    return render_template("revue/references.html")
+def revue_references_removed():
+    # La page Références a été supprimée : on garde l'ancien lien valide.
+    return redirect(url_for("revue_home"), code=301)
 
 
 @app.route("/revue/a-propos")
-def revue_about():
-    return render_template("revue/about.html")
+def revue_about_removed():
+    # La page « À propos » a été fusionnée avec l'accueil de la revue : on garde l'ancien lien valide.
+    return redirect(url_for("revue_home"), code=301)
 
 
 @app.route("/revue/medias")
@@ -3111,8 +3217,11 @@ def admin_revue_submission_download(sub_id):
 def admin_corpus_list():
     q = request.args.get("q", "").strip()
     source_type = request.args.get("source_type", "")
+    status = request.args.get("status", "")
+    rights = request.args.get("rights", "")
     conn = dbm.get_db()
-    query = "SELECT * FROM legal_corpus_documents WHERE 1=1"
+    query = ("SELECT d.*, (SELECT COUNT(*) FROM legal_corpus_passages p WHERE p.doc_id=d.id) AS n_passages "
+             "FROM legal_corpus_documents d WHERE 1=1")
     params = []
     if q:
         query += " AND (title LIKE ? OR full_text LIKE ? OR citation_reference LIKE ?)"
@@ -3121,12 +3230,21 @@ def admin_corpus_list():
     if source_type:
         query += " AND source_type=?"
         params.append(source_type)
+    if status:
+        query += " AND COALESCE(status,'inconnu')=?"
+        params.append(status)
+    if rights:
+        query += " AND COALESCE(rights,'officiel')=?"
+        params.append(rights)
     query += " ORDER BY created_at DESC"
     docs = conn.execute(query, params).fetchall()
+    st = legal_corpus.stats(conn)
     conn.close()
     return render_template(
         "admin/corpus_list.html", docs=docs, source_types=dbm.CORPUS_SOURCE_TYPES,
-        q=q, source_type=source_type,
+        q=q, source_type=source_type, status=status, rights=rights, stats=st,
+        statuses=legal_corpus.STATUS_CHOICES, rights_list=legal_corpus.RIGHTS_CHOICES,
+        status_labels=legal_corpus.STATUS_FR, rights_labels=legal_corpus.RIGHTS_FR,
     )
 
 
@@ -3156,10 +3274,15 @@ def admin_corpus_edit(doc_id):
 def admin_corpus_view(doc_id):
     conn = dbm.get_db()
     doc = conn.execute("SELECT * FROM legal_corpus_documents WHERE id=?", (doc_id,)).fetchone()
-    conn.close()
     if doc is None:
+        conn.close()
         abort(404)
-    return render_template("admin/corpus_view.html", doc=doc)
+    passages = conn.execute("SELECT id, ord, label, heading, text FROM legal_corpus_passages WHERE doc_id=? ORDER BY ord", (doc_id,)).fetchall()
+    sup = conn.execute("SELECT id, title FROM legal_corpus_documents WHERE id=?", (doc["superseded_by"],)).fetchone() if doc["superseded_by"] else None
+    conn.close()
+    return render_template("admin/corpus_view.html", doc=doc, passages=passages, superseded=sup,
+                           status_labels=legal_corpus.STATUS_FR, rights_labels=legal_corpus.RIGHTS_FR,
+                           juris_labels=legal_corpus.JURIS_FR)
 
 
 def _ci_topic_ids(conn):
@@ -3174,7 +3297,38 @@ def _corpus_form_context(doc):
     topics = contract_engine.topic_catalog(_ci_topic_ids(conn))
     conn.close()
     selected = set((doc["ci_tags"] or "").split(",")) if doc else set()
-    return dict(doc=doc, source_types=dbm.CORPUS_SOURCE_TYPES, topics=topics, selected_tags=selected)
+    conn = dbm.get_db()
+    others = conn.execute("SELECT id, title FROM legal_corpus_documents WHERE id!=? ORDER BY title LIMIT 500",
+                          (doc["id"] if doc else 0,)).fetchall()
+    conn.close()
+    return dict(doc=doc, source_types=dbm.CORPUS_SOURCE_TYPES, topics=topics, selected_tags=selected,
+                statuses=legal_corpus.STATUS_CHOICES, rights_list=legal_corpus.RIGHTS_CHOICES,
+                jurisdictions=legal_corpus.JURIS_CHOICES, other_docs=others)
+
+
+def _corpus_meta_from_form():
+    """Métadonnées juridiques (état de vigueur, droits, juridiction) du formulaire, validées."""
+    f = request.form
+    status = f.get("status", "inconnu")
+    if status not in legal_corpus.STATUS_FR:
+        status = "inconnu"
+    rights = f.get("rights", "officiel")
+    if rights not in legal_corpus.RIGHTS_FR:
+        rights = "interne"
+    juris = f.get("jurisdiction", "HT")
+    if juris not in legal_corpus.JURIS_FR:
+        juris = "autre"
+    date_rx = re.compile(r"^\d{4}(-\d{2}(-\d{2})?)?$")
+    eff = f.get("effective_date", "").strip()
+    rep = f.get("repealed_date", "").strip()
+    eff = eff if date_rx.match(eff) else ""
+    rep = rep if date_rx.match(rep) else ""
+    sup = f.get("superseded_by", "").strip()
+    sup = int(sup) if sup.isdigit() else None
+    if sup and status in ("en_vigueur", "inconnu"):
+        status = "abroge"  # un texte remplacé n'est plus en vigueur
+    return dict(status=status, effective_date=eff, repealed_date=rep, superseded_by=sup, jurisdiction=juris,
+                rights=rights, anonymized=1 if f.get("anonymized") else 0, rights_note=f.get("rights_note", "").strip()[:500])
 
 
 def _save_corpus_document(doc_id):
@@ -3215,23 +3369,35 @@ def _save_corpus_document(doc_id):
 
     if ci_enabled and not citation_reference:
         flash("Astuce : renseignez la référence de citation, elle est affichée sous les alertes qui s'appuient sur cette source.", "error")
+    meta = _corpus_meta_from_form()
+    if meta["rights"] == "avis" and not meta["anonymized"]:
+        flash("Avis juridique : tant que l'anonymisation n'est pas confirmée, le texte reste invisible pour le public et pour l'IA.", "error")
     if doc_id is None:
-        conn.execute(
-            "INSERT INTO legal_corpus_documents (title, source_type, citation_reference, full_text, ci_enabled, ci_tags, language, created_by, created_at, updated_at) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?)",
-            (title, source_type, citation_reference, full_text, ci_enabled, ci_tags, language, u["id"], dbm.now(), dbm.now()),
+        cur = conn.execute(
+            "INSERT INTO legal_corpus_documents (title, source_type, citation_reference, full_text, ci_enabled, ci_tags, language, created_by, created_at, updated_at, "
+            "status, effective_date, repealed_date, superseded_by, jurisdiction, rights, anonymized, rights_note) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (title, source_type, citation_reference, full_text, ci_enabled, ci_tags, language, u["id"], dbm.now(), dbm.now(),
+             meta["status"], meta["effective_date"], meta["repealed_date"], meta["superseded_by"], meta["jurisdiction"],
+             meta["rights"], meta["anonymized"], meta["rights_note"]),
         )
+        doc_id = cur.lastrowid
         conn.commit()
+        n = legal_corpus.index_document(conn, doc_id)
         dbm.log_activity(u["id"], "corpus_document_created", title)
-        flash("Texte ajouté au corpus.", "success")
+        flash("Texte ajouté au corpus (%d passage(s) indexé(s))." % n, "success")
     else:
         conn.execute(
-            "UPDATE legal_corpus_documents SET title=?, source_type=?, citation_reference=?, full_text=?, ci_enabled=?, ci_tags=?, language=?, updated_at=? WHERE id=?",
-            (title, source_type, citation_reference, full_text, ci_enabled, ci_tags, language, dbm.now(), doc_id),
+            "UPDATE legal_corpus_documents SET title=?, source_type=?, citation_reference=?, full_text=?, ci_enabled=?, ci_tags=?, language=?, updated_at=?, "
+            "status=?, effective_date=?, repealed_date=?, superseded_by=?, jurisdiction=?, rights=?, anonymized=?, rights_note=? WHERE id=?",
+            (title, source_type, citation_reference, full_text, ci_enabled, ci_tags, language, dbm.now(),
+             meta["status"], meta["effective_date"], meta["repealed_date"], meta["superseded_by"], meta["jurisdiction"],
+             meta["rights"], meta["anonymized"], meta["rights_note"], doc_id),
         )
         conn.commit()
+        n = legal_corpus.index_document(conn, doc_id)
         dbm.log_activity(u["id"], "corpus_document_updated", title)
-        flash("Texte mis à jour.", "success")
+        flash("Texte mis à jour (%d passage(s) indexé(s))." % n, "success")
     conn.close()
     return redirect(url_for("admin_corpus_list"))
 
@@ -3240,6 +3406,8 @@ def _save_corpus_document(doc_id):
 @roles_required("admin")
 def admin_corpus_delete(doc_id):
     conn = dbm.get_db()
+    legal_corpus.delete_document_passages(conn, doc_id)
+    conn.execute("UPDATE legal_corpus_documents SET superseded_by=NULL WHERE superseded_by=?", (doc_id,))
     conn.execute("DELETE FROM legal_corpus_documents WHERE id=?", (doc_id,))
     conn.commit()
     conn.close()

@@ -52,6 +52,8 @@ def init(app_module):
     ci_mobile.init(m, sys.modules[__name__])
     import site_search
     site_search.init(m)
+    import legal_corpus_web
+    legal_corpus_web.init(m)
     import ci_idcheck
     ci_idcheck.init(m, sys.modules[__name__], sys.modules["ci_extras"])
     _start_reminder_thread()

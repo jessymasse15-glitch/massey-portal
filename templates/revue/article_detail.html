@@ -30,14 +30,16 @@
     {% endif %}
   </div>
 
-  {% if article['pdf_stored_name'] %}
-    <div class="ctas" style="margin-top:24px;">
-      <a href="{{ url_for('revue_article_pdf', slug=article['slug']) }}" class="btn btn-ghost">Télécharger le PDF{% if not has_access %} (abonnés){% endif %}</a>
-    </div>
-  {% endif %}
+  <div style="margin-top:24px;">{% with card=card, read=False %}{% include "revue/_article_actions.html" %}{% endwith %}</div>
+
+  <div class="callout rv-howto" style="max-width:74ch;margin-top:28px;">
+    <b>Pour citer cet article</b>
+    <p style="margin:8px 0 0;">{{ card.cite.massey }}</p>
+  </div>
 
   <div class="ctas" style="margin-top:36px;">
     <a href="{{ url_for('revue_articles') }}" class="btn btn-ghost">← Tous les articles</a>
   </div>
 </section>
+{% include "revue/_cite_share_dialogs.html" %}
 {% endblock %}

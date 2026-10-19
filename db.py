@@ -1147,6 +1147,8 @@ def init_db():
     _seed_extra_clauses(conn)
     from contract_templates_seed import seed_templates
     seed_templates(conn, now())
+    import legal_corpus
+    legal_corpus.ensure_schema(conn)
     conn.close()
 
 

@@ -60,9 +60,9 @@
         {% if results %}
           {% for r in results %}
             <div class="result-row">
-              <div class="meta">{{ source_types|selectattr('0','equalto',r['source_type'])|map(attribute='1')|first or r['source_type'] }}{% if r['citation_reference'] %} — {{ r['citation_reference'] }}{% endif %}</div>
-              <h4>{{ r['title'] }}</h4>
-              <div class="snippet">{{ r['full_text'][:420] }}{% if r['full_text']|length > 420 %}…{% endif %}</div>
+              <div class="meta">{{ source_types|selectattr('0','equalto',r['source_type'])|map(attribute='1')|first or r['source_type'] }}{% if r['citation_reference'] %} — {{ r['citation_reference'] }}{% endif %} · {{ status_labels.get(r['status'], r['status']) }} · {{ juris_labels.get(r['jurisdiction'], r['jurisdiction']) }}{% if r['superseded_title'] %} · remplacé par {{ r['superseded_title'] }}{% endif %}</div>
+              <h4>{{ r['title'] }}{% if r['label'] %} — {{ r['label'] }}{% endif %}</h4>
+              <div class="snippet" style="white-space:pre-wrap;">{{ r['snippet'][:520] }}{% if r['snippet']|length > 520 %}…{% endif %}</div>
             </div>
           {% endfor %}
         {% else %}
@@ -91,7 +91,7 @@
   </div>
 
   <div class="callout reveal" style="max-width:74ch;margin-top:32px;">
-    La génération de réponses en langage naturel par IA (avec citations automatiques) sera activée dans une prochaine phase, dès la connexion d'un moteur d'intelligence artificielle. La recherche par mots-clés ci-dessus interroge dès maintenant le corpus réel.
+    Besoin d'une réponse rédigée ? <a href="{{ url_for('legal_assistant') }}"><b>Interrogez l'assistant juridique</b></a> : il ne répond qu'à partir du corpus et cite les passages sur lesquels il s'appuie.
   </div>
 </section>
 {% endblock %}

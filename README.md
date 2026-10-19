@@ -158,3 +158,10 @@ Limites : pas de reconnaissance faciale ni de contrôle automatique d'authentici
 - `clause_library_seed.py` : ~60 clauses supplémentaires (durée, prix/devises, responsabilité, exclusivité, réserve de propriété, PI, cession/sous-traitance, données, imprévision, droit applicable/arbitrage, clauses finales…). Insertion idempotente par titre au démarrage (`db._seed_extra_clauses`) : les bases déjà déployées les reçoivent.
 - `templates_extra_seed.py` : modèles FR/EN de distribution, agence, licence, prêt, bail commercial, sous-traitance, partenariat.
 - Textes originaux, établis d'après les familles classiques de clauses des contrats d'affaires ; ils ne reproduisent aucun ouvrage et doivent être validés par un avocat (droit haïtien).
+
+## Corpus juridique et assistant (Legal Intelligence)
+- `legal_corpus.py` : métadonnées (état de vigueur, dates, remplacement, juridiction, droits d'utilisation, anonymisation), découpage en passages (article par article), recherche SQLite FTS5 (repli Python) avec racinisation FR/EN et glossaire juridique bilingue, questions-réponses sourcées.
+- `legal_corpus_web.py` : import en lot (fichiers ou .zip), réindexation, journal des questions (`/admin/corpus/...`) et assistant (`/assistant-juridique`, `/en/legal-assistant`).
+- Règles : un texte « usage interne », ou un avis non anonymisé, n'est jamais montré au public ni envoyé à l'IA ; les textes abrogés ou en projet sont exclus par défaut ; l'assistant n'appelle le modèle que s'il a trouvé des passages pertinents, et ne garde que les citations qui renvoient aux passages fournis.
+- Variables : `ANTHROPIC_API_KEY` (sans elle, l'assistant affiche seulement les passages), `LEGAL_QA_DAILY_FREE` (défaut 5) et `LEGAL_QA_DAILY_PREMIUM` (défaut 50) = réponses rédigées par jour.
+- Migration : les textes déjà présents (constitution, codes, décrets, jurisprudence) passent en « officiel » ; doctrine et divers passent en « usage interne » jusqu'à votre revue ; tous sont découpés en passages au démarrage.
