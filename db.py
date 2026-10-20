@@ -1120,6 +1120,30 @@ def _seed_revue_demo_article(conn):
     conn.commit()
 
 
+def _upgrade_revue_placeholder_notes(conn):
+    """Les articles d'origine (texte de démonstration) reçoivent notes de bas de page et bibliographie,
+    une seule fois et seulement s'ils n'en ont pas. Contenu fictif, à remplacer depuis l'admin."""
+    import re as _re
+    notes = ("Note de démonstration : ce texte illustre la mise en page des notes de bas de page ; il ne cite aucune source réelle.\n"
+             "Seconde note de démonstration, à remplacer par la référence exacte (auteur, titre, éditeur, année, page).\n"
+             "Troisième note de démonstration : renvoi interne ou précision rédactionnelle.\n")
+    biblio = ("Référence de démonstration n° 1 — à remplacer par une source réelle.\n"
+              "Référence de démonstration n° 2 — à remplacer par une source réelle.\n")
+    rows = conn.execute("SELECT id, body_html FROM review_articles WHERE (footnotes IS NULL OR footnotes='') "
+                        "AND body_html LIKE '%Texte de démonstration%' AND slug<>'article-de-demonstration-contrats-transfrontaliers'").fetchall()
+    for r in rows:
+        body, n = r["body_html"] or "", [0]
+        def add(m):
+            if n[0] >= 3:
+                return m.group(0)
+            n[0] += 1
+            return "%s[^%d]</p>" % (m.group(1), n[0])
+        body = _re.sub(r"(<p>.*?)</p>", add, body, flags=_re.S)
+        conn.execute("UPDATE review_articles SET body_html=?, footnotes=?, bibliography=? WHERE id=?",
+                     (body, notes, r["bibliography"] if False else biblio, r["id"]))
+    conn.commit()
+
+
 def _upgrade_revue_demo_bibliography(conn):
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "revue_demo_biblio.txt")
     try:
@@ -1201,6 +1225,7 @@ def init_db():
     _seed_revue_demo_article(conn)  # après les articles d'origine (leur semis dépend d'une table vide)
     _upgrade_revue_demo_footnotes(conn)
     _upgrade_revue_demo_bibliography(conn)
+    _upgrade_revue_placeholder_notes(conn)
     conn.close()
 
 

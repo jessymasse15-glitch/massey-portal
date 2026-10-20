@@ -1236,3 +1236,55 @@ header.site.is-scrolled nav.links > a::after{bottom:3px;}
   .header-actions .lang-switch{padding:6px 8px;font-size:.68rem;}
   .hdr-search button{padding:7px 9px;}
 }
+
+/* --- Impression de l'article : même mise en page que le PDF (bleu nuit + or) --- */
+.rv-print-block{display:none;}
+@media print{
+  @page{size:A4;margin:16mm 18mm 18mm;}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body:has(.rva) .site-header,body:has(.rva) header.site-header,body:has(.rva) footer,body:has(.rva) .revue-subnav,.rva-top,.rva-progress{display:none !important;}
+  body:has(.rva){background:#fff !important;color:#1B2430 !important;}
+  .rva .rv-print-block{display:block;}
+  .rva-pmast{display:flex !important;align-items:center;gap:14px;margin:0 0 7mm;padding:6mm 7mm;background:linear-gradient(100deg,#081729,#122D4F);border-bottom:1.4mm solid #D9B063;color:#fff;}
+  .rva-pmast img{height:15mm;width:auto;}
+  .rva-pm-t{flex:1;}
+  .rva-pm-t b{display:block;font-family:Georgia,'Times New Roman',serif;font-size:17pt;letter-spacing:.06em;text-transform:uppercase;}
+  .rva-pm-t small{display:block;font:8pt Helvetica,Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#D9B063;margin-top:1mm;}
+  .rva-pm-i{font:bold 8.5pt Helvetica,Arial,sans-serif;color:#fff;}
+  .rva{font-family:Georgia,'Times New Roman',serif;max-width:none !important;width:100% !important;margin:0 !important;padding:0 !important;}
+  body:has(.rva) main,body:has(.rva) .container,body:has(.rva) .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;}
+  .rva-grid{display:block !important;margin:0 !important;}
+  .rva-main,.rva-text,.rva-body{max-width:none !important;width:100% !important;}
+  body:has(.rva) header.rva-head{display:block !important;}
+  .rva-body h2{font-weight:700 !important;margin:6mm 0 2mm !important;}
+  .rva-body p{margin:0 0 3mm;line-height:1.5 !important;}
+  .rva-head{text-align:left !important;border:0 !important;background:none !important;box-shadow:none !important;padding:0 !important;margin:0 0 6mm !important;}
+  .rva-kick,.rva-kick a{font:bold 8pt Helvetica,Arial,sans-serif !important;letter-spacing:.12em;text-transform:uppercase;color:#A8782A !important;justify-content:flex-start !important;}
+  .rva-title{font-size:24pt !important;line-height:1.16 !important;color:#0B1E36 !important;text-align:left !important;}
+  .rva-author{color:#A8782A !important;font-style:italic;text-align:left !important;}
+  .rva-rule{display:none !important;}
+  .rva-facts{justify-content:flex-start !important;font:9pt Helvetica,Arial,sans-serif;color:#4A5568;padding:0 0 3mm !important;margin:0 !important;border-bottom:.3mm solid #0B1E36;box-shadow:0 1.2mm 0 -.6mm #fff,0 1.5mm 0 -.6mm #D9B063;}
+  .rva-facts li{background:none !important;border:0 !important;padding:0 !important;}
+  .rva-facts svg,.rva-new{display:none !important;}
+  .rva-facts li+li::before{content:"·";margin:0 2mm;}
+  .rva-text{border:0 !important;padding-top:4mm !important;margin-top:0 !important;font-size:10.5pt !important;line-height:1.5;text-align:justify;hyphens:auto;}
+  .rva-abstract{background:#F2F5F9 !important;border:0 !important;border-left:.9mm solid #D9B063 !important;padding:4mm 5mm !important;margin:0 0 6mm !important;}
+  .rva-abstract .rva-label{color:#A8782A !important;font:bold 7.5pt Helvetica,Arial,sans-serif;}
+  .rva-abstract p{font-style:italic;margin:0;}
+  .rva-body h2{color:#0B1E36 !important;font-size:14pt !important;border:0 !important;break-after:avoid;}
+  .rva-body h3{color:#0B1E36 !important;break-after:avoid;}
+  .rva-body>p:first-of-type::first-letter{all:unset;}
+  .rva-body>p:first-of-type::first-line{font-variant:small-caps;color:#0B1E36;font-weight:bold;}
+  .rva-body a{color:inherit !important;text-decoration:none !important;}
+  .rva-body sup a,.rva-body .rva-fnref{color:#A8782A !important;}
+  details.rva-notes,details.rva-biblio,.rva-notes,.rva-biblio{border:0 !important;border-top:.4mm solid #0B1E36 !important;padding:2mm 0 0 !important;margin-top:6mm !important;box-shadow:none !important;background:none !important;break-inside:auto;}
+  details>summary{list-style:none;color:#0B1E36 !important;font:bold 9pt Helvetica,Arial,sans-serif;letter-spacing:.1em;}
+  details>summary::-webkit-details-marker{display:none;}
+  details>summary *{color:inherit !important;}
+  details>summary svg,details>summary .rva-tog{display:none !important;}
+  .rva-notes li,.rva-biblio li{font-size:8.6pt;line-height:1.4;}
+  .rva-pcite{display:block !important;margin-top:8mm;padding:4mm 5mm;border:.3mm solid #D5DBE4;border-top:.7mm solid #0B1E36;break-inside:avoid;font:9pt/1.45 Georgia,serif;text-align:left;}
+  .rva-pcite b{display:block;font:bold 7.5pt Helvetica,Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#A8782A;margin-bottom:2mm;}
+  .rva-pcite p{margin:0 0 2mm;}
+  .rva-pcite span{font:7.5pt Helvetica,Arial,sans-serif;color:#4A5568;}
+}

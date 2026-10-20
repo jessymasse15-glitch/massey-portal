@@ -13,6 +13,11 @@ from xml.sax.saxutils import escape
 from markupsafe import Markup
 
 JOURNAL = "Massey Law Review"
+# Palette des PDF = celle de l'en-tête du site (bleu nuit + or)
+NAVY_HEX, NAVY2_HEX, NAVY_DEEP_HEX = "#0B1E36", "#122D4F", "#081729"
+GOLD_BRIGHT_HEX = "#D9B063"   # or vif (sur fond sombre)
+GOLD_HEX = "#A8782A"          # or foncé (texte sur fond clair)
+RULE_HEX = "#D5DBE4"
 _HONORIFICS = re.compile(r"^\s*(?:Me|Mᵉ|Maître|Pr|Prof|Professeur|Professeure|Dr|Docteur)\.?\s+", re.I)
 _ORG_WORDS = ("équipe", "equipe", "comité", "comite", "rédaction", "redaction", "review", "revue", "team", "editorial")
 
@@ -327,12 +332,13 @@ TYPE_LABELS = dict(ARTICLE_TYPES)
 def _styles():
     from reportlab.lib.styles import ParagraphStyle
     import ci_pdf
-    burg, ink, soft = ci_pdf.BURGUNDY, ci_pdf.INK, ci_pdf.SOFT
+    from reportlab.lib import colors as _c
+    burg, ink, soft, acc = _c.HexColor(NAVY_HEX), _c.HexColor("#1B2430"), _c.HexColor("#4A5568"), _c.HexColor(GOLD_HEX)
     return {
-        "kicker": ParagraphStyle("k", fontName="Helvetica-Bold", fontSize=8.5, textColor=burg, spaceAfter=6, leading=11),
-        "title": ParagraphStyle("t", fontName="Times-Bold", fontSize=23, leading=27, textColor=ink, spaceAfter=8),
-        "author": ParagraphStyle("au", fontName="Times-Italic", fontSize=13, leading=17, textColor=burg, spaceAfter=3),
-        "abslabel": ParagraphStyle("al", fontName="Helvetica-Bold", fontSize=7.6, leading=10, textColor=burg, spaceAfter=3),
+        "kicker": ParagraphStyle("k", fontName="Helvetica-Bold", fontSize=8, textColor=acc, spaceAfter=6, leading=11),
+        "title": ParagraphStyle("t", fontName="Times-Bold", fontSize=24, leading=28, textColor=burg, spaceAfter=8),
+        "author": ParagraphStyle("au", fontName="Times-Italic", fontSize=13, leading=17, textColor=acc, spaceAfter=3),
+        "abslabel": ParagraphStyle("al", fontName="Helvetica-Bold", fontSize=7.4, leading=10, textColor=acc, spaceAfter=3),
         "note": ParagraphStyle("nt", fontName="Times-Roman", fontSize=9.2, leading=12.6, textColor=soft, leftIndent=14, firstLineIndent=-14, spaceAfter=3),
         "fnote": ParagraphStyle("fnt", fontName="Times-Roman", fontSize=8.6, leading=11.2, textColor=soft, leftIndent=12, firstLineIndent=-12),
         "fine": ParagraphStyle("fn", fontName="Helvetica-Oblique", fontSize=7.6, leading=10.5, textColor=soft),
@@ -349,7 +355,7 @@ def _styles():
     }
 
 
-GOLD = "#B8893A"
+GOLD = GOLD_HEX
 _LOGOS = {}
 
 
@@ -363,8 +369,8 @@ def _logo(kind):
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "img", "mark-header.png")
     try:
         im = Image.open(path).convert("RGBA")
-        if kind == "burgundy":
-            solid = Image.new("RGBA", im.size, (122, 31, 43, 255))
+        if kind == "accent":
+            solid = Image.new("RGBA", im.size, (11, 30, 54, 255))
             solid.putalpha(im.getchannel("A"))
             im = solid
         _LOGOS[kind] = (ImageReader(im), im.size)
@@ -407,12 +413,12 @@ def _flow(article, url, cite_text, st, masthead=True, fn=None, idx=0):
                if clean_author(article["author_name"]).strip().lower() not in ("rédaction", "redaction") else []),
              Paragraph(c(" · ".join(x for x in (fr_date(article["published_at"] or article["created_at"]),
                                                 article["issue_label"] or "", ("%d min de lecture" % mins) if mins else "") if x)), st["meta"]),
-             Spacer(1, 6), HRFlowable(width="100%", thickness=1.1, color=ci_pdf.BURGUNDY, spaceAfter=1),
-             HRFlowable(width="100%", thickness=0.4, color=colors.HexColor(GOLD), spaceAfter=10)]
+             Spacer(1, 6), HRFlowable(width="100%", thickness=0.9, color=colors.HexColor(NAVY_HEX), spaceAfter=1.5),
+             HRFlowable(width="100%", thickness=0.5, color=colors.HexColor(GOLD_BRIGHT_HEX), spaceAfter=11)]
     if article["abstract"]:
         box = Table([[Paragraph("RÉSUMÉ", st["abslabel"])], [Paragraph(c(article["abstract"]), st["abs"])]], colWidths=["100%"])
-        box.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F7F2F1")),
-                                 ("LINEBEFORE", (0, 0), (0, -1), 2.2, ci_pdf.BURGUNDY),
+        box.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F2F5F9")),
+                                 ("LINEBEFORE", (0, 0), (0, -1), 2.4, colors.HexColor(GOLD_BRIGHT_HEX)),
                                  ("LEFTPADDING", (0, 0), (-1, -1), 12), ("RIGHTPADDING", (0, 0), (-1, -1), 12),
                                  ("TOPPADDING", (0, 0), (0, 0), 9), ("BOTTOMPADDING", (0, -1), (-1, -1), 10)]))
         story += [box, Spacer(1, 12)]
@@ -421,6 +427,7 @@ def _flow(article, url, cite_text, st, masthead=True, fn=None, idx=0):
     parser.close()
     notes = parse_footnotes(article["footnotes"] if "footnotes" in keys else "")
     cited = set()
+    first_p = True
     for kind, text in parser.blocks:
         marked = text
         for k, v in ci_pdf._REPL.items():
@@ -435,9 +442,14 @@ def _flow(article, url, cite_text, st, masthead=True, fn=None, idx=0):
             key = "%d:%d" % (idx, n)
             if fn is not None:
                 fn.notes[key] = (n, _pdf_note_html(notes[n - 1]))
-            return ('<super><font color="#7A1F2B" size="7"><b>%d</b></font></super>' % n
+            return ('<super><font color="#A8782A" size="7"><b>%d</b></font></super>' % n
                     + ('<onDraw name="fnmark" label="%s"/>' % key if fn is not None else ""))
         marked = _FN_REF.sub(_mark, marked)
+        if first_p and kind == "p":
+            first_p = False
+            m0 = re.match(r"^((?:[^<\s]+\s+){0,3}[^<\s]+)(\s.*)$", marked, re.S)
+            if m0 and not re.search(r"[<&\[]", m0.group(1)):
+                marked = '<font color="%s" size="9.8"><b>%s</b></font>%s' % (NAVY_HEX, m0.group(1).upper(), m0.group(2))
         try:
             story.append(Paragraph(marked, st[kind], bulletText="•" if kind == "li" else None))
         except Exception:
@@ -445,7 +457,7 @@ def _flow(article, url, cite_text, st, masthead=True, fn=None, idx=0):
     biblio = parse_footnotes(article["bibliography"] if "bibliography" in keys else "")
     if biblio:
         story += [Spacer(1, 14), Paragraph("BIBLIOGRAPHIE", st["abslabel"]),
-                  HRFlowable(width="100%", thickness=0.6, color=ci_pdf.BURGUNDY, spaceAfter=6)]
+                  HRFlowable(width="100%", thickness=0.6, color=colors.HexColor(NAVY_HEX), spaceAfter=6)]
         for t in biblio:
             txt = re.sub(r"(?<![\w*])\*([^*\n]+)\*(?![\w*])", r"<i>\1</i>", c(t))
             story.append(Paragraph(txt, st["note"]))
@@ -453,16 +465,16 @@ def _flow(article, url, cite_text, st, masthead=True, fn=None, idx=0):
     rest = [(i, t) for i, t in enumerate(notes, 1) if fn is None or i not in cited]
     if rest:
         story += [Spacer(1, 14), Paragraph("NOTES" if fn is not None else "NOTES DE BAS DE PAGE", st["abslabel"]),
-                  HRFlowable(width="100%", thickness=0.6, color=ci_pdf.BURGUNDY, spaceAfter=6)]
+                  HRFlowable(width="100%", thickness=0.6, color=colors.HexColor(NAVY_HEX), spaceAfter=6)]
         for i, t in rest:
-            story.append(Paragraph('<font color="#7A1F2B"><b>%d</b></font>&nbsp;&nbsp;%s' % (i, _pdf_note_html(t)), st["note"]))
+            story.append(Paragraph('<font color="#A8782A"><b>%d</b></font>&nbsp;&nbsp;%s' % (i, _pdf_note_html(t)), st["note"]))
     cite_par = c(cite_text).replace(JOURNAL, "<i>%s</i>" % JOURNAL)
     cite = Table([[Paragraph("POUR CITER CET ARTICLE", st["abslabel"])], [Paragraph(cite_par, st["cite"])],
                   [Paragraph(c("Référence : %s  ·  %s" % (issue_ref(article), url)), st["cite"])],
                   [Paragraph(c("Les opinions exprimées engagent leurs auteurs et ne constituent pas un avis juridique. "
                                "© %s %s. Tous droits réservés." % (year_of(article), JOURNAL)), st["fine"])]], colWidths=["100%"])
-    cite.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#D9D2D0")),
-                              ("LINEABOVE", (0, 0), (-1, 0), 2, ci_pdf.BURGUNDY),
+    cite.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor(RULE_HEX)),
+                              ("LINEABOVE", (0, 0), (-1, 0), 2.2, colors.HexColor(NAVY_HEX)),
                               ("LEFTPADDING", (0, 0), (-1, -1), 12), ("RIGHTPADDING", (0, 0), (-1, -1), 12),
                               ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, -1), (-1, -1), 9)]))
     story += [Spacer(1, 18), KeepTogether([cite])]
@@ -478,6 +490,11 @@ def _raw(text):
     return s.encode("cp1252", "replace").decode("cp1252")
 
 
+def colors_navy():
+    from reportlab.lib import colors
+    return colors.HexColor(NAVY_HEX)
+
+
 def _decorate(label_right, cover_label=None):
     """Fonctions de dessin des pages : bandeau de marque (1re page), en-tête courant, pied de page, couverture."""
     from reportlab.lib import colors
@@ -485,10 +502,20 @@ def _decorate(label_right, cover_label=None):
     from reportlab.lib.units import mm
     import ci_pdf
     W, H = A4
-    burg, gold, soft = ci_pdf.BURGUNDY, colors.HexColor(GOLD), ci_pdf.SOFT
+    burg, gold, soft = colors.HexColor(NAVY_HEX), colors.HexColor(GOLD_BRIGHT_HEX), colors.HexColor("#4A5568")
+
+    def grad(canvas, x, y, w, h, c1, c2, horizontal=True, steps=60):
+        a, b = colors.HexColor(c1), colors.HexColor(c2)
+        for i in range(steps):
+            t = i / float(steps - 1)
+            canvas.setFillColorRGB(a.red + (b.red - a.red) * t, a.green + (b.green - a.green) * t, a.blue + (b.blue - a.blue) * t)
+            if horizontal:
+                canvas.rect(x + w * i / steps, y, w / steps + 0.6, h, stroke=0, fill=1)
+            else:
+                canvas.rect(x, y + h * i / steps, w, h / steps + 0.6, stroke=0, fill=1)
 
     def footer(canvas, doc):
-        canvas.setStrokeColor(colors.HexColor("#D9D2D0")); canvas.setLineWidth(0.5)
+        canvas.setStrokeColor(colors.HexColor(RULE_HEX)); canvas.setLineWidth(0.5)
         canvas.line(20 * mm, 16 * mm, W - 20 * mm, 16 * mm)
         canvas.setFont("Helvetica", 7.8); canvas.setFillColor(soft)
         canvas.drawString(20 * mm, 11.5 * mm, _raw(JOURNAL + "  ·  Massey Contracts & Tax"))
@@ -496,8 +523,8 @@ def _decorate(label_right, cover_label=None):
 
     def first(canvas, doc):
         canvas.saveState()
-        canvas.setFillColor(burg); canvas.rect(0, H - 40 * mm, W, 40 * mm, stroke=0, fill=1)
-        canvas.setFillColor(gold); canvas.rect(0, H - 41.6 * mm, W, 1.6 * mm, stroke=0, fill=1)
+        grad(canvas, 0, H - 40 * mm, W, 40 * mm, NAVY_DEEP_HEX, NAVY2_HEX)
+        grad(canvas, 0, H - 41.2 * mm, W, 1.2 * mm, "#B8893A", "#F0D79A", steps=40)
         w = _draw_logo(canvas, "cream", 20 * mm, H - 32 * mm, 22 * mm)
         x = 20 * mm + w + 6 * mm
         canvas.setFillColor(colors.white); canvas.setFont("Times-Bold", 21)
@@ -513,7 +540,7 @@ def _decorate(label_right, cover_label=None):
 
     def later(canvas, doc):
         canvas.saveState()
-        w = _draw_logo(canvas, "burgundy", 20 * mm, H - 16.5 * mm, 8 * mm)
+        w = _draw_logo(canvas, "accent", 20 * mm, H - 16.5 * mm, 8 * mm)
         canvas.setFillColor(burg); canvas.setFont("Times-Bold", 10.5)
         canvas.drawString(20 * mm + w + 3 * mm, H - 13.4 * mm, "MASSEY LAW REVIEW")
         canvas.setFont("Helvetica", 7.8); canvas.setFillColor(soft)
@@ -525,8 +552,8 @@ def _decorate(label_right, cover_label=None):
 
     def cover(canvas, doc):
         canvas.saveState()
-        canvas.setFillColor(burg); canvas.rect(0, 0, W, H, stroke=0, fill=1)
-        canvas.setFillColor(colors.HexColor("#6A1824")); canvas.rect(0, 0, W, 62 * mm, stroke=0, fill=1)
+        grad(canvas, 0, 0, W, H, NAVY2_HEX, NAVY_DEEP_HEX, horizontal=False, steps=80)
+        canvas.setFillColor(colors.HexColor(NAVY_DEEP_HEX)); canvas.rect(0, 0, W, 62 * mm, stroke=0, fill=1)
         canvas.setFillColor(gold); canvas.rect(20 * mm, 62 * mm, 40 * mm, 1.2 * mm, stroke=0, fill=1)
         lh = 46 * mm
         _draw_logo(canvas, "cream", 20 * mm, H - 36 * mm - lh, lh)
@@ -571,7 +598,7 @@ class _FNCtx:
         out = []
         for k in keys:
             n, html = self.notes[k]
-            out.append(Paragraph('<font color="#7A1F2B"><b>%d</b></font>&nbsp;&nbsp;%s' % (n, html), st["fnote"]))
+            out.append(Paragraph('<font color="#A8782A"><b>%d</b></font>&nbsp;&nbsp;%s' % (n, html), st["fnote"]))
         return out
 
     def need(self, st, keys):
@@ -596,7 +623,7 @@ class _FNCtx:
         hs = [p.wrap(self.width, 10000)[1] for p in paras]
         y = 20 * mm + sum(hs) + 2 * len(hs)
         canvas.saveState()
-        canvas.setStrokeColor(colors.HexColor("#7A1F2B")); canvas.setLineWidth(0.6)
+        canvas.setStrokeColor(colors.HexColor(GOLD_BRIGHT_HEX)); canvas.setLineWidth(0.8)
         canvas.line(20 * mm, y + 3 * mm, 20 * mm + 42 * mm, y + 3 * mm)
         for p, h in zip(paras, hs):
             y -= h + 2
@@ -678,9 +705,9 @@ def issue_pdf(label, articles, url_of, cite_of):
     def make(fn):
         fn.notes.clear()
         story = [NextPageTemplate("later"), Spacer(1, 1), PageBreak(), Paragraph(c("Sommaire"), st["h2"]),
-                 HRFlowable(width="100%", thickness=0.5, color=ci_pdf.BURGUNDY, spaceAfter=10)]
+                 HRFlowable(width="100%", thickness=0.5, color=colors_navy(), spaceAfter=10)]
         for n, a in enumerate(articles, 1):
-            story.append(Paragraph("<font color='#B8893A'>%02d</font>&nbsp;&nbsp;<b>%s</b><br/>%s" % (n, c(a["title"]), c(clean_author(a["author_name"]))), st["toc"]))
+            story.append(Paragraph("<font color='#A8782A'>%02d</font>&nbsp;&nbsp;<b>%s</b><br/>%s" % (n, c(a["title"]), c(clean_author(a["author_name"]))), st["toc"]))
         for k, a in enumerate(articles):
             story.append(PageBreak())
             story += _flow(a, url_of(a), cite_of(a), st, masthead=False, fn=fn, idx=k)

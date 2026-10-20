@@ -12,6 +12,11 @@
 {% include "revue/_subnav.html" %}
 
 <div class="rva-progress rv-noprint" id="rva-progress" aria-hidden="true"><span></span></div>
+<div class="rva-pmast rv-print-block" aria-hidden="true">
+  <img src="{{ url_for('static', filename='img/mark-header.png') }}" alt="">
+  <div class="rva-pm-t"><b>Massey Law Review</b><small>Revue juridique · Massey Contracts &amp; Tax</small></div>
+  <div class="rva-pm-i">{{ article['issue_label'] or '' }}</div>
+</div>
 <header class="rva-head">
   <p class="rva-kick">
     {% if card.type %}<a href="{{ url_for('revue_articles', type=card.type_key) }}">{{ card.type }}</a>{% endif %}
@@ -80,6 +85,7 @@
       </div>
     </section>
     {% endif %}
+    {% if has_access %}<aside class="rva-pcite rv-print-block" aria-hidden="true"><b>Pour citer cet article</b><p>{{ card.cite_html['chicago']|safe if card.cite_html is mapping else '' }}</p><span>{{ ref }} · {{ card.url }}</span></aside>{% endif %}
     <p class="rv-noprint" style="margin-top:28px;"><a href="{{ url_for('revue_articles') }}" class="btn btn-ghost">← Tous les articles</a></p>
   </article>
 
