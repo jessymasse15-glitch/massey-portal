@@ -11,33 +11,35 @@
 <a class="rv-skip" href="#rva-main">Aller au texte de l'article</a>
 {% include "revue/_subnav.html" %}
 
-<header class="rva-mast">
-  <div class="rva-mast-top">
-    <span class="rva-mast-brand"><img src="{{ url_for('static', filename='img/mark-header.png') }}" alt="" width="34" height="24"><span><b>Massey Law Review</b><small>Revue juridique · Massey Contracts &amp; Tax</small></span></span>
-    <span class="rva-mast-issue">{% if article['issue_label'] %}{{ article['issue_label'] }}{% else %}Hors numéro{% endif %}{% if card.year %} · {{ card.year }}{% endif %}</span>
-  </div>
-  <div class="rva-mast-kick">
-    {% if card.type %}<a href="{{ url_for('revue_articles', type=card.type_key) }}">{{ card.type }}</a>{% endif %}{% if card.domain %}<a href="{{ url_for('revue_articles', domaine=card.domain_key) }}">{{ card.domain }}</a>{% endif %}
+<div class="rva-progress rv-noprint" id="rva-progress" aria-hidden="true"><span></span></div>
+<header class="rva-head">
+  <p class="rva-kick">
+    {% if card.type %}<a href="{{ url_for('revue_articles', type=card.type_key) }}">{{ card.type }}</a>{% endif %}
+    {% if card.type and card.domain %}<i class="rva-dia" aria-hidden="true"></i>{% endif %}
+    {% if card.domain %}<a href="{{ url_for('revue_articles', domaine=card.domain_key) }}">{{ card.domain }}</a>{% endif %}
     {% if not card.type and not card.domain %}<span>Article</span>{% endif %}
+  </p>
+  <h1 class="rva-title">{{ article['title'] }}</h1>
+  {% if show_author %}<p class="rva-author">{{ card.author }}</p>{% endif %}
+  <div class="rva-rule" aria-hidden="true"></div>
+  <ul class="rva-facts">
+    {% if article['issue_label'] %}<li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h12v17H6a2 2 0 0 0-2 2zM8 7h6M8 11h6"/></svg><a href="{{ url_for('revue_articles', numero=article['issue_label']) }}" title="Voir tout le numéro">{{ article['issue_label'] }}</a></li>{% endif %}
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>{{ card.date }}</span></li>
+    {% if card.minutes %}<li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>{{ card.minutes }} min de lecture</span></li>{% endif %}
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4C9 2.5 5.5 2.5 3 4v15c2.5-1.5 6-1.5 9 0 3-1.5 6.5-1.5 9 0V4c-2.5-1.5-6-1.5-9 0zM12 4v15"/></svg><span>{{ 'Texte intégral' if has_access else 'Résumé libre' }}</span></li>
+    {% if is_new %}<li class="rva-new">Nouveau</li>{% endif %}
+  </ul>
+  <div class="rva-actions-row rv-noprint">
+    <a class="rva-dlbtn" href="{{ url_for('revue_article_pdf', slug=article['slug']) }}" title="{{ 'Télécharger le PDF' if has_access else 'PDF réservé aux abonnés' }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7zm-1 7V3.5L17.5 9zM8 13h8v1.6H8zm0 3h8v1.6H8z"/></svg><span>Télécharger</span></a>
+    <button type="button" class="rva-ghost" id="rva-go-cite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h4v4c0 3-2 5-4 5M15 7h4v4c0 3-2 5-4 5"/></svg><span>Citer</span></button>
+    <button type="button" class="rva-ghost" data-rv-share data-title="{{ article['title'] }}" data-url="{{ card.url }}" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg><span>Partager</span></button>
+    <button type="button" class="rva-ghost" onclick="window.print()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v7H7z"/></svg><span>Imprimer</span></button>
   </div>
-  <dl class="rva-mast-facts">
-    <div><dt>Publié le</dt><dd>{{ card.date }}</dd></div>
-    {% if card.minutes %}<div><dt>Lecture</dt><dd>{{ card.minutes }} min</dd></div>{% endif %}
-    <div><dt>Accès</dt><dd>{{ 'Texte intégral' if has_access else 'Résumé libre' }}</dd></div>
-    <div><dt>Référence</dt><dd class="rva-ref">{{ ref }}</dd></div>
-  </dl>
-  <span class="rva-mast-mark" aria-hidden="true">§</span>
 </header>
 
 <div class="rva-grid">
   <article class="rva-main" id="rva-main">
-    <p class="rva-meta">
-      {% if article['issue_label'] %}<a href="{{ url_for('revue_articles', numero=article['issue_label']) }}">{{ article['issue_label'] }}</a>{% endif %}
-      {% if is_new %}<span class="rva-new">Nouveau</span>{% endif %}
-    </p>
-    <h1 class="rva-title">{{ article['title'] }}</h1>
-    <p class="rva-author">{{ card.author }}</p>
-
     <div class="rva-read rv-noprint" role="group" aria-label="Confort de lecture">
       <span class="rva-read-l">Lecture</span>
       <button type="button" class="rv-btn" data-rva="smaller" aria-label="Réduire la taille du texte">A−</button>
@@ -54,7 +56,7 @@
       </section>
       {% endif %}
       {% if has_access %}
-        <div class="rva-body prose" id="rva-body">{{ body_fn|safe }}{{ notes_fn|safe }}</div>
+        <div class="rva-body prose" id="rva-body">{{ body_fn|safe }}{{ biblio_html|safe }}{{ notes_fn|safe }}</div>
       {% else %}
         <div class="upsell-banner rv-noprint" style="margin-top:28px;">
           <p><b>Texte intégral réservé aux abonnés.</b> L'accès complet à Massey Law Review est inclus dans l'abonnement Premium Massey AI (avec les 5 piliers), ou disponible séparément via l'abonnement Lecteur/Institution de la revue.</p>
@@ -71,6 +73,18 @@
       <p style="margin:8px 0 0;">{{ card.cite_html.chicago|safe }}</p>
       <p class="rv-print-only">Adresse : {{ card.url }}</p>
     </div>
+    {% if related %}
+    <section class="rva-related rv-noprint" aria-labelledby="rva-rel-h">
+      <h2 id="rva-rel-h" class="rva-label rva-label-strong">{{ related_title }}</h2>
+      <div class="rva-rel-grid">
+        {% for r in related %}<a class="rva-rel" href="{{ r.url }}">
+          <span class="rva-rel-k">{{ r.domain or 'Article' }}</span>
+          <strong>{{ r.a['title'] }}</strong>
+          <span class="rva-rel-m">{% if r.author != 'Rédaction' %}{{ r.author }} · {% endif %}{{ r.date }}</span>
+        </a>{% endfor %}
+      </div>
+    </section>
+    {% endif %}
     <p class="rv-noprint" style="margin-top:28px;"><a href="{{ url_for('revue_articles') }}" class="btn btn-ghost">← Tous les articles</a></p>
   </article>
 
@@ -79,14 +93,6 @@
       <h2 class="rva-label" id="rva-toc-h">Sommaire</h2>
       <ol id="rva-toc-list"></ol>
     </nav>
-
-    <div class="rva-card rva-tools">
-      <a class="rv-btn rv-btn-primary" href="{{ url_for('revue_article_pdf', slug=article['slug']) }}"
-         title="{{ 'Télécharger le PDF' if has_access else 'PDF réservé aux abonnés' }}">PDF</a>
-      <button type="button" class="rv-btn" data-rv-share data-title="{{ article['title'] }}" data-url="{{ card.url }}" aria-haspopup="dialog">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
-        <span>Partager</span></button>
-    </div>
 
     <div class="rva-card" id="rva-cite" data-cite='{{ {"plain": card.cite, "html": card.cite_html}|tojson }}'>
       <h2 class="rva-label rva-label-strong">Citer cet article</h2>
@@ -103,6 +109,7 @@
   </aside>
 </div>
 </div>
+<button type="button" class="rva-top rv-noprint" id="rva-top" aria-label="Retour en haut de la page" hidden>↑</button>
 {% include "revue/_cite_share_dialogs.html" %}
 <script>
 (function(){
@@ -148,6 +155,29 @@
       }
       window.addEventListener('scroll',spy,{passive:true}); spy();
     }
+  }
+
+  /* Barre de progression, retour en haut, bouton « Citer » */
+  var bar=document.querySelector('#rva-progress span'), topb=document.getElementById('rva-top'), art=document.getElementById('rva-main');
+  function prog(){
+    if(art&&bar){ var r=art.getBoundingClientRect(), h=r.height-window.innerHeight*0.6; var p=Math.max(0,Math.min(1,(-r.top+120)/Math.max(h,1))); bar.style.width=(p*100)+'%'; }
+    if(topb) topb.hidden=window.scrollY<700;
+  }
+  window.addEventListener('scroll',prog,{passive:true}); prog();
+  if(topb) topb.addEventListener('click',function(){ window.scrollTo({top:0,behavior:'smooth'}); });
+  var gc=document.getElementById('rva-go-cite'), cb=document.getElementById('rva-cite');
+  if(gc&&cb) gc.addEventListener('click',function(){
+    cb.scrollIntoView({behavior:'smooth',block:'center'}); cb.classList.add('rva-flash'); setTimeout(function(){ cb.classList.remove('rva-flash'); },1600);
+    var tb=cb.querySelector('.rva-ctab.on'); if(tb) setTimeout(function(){ tb.focus({preventScroll:true}); },500);
+  });
+
+  /* Notes repliables : s'ouvrent à l'appel d'un numéro, à l'arrivée sur #fn-n ou à l'impression */
+  var nd=document.getElementById('rva-notes-d');
+  function openNote(){ if(nd && /^#fn-\d+$/.test(location.hash)){ nd.open=true; var el=document.querySelector(location.hash); if(el) setTimeout(function(){ el.scrollIntoView({block:'center'}); },30); } }
+  if(nd){
+    document.querySelectorAll('.rva-fnref a').forEach(function(a){ a.addEventListener('click',function(){ nd.open=true; }); });
+    window.addEventListener('hashchange',openNote); openNote();
+    window.addEventListener('beforeprint',function(){ nd.open=true; });
   }
 
   /* Aperçu d'une note au survol / au focus de son numéro */

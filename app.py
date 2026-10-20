@@ -1713,9 +1713,20 @@ def revue_article_detail(slug):
         is_new = 0 <= (datetime.utcnow() - d).days <= 30
     except Exception:
         pass
+    conn = dbm.get_db()
+    others = conn.execute("SELECT * FROM review_articles WHERE published=1 AND id!=? ORDER BY COALESCE(published_at, created_at) DESC, id DESC", (article["id"],)).fetchall()
+    conn.close()
+    same = [o for o in others if article["issue_label"] and o["issue_label"] == article["issue_label"]]
+    related_title = "Dans le même numéro" if same else "À lire aussi"
+    related = [{"a": o, "url": url_for("revue_article_detail", slug=o["slug"]), "author": revue_tools.clean_author(o["author_name"]),
+                "date": revue_tools.fr_date(o["published_at"] or o["created_at"]),
+                "domain": revue_tools.DOMAIN_LABELS.get(o["domain"]) if "domain" in o.keys() else None}
+               for o in (same or others)[:3]]
     body_fn, notes_fn = revue_tools.render_footnotes(article["body_html"], article["footnotes"] if "footnotes" in article.keys() else "")
-    return render_template("revue/article_detail.html", article=article, has_access=has_access, card=card, body_fn=body_fn, notes_fn=notes_fn,
-                           cite_styles=revue_tools.CITE_STYLES, terms=(), is_new=is_new, ref=revue_tools.issue_ref(article))
+    biblio_html = revue_tools.render_bibliography(article["bibliography"] if "bibliography" in article.keys() else "")
+    return render_template("revue/article_detail.html", article=article, has_access=has_access, card=card, body_fn=body_fn, notes_fn=notes_fn, biblio_html=biblio_html,
+                           cite_styles=revue_tools.CITE_STYLES, terms=(), is_new=is_new, ref=revue_tools.issue_ref(article),
+                           related=related, related_title=related_title, show_author=card["author"].strip().lower() not in ("rédaction", "redaction"))
 
 
 @app.route("/revue/articles/<slug>/pdf")
@@ -3223,6 +3234,7 @@ def _save_revue_article(article_id):
     article_type = request.form.get("article_type", "")
     article_type = article_type if article_type in revue_tools.TYPE_LABELS else None
     footnotes = request.form.get("footnotes", "").strip() or None
+    bibliography = request.form.get("bibliography", "").strip() or None
     file = request.files.get("pdf")
 
     if not (title and author_name):
@@ -3251,10 +3263,10 @@ def _save_revue_article(article_id):
         published_at = dbm.now() if published else None
         conn.execute(
             "INSERT INTO review_articles (slug, title, author_name, issue_label, abstract, body_html, "
-            "pdf_stored_name, pdf_original_name, published, created_by, created_at, published_at, domain, article_type, footnotes) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "pdf_stored_name, pdf_original_name, published, created_by, created_at, published_at, domain, article_type, footnotes, bibliography) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (slug, title, author_name, issue_label, abstract, body_html, pdf_stored_name, pdf_original_name,
-             published, u["id"], dbm.now(), published_at, domain, article_type, footnotes),
+             published, u["id"], dbm.now(), published_at, domain, article_type, footnotes, bibliography),
         )
         conn.commit()
         dbm.log_activity(u["id"], "revue_article_created", title)
@@ -3269,9 +3281,9 @@ def _save_revue_article(article_id):
             pdf_original_name = existing["pdf_original_name"]
         conn.execute(
             "UPDATE review_articles SET title=?, author_name=?, issue_label=?, abstract=?, body_html=?, "
-            "pdf_stored_name=?, pdf_original_name=?, published=?, published_at=?, domain=?, article_type=?, footnotes=? WHERE id=?",
+            "pdf_stored_name=?, pdf_original_name=?, published=?, published_at=?, domain=?, article_type=?, footnotes=?, bibliography=? WHERE id=?",
             (title, author_name, issue_label, abstract, body_html, pdf_stored_name, pdf_original_name,
-             published, new_published_at, domain, article_type, footnotes, article_id),
+             published, new_published_at, domain, article_type, footnotes, bibliography, article_id),
         )
         conn.commit()
         dbm.log_activity(u["id"], "revue_article_updated", title)

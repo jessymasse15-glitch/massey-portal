@@ -276,6 +276,15 @@ def _note_html(text):
     return out
 
 
+def render_bibliography(raw):
+    """Bibliographie saisie (une référence par ligne) -> section HTML à intertitre (reprise dans le sommaire) ; vide si rien."""
+    refs = parse_footnotes(raw)
+    if not refs:
+        return ""
+    return ('<section class="rva-biblio"><h2 id="bibliographie">Bibliographie</h2><ul>%s</ul></section>'
+            % "".join("<li>%s</li>" % _note_html(r) for r in refs))
+
+
 def render_footnotes(body_html, raw_notes):
     """Remplace [^n] dans le corps par des appels de note et construit la section « Notes de bas de page ».
     Retourne (html_du_corps_avec_appels, html_de_la_section_notes_ou_vide)."""
@@ -296,8 +305,10 @@ def render_footnotes(body_html, raw_notes):
     items = "".join('<li id="fn-%d" role="doc-endnote"><span class="rva-fnnum">%d</span><span class="rva-fntext">%s '
                     '<a class="rva-fnback" href="#fnref-%d" role="doc-backlink" aria-label="Retour au texte (appel %d)">↩</a></span></li>'
                     % (i, i, _note_html(t), i, i) for i, t in enumerate(notes, 1))
-    section = ('<section class="rva-notes" role="doc-endnotes" aria-labelledby="rva-notes-h">'
-               '<h2 id="rva-notes-h">Notes de bas de page</h2><ol>%s</ol></section>' % items)
+    section = ('<section class="rva-notes" role="doc-endnotes" aria-label="Notes de bas de page">'
+               '<details id="rva-notes-d"><summary><span class="rva-notes-t">Notes de bas de page</span>'
+               '<span class="rva-notes-s"><span class="rva-on-closed">Afficher</span><span class="rva-on-open">Masquer</span>'
+               '<i class="rva-pm" aria-hidden="true"></i></span></summary><ol>%s</ol></details></section>' % items)
     return body, section
 
 
@@ -320,11 +331,12 @@ def _styles():
         "author": ParagraphStyle("au", fontName="Times-Italic", fontSize=13, leading=17, textColor=burg, spaceAfter=3),
         "abslabel": ParagraphStyle("al", fontName="Helvetica-Bold", fontSize=7.6, leading=10, textColor=burg, spaceAfter=3),
         "note": ParagraphStyle("nt", fontName="Times-Roman", fontSize=9.2, leading=12.6, textColor=soft, leftIndent=14, firstLineIndent=-14, spaceAfter=3),
+        "fnote": ParagraphStyle("fnt", fontName="Times-Roman", fontSize=8.6, leading=11.2, textColor=soft, leftIndent=12, firstLineIndent=-12),
         "fine": ParagraphStyle("fn", fontName="Helvetica-Oblique", fontSize=7.6, leading=10.5, textColor=soft),
         "meta": ParagraphStyle("m", fontName="Helvetica", fontSize=9.5, leading=13, textColor=soft, spaceAfter=2),
         "abs": ParagraphStyle("a", fontName="Times-Italic", fontSize=11, leading=15.5, textColor=ink, spaceAfter=2),
-        "h2": ParagraphStyle("h2", fontName="Times-Bold", fontSize=14.5, leading=18, textColor=burg, spaceBefore=14, spaceAfter=5),
-        "h3": ParagraphStyle("h3", fontName="Times-Bold", fontSize=12, leading=16, textColor=ink, spaceBefore=10, spaceAfter=4),
+        "h2": ParagraphStyle("h2", fontName="Times-Bold", fontSize=14.5, leading=18, textColor=burg, spaceBefore=14, spaceAfter=5, keepWithNext=1),
+        "h3": ParagraphStyle("h3", fontName="Times-Bold", fontSize=12, leading=16, textColor=ink, spaceBefore=10, spaceAfter=4, keepWithNext=1),
         "p": ParagraphStyle("p", fontName="Times-Roman", fontSize=11, leading=16, textColor=ink, spaceAfter=7, alignment=4),
         "li": ParagraphStyle("li", fontName="Times-Roman", fontSize=11, leading=15.5, textColor=ink, leftIndent=14, bulletIndent=3, spaceAfter=3),
         "blockquote": ParagraphStyle("bq", fontName="Times-Italic", fontSize=10.5, leading=15, textColor=soft, leftIndent=18, rightIndent=10, spaceAfter=7),
@@ -373,7 +385,7 @@ def issue_ref(article):
     return "MLR-%s-%s%s-%03d" % (year_of(article) or "0000", ("V%d" % vol) if vol else "", ("N%d" % num) if num else "", article["id"] or 0)
 
 
-def _flow(article, url, cite_text, st, masthead=True):
+def _flow(article, url, cite_text, st, masthead=True, fn=None, idx=0):
     """Éléments reportlab d'un article : en-tête éditorial, résumé encadré, texte, bloc « Pour citer »."""
     from reportlab.lib import colors
     from reportlab.lib.units import mm
@@ -388,7 +400,8 @@ def _flow(article, url, cite_text, st, masthead=True):
     mins = reading_minutes(article["body_html"])
     story = [Paragraph(c(kicker.upper()), st["kicker"]),
              Paragraph(c(article["title"]), st["title"]),
-             Paragraph(c(clean_author(article["author_name"])), st["author"]),
+             *([Paragraph(c(clean_author(article["author_name"])), st["author"])]
+               if clean_author(article["author_name"]).strip().lower() not in ("rédaction", "redaction") else []),
              Paragraph(c(" · ".join(x for x in (fr_date(article["published_at"] or article["created_at"]),
                                                 article["issue_label"] or "", ("%d min de lecture" % mins) if mins else "") if x)), st["meta"]),
              Spacer(1, 6), HRFlowable(width="100%", thickness=1.1, color=ci_pdf.BURGUNDY, spaceAfter=1),
@@ -404,24 +417,42 @@ def _flow(article, url, cite_text, st, masthead=True):
     parser.feed(article["body_html"] or "")
     parser.close()
     notes = parse_footnotes(article["footnotes"] if "footnotes" in keys else "")
+    cited = set()
     for kind, text in parser.blocks:
         marked = text
         for k, v in ci_pdf._REPL.items():
             marked = marked.replace(k, v)
         marked = marked.encode("cp1252", "replace").decode("cp1252")
         marked = re.sub(r"<(?!/?[bi]>)", "&lt;", marked)
-        marked = _FN_REF.sub(lambda m: '<super><font color="#7A1F2B" size="7"><b>%s</b></font></super>' % m.group(1)
-                             if 1 <= int(m.group(1)) <= len(notes) else m.group(0), marked)
+        def _mark(m):
+            n = int(m.group(1))
+            if not 1 <= n <= len(notes):
+                return m.group(0)
+            cited.add(n)
+            key = "%d:%d" % (idx, n)
+            if fn is not None:
+                fn.notes[key] = (n, _pdf_note_html(notes[n - 1]))
+            return ('<super><font color="#7A1F2B" size="7"><b>%d</b></font></super>' % n
+                    + ('<onDraw name="fnmark" label="%s"/>' % key if fn is not None else ""))
+        marked = _FN_REF.sub(_mark, marked)
         try:
             story.append(Paragraph(marked, st[kind], bulletText="•" if kind == "li" else None))
         except Exception:
             story.append(Paragraph(c(re.sub(r"</?[bi]>", "", text)), st[kind], bulletText="-" if kind == "li" else None))
-    if notes:
-        story += [Spacer(1, 14), Paragraph("NOTES DE BAS DE PAGE", st["abslabel"]),
+    biblio = parse_footnotes(article["bibliography"] if "bibliography" in keys else "")
+    if biblio:
+        story += [Spacer(1, 14), Paragraph("BIBLIOGRAPHIE", st["abslabel"]),
                   HRFlowable(width="100%", thickness=0.6, color=ci_pdf.BURGUNDY, spaceAfter=6)]
-        for i, t in enumerate(notes, 1):
+        for t in biblio:
             txt = re.sub(r"(?<![\w*])\*([^*\n]+)\*(?![\w*])", r"<i>\1</i>", c(t))
-            story.append(Paragraph('<font color="#7A1F2B"><b>%d</b></font>&nbsp;&nbsp;%s' % (i, txt), st["note"]))
+            story.append(Paragraph(txt, st["note"]))
+    # sans pagination dynamique (fn=None) toutes les notes vont en fin de texte ; sinon seules les notes jamais appelées y figurent
+    rest = [(i, t) for i, t in enumerate(notes, 1) if fn is None or i not in cited]
+    if rest:
+        story += [Spacer(1, 14), Paragraph("NOTES" if fn is not None else "NOTES DE BAS DE PAGE", st["abslabel"]),
+                  HRFlowable(width="100%", thickness=0.6, color=ci_pdf.BURGUNDY, spaceAfter=6)]
+        for i, t in rest:
+            story.append(Paragraph('<font color="#7A1F2B"><b>%d</b></font>&nbsp;&nbsp;%s' % (i, _pdf_note_html(t)), st["note"]))
     cite_par = c(cite_text).replace(JOURNAL, "<i>%s</i>" % JOURNAL)
     cite = Table([[Paragraph("POUR CITER CET ARTICLE", st["abslabel"])], [Paragraph(cite_par, st["cite"])],
                   [Paragraph(c("Référence : %s  ·  %s" % (issue_ref(article), url)), st["cite"])],
@@ -510,7 +541,67 @@ def _decorate(label_right, cover_label=None):
     return first, later, cover
 
 
-def _build(story, title, author, label_right, mode="article", cover_label=None):
+def _pdf_note_html(t):
+    import ci_pdf
+    return re.sub(r"(?<![\w*])\*([^*\n]+)\*(?![\w*])", r"<i>\1</i>", ci_pdf._c(t))
+
+
+class _FNCtx:
+    """Notes de bas de page des PDF : chaque note est dessinée au bas de la page où son numéro est cité.
+    La place nécessaire est réservée par mise en page itérative (le texte reflue autour des notes)."""
+
+    def __init__(self):
+        self.notes = {}      # clé "article:n" -> (n, html)
+        self.pages = {}      # page -> [clés dans l'ordre d'apparition] (passe en cours)
+        self.reserve = {}    # page -> hauteur réservée (points)
+        self.doc = None
+        self.width = 0
+
+    def mark(self, canvas, kind, label):
+        page = self.doc.page if self.doc else 0
+        lst = self.pages.setdefault(page, [])
+        if label in self.notes and label not in lst and not any(label in v for v in self.pages.values()):
+            lst.append(label)
+
+    def _paras(self, st, keys):
+        from reportlab.platypus import Paragraph
+        out = []
+        for k in keys:
+            n, html = self.notes[k]
+            out.append(Paragraph('<font color="#7A1F2B"><b>%d</b></font>&nbsp;&nbsp;%s' % (n, html), st["fnote"]))
+        return out
+
+    def need(self, st, keys):
+        from reportlab.lib.units import mm
+        h = 0
+        for p in self._paras(st, keys):
+            h += p.wrap(self.width, 10000)[1] + 2
+        return h + 5 * mm
+
+    def padding(self):
+        from reportlab.lib.units import mm
+        r = self.reserve.get(getattr(self.doc, "page", 0) if self.doc else 0, 0)
+        return r + 3 * mm if r else 0
+
+    def draw(self, canvas, doc, st):
+        from reportlab.lib import colors
+        from reportlab.lib.units import mm
+        keys = self.pages.get(doc.page)
+        if not keys:
+            return
+        paras = self._paras(st, keys)
+        hs = [p.wrap(self.width, 10000)[1] for p in paras]
+        y = 20 * mm + sum(hs) + 2 * len(hs)
+        canvas.saveState()
+        canvas.setStrokeColor(colors.HexColor("#7A1F2B")); canvas.setLineWidth(0.6)
+        canvas.line(20 * mm, y + 3 * mm, 20 * mm + 42 * mm, y + 3 * mm)
+        for p, h in zip(paras, hs):
+            y -= h + 2
+            p.drawOn(canvas, 20 * mm, y)
+        canvas.restoreState()
+
+
+def _build(story_fn, title, author, label_right, mode="article", cover_label=None):
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
     from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate
@@ -518,23 +609,57 @@ def _build(story, title, author, label_right, mode="article", cover_label=None):
 
     W, H = A4
     first, later, cover = _decorate(label_right, cover_label)
-    buf = io.BytesIO()
-    doc = BaseDocTemplate(buf, pagesize=A4, title=title, author=author, subject=JOURNAL, creator=JOURNAL)
-    fr = lambda top: Frame(20 * mm, 20 * mm, W - 40 * mm, H - 20 * mm - top, id="f", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
-    templates = [PageTemplate(id="later", frames=[fr(26 * mm)], onPage=later)]
-    if mode == "issue":
-        templates.insert(0, PageTemplate(id="cover", frames=[fr(H - 30 * mm)], onPage=cover))
-    else:
-        templates.insert(0, PageTemplate(id="first", frames=[fr(50 * mm)], onPage=first, autoNextPageTemplate="later"))
-    doc.addPageTemplates(templates)
-    doc.build(story)
-    return buf.getvalue()
+    st = _styles()
+    ctx = _FNCtx()
+    ctx.width = W - 40 * mm
+
+    class _Frame(Frame):
+        def _reset(self):
+            self.__dict__["_bottomPadding"] = ctx.padding() if ctx.doc else 0
+            self._geom()
+            Frame._reset(self)
+
+    class _Doc(BaseDocTemplate):
+        def handle_pageBegin(self):
+            BaseDocTemplate.handle_pageBegin(self)
+            self.canv.setNamedCB("fnmark", ctx.mark)
+
+    def one_pass():
+        buf = io.BytesIO()
+        doc = _Doc(buf, pagesize=A4, title=title, author=author, subject=JOURNAL, creator=JOURNAL)
+        ctx.doc = doc
+        ctx.pages = {}
+        fr = lambda top: _Frame(20 * mm, 20 * mm, W - 40 * mm, H - 20 * mm - top, id="f", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
+        end = lambda canv, d: ctx.draw(canv, d, st)
+        templates = [PageTemplate(id="later", frames=[fr(26 * mm)], onPage=later, onPageEnd=end)]
+        if mode == "issue":
+            templates.insert(0, PageTemplate(id="cover", frames=[fr(H - 30 * mm)], onPage=cover, onPageEnd=end))
+        else:
+            templates.insert(0, PageTemplate(id="first", frames=[fr(50 * mm)], onPage=first, onPageEnd=end, autoNextPageTemplate="later"))
+        doc.addPageTemplates(templates)
+        doc.build(story_fn(ctx))
+        return buf.getvalue()
+
+    data = one_pass()
+    seen = []
+    for _ in range(7):
+        need = {p: ctx.need(st, ks) for p, ks in ctx.pages.items() if ks}
+        if all(need.get(p, 0) <= ctx.reserve.get(p, 0) + 0.5 for p in need) and all(ctx.reserve.get(p, 0) <= need.get(p, 0) + 0.5 for p in ctx.reserve):
+            break
+        seen.append(dict(ctx.reserve))
+        if need in seen or len(seen) > 4:  # oscillation : on réserve le maximum connu pour garantir de la place
+            for p in set(need) | set(ctx.reserve):
+                ctx.reserve[p] = max(need.get(p, 0), ctx.reserve.get(p, 0))
+        else:
+            ctx.reserve = need
+        data = one_pass()
+    return data
 
 
 def article_pdf(article, url, cite_text):
     """PDF A4 de l'article : bandeau de marque, en-tête courant, résumé encadré, bloc « Pour citer » (reportlab, polices standard)."""
     right = " · ".join(x for x in (article["issue_label"], year_of(article)) if x) or JOURNAL
-    return _build(_flow(article, url, cite_text, _styles()), article["title"], clean_author(article["author_name"]), right)
+    return _build(lambda fn: _flow(article, url, cite_text, _styles(), fn=fn), article["title"], clean_author(article["author_name"]), right)
 
 
 def issue_pdf(label, articles, url_of, cite_of):
@@ -547,11 +672,15 @@ def issue_pdf(label, articles, url_of, cite_of):
     st = _styles()
     newest = max((a["published_at"] or a["created_at"] or "") for a in articles)
     cover_label = "%s  ·  %d article%s  ·  paru le %s" % (label, len(articles), "s" if len(articles) > 1 else "", fr_date(newest))
-    story = [NextPageTemplate("later"), Spacer(1, 1), PageBreak(), Paragraph(c("Sommaire"), st["h2"]),
-             HRFlowable(width="100%", thickness=0.5, color=ci_pdf.BURGUNDY, spaceAfter=10)]
-    for n, a in enumerate(articles, 1):
-        story.append(Paragraph("<font color='#B8893A'>%02d</font>&nbsp;&nbsp;<b>%s</b><br/>%s" % (n, c(a["title"]), c(clean_author(a["author_name"]))), st["toc"]))
-    for a in articles:
-        story.append(PageBreak())
-        story += _flow(a, url_of(a), cite_of(a), st, masthead=False)
-    return _build(story, "%s — %s" % (JOURNAL, label), JOURNAL, label, mode="issue", cover_label=cover_label)
+    def make(fn):
+        fn.notes.clear()
+        story = [NextPageTemplate("later"), Spacer(1, 1), PageBreak(), Paragraph(c("Sommaire"), st["h2"]),
+                 HRFlowable(width="100%", thickness=0.5, color=ci_pdf.BURGUNDY, spaceAfter=10)]
+        for n, a in enumerate(articles, 1):
+            story.append(Paragraph("<font color='#B8893A'>%02d</font>&nbsp;&nbsp;<b>%s</b><br/>%s" % (n, c(a["title"]), c(clean_author(a["author_name"]))), st["toc"]))
+        for k, a in enumerate(articles):
+            story.append(PageBreak())
+            story += _flow(a, url_of(a), cite_of(a), st, masthead=False, fn=fn, idx=k)
+        return story
+
+    return _build(make, "%s — %s" % (JOURNAL, label), JOURNAL, label, mode="issue", cover_label=cover_label)

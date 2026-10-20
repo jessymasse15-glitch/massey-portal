@@ -1043,3 +1043,88 @@ mark{background:rgba(214,170,50,.38);color:inherit;padding:0 2px;border-radius:2
 .rva-fnref a{font-size:.8em;min-width:1.5em;padding:.2em .4em .18em;}
 .rva-body sup.rva-fnref{vertical-align:.42em;margin:0 .25em 0 .15em;}
 @media (max-width:700px){.rva-body > p:first-of-type::first-letter{font-size:4.6em;}}
+
+/* Massey Law Review — en-tête d'article sobre (remplace le bandeau) */
+.rva-mast{display:none !important;}
+.rva-head{text-align:center;max-width:860px;margin:18px auto 8px;padding:0 4px;}
+.rva-kick{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:8px 12px;margin:0 0 14px;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;font-weight:600;}
+.rva-kick a{color:var(--ink-soft);text-decoration:none;} .rva-kick a:hover{color:var(--gold);}
+.rva-dia{display:inline-block;width:6px;height:6px;background:#CDB79A;transform:rotate(45deg);flex:none;}
+.rva-head .rva-title{margin:0 auto 12px;max-width:34ch;}
+.rva-head .rva-author{margin:0 0 16px;font-family:var(--sans);font-size:.88rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);}
+.rva-rule{height:5px;border-top:1px solid #D2C7C0;border-bottom:1px solid #D2C7C0;margin:0 auto 16px;max-width:100%;}
+.rva-issueline{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px 14px;margin:0 0 10px;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#3d2c2f;}
+.rva-issueline .rva-new{background:var(--gold);color:#fff;font-size:.62rem;letter-spacing:.08em;padding:3px 7px;border-radius:2px;}
+.rva-head-links{margin:0 0 16px;}
+.rva-seeissue{font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--gold);text-decoration:none;}
+.rva-seeissue:hover{text-decoration:underline;text-underline-offset:4px;}
+.rva-dlbtn{display:inline-flex;align-items:center;gap:10px;padding:11px 26px;background:var(--gold);color:#fff;text-decoration:none;font-size:.82rem;letter-spacing:.16em;text-transform:uppercase;font-weight:700;border:1px solid var(--gold);outline:1px solid rgba(255,255,255,.65);outline-offset:-5px;transition:background .2s;}
+.rva-dlbtn:hover{background:var(--gold-2);color:#fff;}
+.rva-dlbtn:focus-visible{outline:2px solid var(--ink);outline-offset:3px;}
+.rva-head + .rva-grid{margin-top:30px;}
+@media (max-width:700px){.rva-head{margin-top:10px;} .rva-head .rva-title{max-width:none;}}
+@media print{.rva-dlbtn{display:none !important;}}
+
+/* Notes de bas de page repliables */
+.rva-body .rva-notes{margin-top:2.6em;padding-top:0;border-top:0;}
+.rva-notes details{border:1px solid #D2C7C0;padding:5px;background:var(--surface);}
+.rva-notes summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 18px;border:1px solid #D2C7C0;font-family:var(--sans);}
+.rva-notes summary::-webkit-details-marker{display:none;}
+.rva-notes summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+.rva-notes-t{font-size:.9rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--gold);}
+.rva-notes-s{display:inline-flex;align-items:center;gap:8px;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--gold);}
+.rva-on-open{display:none;} .rva-notes details[open] .rva-on-open{display:inline;} .rva-notes details[open] .rva-on-closed{display:none;}
+.rva-pm{position:relative;width:11px;height:11px;display:inline-block;}
+.rva-pm::before,.rva-pm::after{content:"";position:absolute;background:currentColor;left:0;right:0;top:50%;height:2px;margin-top:-1px;}
+.rva-pm::after{transform:rotate(90deg);transition:transform .2s;}
+.rva-notes details[open] .rva-pm::after{transform:rotate(0);}
+.rva-notes ol{padding:18px 14px 8px;}
+/* Bibliographie */
+.rva-body .rva-biblio{margin-top:2.6em;}
+.rva-body .rva-biblio h2{margin-top:0;}
+.rva-biblio ul{list-style:none;margin:0;padding:0;display:grid;gap:.75em;}
+.rva-biblio li{font-family:var(--serif);font-size:calc(var(--rva-fs) * .92);line-height:1.6;padding-left:1.6em;text-indent:-1.6em;color:var(--ink);overflow-wrap:anywhere;}
+.rva-biblio li a{color:var(--gold);}
+@media print{.rva-notes details>*{display:block !important;}}
+
+/* ===== En-tête d'article, version riche ===== */
+.rva-progress{position:fixed;left:0;right:0;top:var(--hdr-h,0px);height:3px;z-index:40;background:transparent;pointer-events:none;}
+.rva-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),#B8893A);transition:width .1s linear;}
+.rva-head{position:relative;overflow:hidden;max-width:none;margin:20px 0 0;padding:34px 24px 28px;border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:var(--radius);background:linear-gradient(180deg,#fff 0%,#FAF6F3 100%);box-shadow:0 22px 40px -32px rgba(60,20,28,.45);}
+.rva-head::before{content:"";position:absolute;right:-30px;top:-24px;width:260px;height:190px;background:var(--gold);opacity:.055;-webkit-mask:url(/static/img/mark-header.png) center/contain no-repeat;mask:url(/static/img/mark-header.png) center/contain no-repeat;pointer-events:none;}
+.rva-head > *{position:relative;}
+.rva-head .rva-title{max-width:40ch;}
+.rva-facts{list-style:none;margin:0 0 20px;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:8px 10px;}
+.rva-facts li{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border:1px solid #E3D9D3;border-radius:999px;background:#fff;font-size:.8rem;font-weight:600;color:#3d2c2f;}
+.rva-facts li a{color:inherit;text-decoration:none;} .rva-facts li a:hover{color:var(--gold);}
+.rva-facts svg{width:16px;height:16px;fill:none;stroke:var(--gold);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;}
+.rva-facts li.rva-new{background:var(--gold);border-color:var(--gold);color:#fff;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;}
+.rva-actions-row{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;}
+.rva-ghost{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;font:inherit;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--gold);background:#fff;border:1px solid #D2C7C0;cursor:pointer;transition:border-color .2s,background .2s;}
+.rva-ghost:hover{border-color:var(--gold);background:#FBF3F3;}
+.rva-ghost:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+.rva-ghost svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.rva-dlbtn{min-height:44px;}
+.rva-abstract{background:#FBF7F4;border:1px solid #EADFD8;border-left:4px solid var(--gold);border-radius:3px;padding:16px 20px 18px;margin-bottom:26px;}
+.rva-abstract .rva-label{color:var(--gold);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:.7rem;}
+.rva-abstract p{font-size:calc(var(--rva-fs) * .98);}
+.rva-text{border-top:0;padding-top:6px;}
+.rva-card.rva-flash{box-shadow:0 0 0 3px rgba(var(--gold-rgb),.35);transition:box-shadow .3s;}
+.rva-related{max-width:68ch;margin-top:44px;padding-top:22px;border-top:2px solid var(--gold);}
+.rva-wide-col .rva-related{max-width:none;}
+.rva-rel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+.rva-rel{display:flex;flex-direction:column;gap:6px;padding:14px 16px;background:#fff;border:1px solid var(--line);border-top:3px solid #D9C3A2;border-radius:3px;text-decoration:none;color:var(--ink);transition:transform .2s,box-shadow .2s,border-color .2s;}
+.rva-rel:hover{transform:translateY(-2px);box-shadow:0 14px 26px -18px rgba(60,20,28,.5);border-top-color:var(--gold);}
+.rva-rel:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+.rva-rel-k{font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--gold);}
+.rva-rel strong{font-family:var(--serif);font-size:1.02rem;line-height:1.3;font-weight:600;}
+.rva-rel-m{font-size:.76rem;color:var(--ink-soft);margin-top:auto;}
+.rva-top{position:fixed;right:18px;bottom:18px;z-index:45;width:44px;height:44px;border-radius:50%;border:1px solid var(--gold);background:var(--gold);color:#fff;font-size:1.2rem;cursor:pointer;box-shadow:0 10px 22px -10px rgba(40,10,20,.6);}
+.rva-top:hover{background:var(--gold-2);} .rva-top:focus-visible{outline:2px solid var(--ink);outline-offset:3px;}
+@media (max-width:700px){
+  .rva-head{padding:24px 14px 20px;} .rva-facts li{padding:6px 11px;font-size:.76rem;}
+  .rva-actions-row{display:grid;grid-template-columns:1fr 1fr;} .rva-actions-row .rva-dlbtn{grid-column:1 / -1;justify-content:center;}
+  .rva-ghost{justify-content:center;padding:0 10px;}
+}
+@media print{.rva-progress,.rva-top,.rva-related{display:none !important;} .rva-head{box-shadow:none;border:0;background:none;} .rva-head::before{display:none;}}
+@media (max-width:700px){.rva-actions-row .rva-ghost[onclick]{display:none;}}

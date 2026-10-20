@@ -35,6 +35,11 @@
     <div class="helptext">Balises HTML simples acceptées : &lt;p&gt;, &lt;h2&gt;, &lt;blockquote&gt;, &lt;ul&gt;/&lt;li&gt;, &lt;strong&gt;, &lt;em&gt;. Pour appeler une note de bas de page, écrivez <code>[^1]</code>, <code>[^2]</code>… à l'endroit voulu.</div>
   </div>
   <div class="form-group">
+    <label for="bibliography">Bibliographie</label>
+    <textarea id="bibliography" name="bibliography" style="min-height:130px;font-size:0.88rem;" placeholder="Une référence par ligne">{{ article['bibliography'] if article and article['bibliography'] else '' }}</textarea>
+    <div class="helptext">Une référence par ligne. Elle apparaît à la fin de l'article, dans le sommaire, sous le titre « Bibliographie ». Titres d'ouvrages entre *astérisques* pour l'italique.</div>
+  </div>
+  <div class="form-group">
     <label for="footnotes">Notes de bas de page</label>
     <textarea id="footnotes" name="footnotes" style="min-height:160px;font-size:0.88rem;" placeholder="Une note par ligne, dans l'ordre : la 1re ligne est la note 1, la 2e la note 2…">{{ article['footnotes'] if article and article['footnotes'] else '' }}</textarea>
     <div class="helptext">Une note par ligne ; la numérotation est automatique. Mettez un titre d'ouvrage entre *astérisques* pour l'italique ; une adresse web devient un lien.</div>
