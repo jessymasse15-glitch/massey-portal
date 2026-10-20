@@ -1713,8 +1713,9 @@ def revue_article_detail(slug):
         is_new = 0 <= (datetime.utcnow() - d).days <= 30
     except Exception:
         pass
-    return render_template("revue/article_detail.html", article=article, has_access=has_access, card=card,
-                           cite_styles=revue_tools.CITE_STYLES, terms=(), is_new=is_new)
+    body_fn, notes_fn = revue_tools.render_footnotes(article["body_html"], article["footnotes"] if "footnotes" in article.keys() else "")
+    return render_template("revue/article_detail.html", article=article, has_access=has_access, card=card, body_fn=body_fn, notes_fn=notes_fn,
+                           cite_styles=revue_tools.CITE_STYLES, terms=(), is_new=is_new, ref=revue_tools.issue_ref(article))
 
 
 @app.route("/revue/articles/<slug>/pdf")
@@ -1735,7 +1736,7 @@ def revue_article_pdf(slug):
             as_attachment=True, download_name=article["pdf_original_name"] or f"{slug}.pdf",
         )
     url = _revue_article_url(article)  # sinon : PDF mis en page à partir du texte de l'article
-    data = revue_tools.article_pdf(article, url, revue_tools.citations(article, url)["massey"])
+    data = revue_tools.article_pdf(article, url, revue_tools.citations(article, url)["chicago"])
     return Response(data, mimetype="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="{slug}.pdf"'})
 
@@ -1754,7 +1755,7 @@ def revue_issue_pdf(issue_slug):
         flash("Le numéro complet en PDF est réservé aux abonnés Premium Massey AI ou à la Revue.", "error")
         return redirect(url_for("revue_articles", numero=label))
     data = revue_tools.issue_pdf(label, arts, _revue_article_url,
-                                 lambda a: revue_tools.citations(a, _revue_article_url(a))["massey"])
+                                 lambda a: revue_tools.citations(a, _revue_article_url(a))["chicago"])
     return Response(data, mimetype="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="massey-law-review-{issue_slug}.pdf"'})
 
@@ -3221,6 +3222,7 @@ def _save_revue_article(article_id):
     domain = domain if domain in revue_tools.DOMAIN_LABELS else None
     article_type = request.form.get("article_type", "")
     article_type = article_type if article_type in revue_tools.TYPE_LABELS else None
+    footnotes = request.form.get("footnotes", "").strip() or None
     file = request.files.get("pdf")
 
     if not (title and author_name):
@@ -3249,10 +3251,10 @@ def _save_revue_article(article_id):
         published_at = dbm.now() if published else None
         conn.execute(
             "INSERT INTO review_articles (slug, title, author_name, issue_label, abstract, body_html, "
-            "pdf_stored_name, pdf_original_name, published, created_by, created_at, published_at, domain, article_type) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "pdf_stored_name, pdf_original_name, published, created_by, created_at, published_at, domain, article_type, footnotes) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (slug, title, author_name, issue_label, abstract, body_html, pdf_stored_name, pdf_original_name,
-             published, u["id"], dbm.now(), published_at, domain, article_type),
+             published, u["id"], dbm.now(), published_at, domain, article_type, footnotes),
         )
         conn.commit()
         dbm.log_activity(u["id"], "revue_article_created", title)
@@ -3267,9 +3269,9 @@ def _save_revue_article(article_id):
             pdf_original_name = existing["pdf_original_name"]
         conn.execute(
             "UPDATE review_articles SET title=?, author_name=?, issue_label=?, abstract=?, body_html=?, "
-            "pdf_stored_name=?, pdf_original_name=?, published=?, published_at=?, domain=?, article_type=? WHERE id=?",
+            "pdf_stored_name=?, pdf_original_name=?, published=?, published_at=?, domain=?, article_type=?, footnotes=? WHERE id=?",
             (title, author_name, issue_label, abstract, body_html, pdf_stored_name, pdf_original_name,
-             published, new_published_at, domain, article_type, article_id),
+             published, new_published_at, domain, article_type, footnotes, article_id),
         )
         conn.commit()
         dbm.log_activity(u["id"], "revue_article_updated", title)

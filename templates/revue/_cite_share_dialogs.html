@@ -5,7 +5,7 @@
   <div class="rv-tabs" role="tablist" aria-label="Format de citation">
     {% for key, label in cite_styles %}<button type="button" role="tab" id="rv-tab-{{ key }}" data-style="{{ key }}" aria-controls="rv-cite-panel" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ 0 if loop.first else -1 }}" class="rv-tab{{ ' on' if loop.first }}">{{ label }}</button>{% endfor %}
   </div>
-  <div id="rv-cite-panel" class="rv-cite-text" role="tabpanel" tabindex="0" aria-labelledby="rv-tab-massey"></div>
+  <div id="rv-cite-panel" class="rv-cite-text" role="tabpanel" tabindex="0" aria-labelledby="rv-tab-chicago"></div>
   <p class="rv-dialog-note" id="rv-cite-note">La citation se colle avec ses italiques dans Word ou Google Docs.</p>
   <div class="rv-dialog-foot">
     <button type="button" class="rv-btn rv-btn-primary" id="rv-cite-copy">Copier la citation</button>
@@ -34,7 +34,7 @@
 (function(){
   var cd=document.getElementById('rv-cite-dialog'), sd=document.getElementById('rv-share-dialog');
   if(!cd||!sd) return;
-  var cur=null, style='massey', opener=null, RICH={massey:1,bluebook:1,apa:1};
+  var cur=null, style='chicago', opener=null, RICH={chicago:1,bluebook:1,apa:1};
   var panel=document.getElementById('rv-cite-panel'), tabs=[].slice.call(cd.querySelectorAll('.rv-tab'));
   function say(el,msg){ el.textContent=msg; setTimeout(function(){ el.textContent=''; },2400); }
   function open(d){ if(d.showModal){ d.showModal(); } else { d.setAttribute('open',''); } }
@@ -73,7 +73,7 @@
       document.getElementById('rv-cite-article').textContent=c.dataset.title;
       document.getElementById('rv-cite-ris').href='/revue/articles/'+cur.slug+'/citation.ris';
       document.getElementById('rv-cite-bib').href='/revue/articles/'+cur.slug+'/citation.bib';
-      document.getElementById('rv-cite-ok').textContent=''; style='massey'; paint(); open(cd);
+      document.getElementById('rv-cite-ok').textContent=''; style='chicago'; paint(); open(cd);
     }
     if(s){
       opener=s; var url=s.dataset.url, title=s.dataset.title, u=encodeURIComponent(url), t=encodeURIComponent(title);

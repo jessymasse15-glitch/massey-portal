@@ -11,15 +11,27 @@
 <a class="rv-skip" href="#rva-main">Aller au texte de l'article</a>
 {% include "revue/_subnav.html" %}
 
-<div class="rva-banner" role="img" aria-label="{{ card.domain or article['issue_label'] or 'Massey Law Review' }}">
-  <span class="rva-banner-t">{{ card.domain or article['issue_label'] or 'Massey Law Review' }}</span>
-  <svg class="rva-banner-i" width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0L7 7zM17 7l-3 7a3 3 0 0 0 6 0l-3-7zM8 21h8"/></svg>
-</div>
+<header class="rva-mast">
+  <div class="rva-mast-top">
+    <span class="rva-mast-brand"><img src="{{ url_for('static', filename='img/mark-header.png') }}" alt="" width="34" height="24"><span><b>Massey Law Review</b><small>Revue juridique · Massey Contracts &amp; Tax</small></span></span>
+    <span class="rva-mast-issue">{% if article['issue_label'] %}{{ article['issue_label'] }}{% else %}Hors numéro{% endif %}{% if card.year %} · {{ card.year }}{% endif %}</span>
+  </div>
+  <div class="rva-mast-kick">
+    {% if card.type %}<a href="{{ url_for('revue_articles', type=card.type_key) }}">{{ card.type }}</a>{% endif %}{% if card.domain %}<a href="{{ url_for('revue_articles', domaine=card.domain_key) }}">{{ card.domain }}</a>{% endif %}
+    {% if not card.type and not card.domain %}<span>Article</span>{% endif %}
+  </div>
+  <dl class="rva-mast-facts">
+    <div><dt>Publié le</dt><dd>{{ card.date }}</dd></div>
+    {% if card.minutes %}<div><dt>Lecture</dt><dd>{{ card.minutes }} min</dd></div>{% endif %}
+    <div><dt>Accès</dt><dd>{{ 'Texte intégral' if has_access else 'Résumé libre' }}</dd></div>
+    <div><dt>Référence</dt><dd class="rva-ref">{{ ref }}</dd></div>
+  </dl>
+  <span class="rva-mast-mark" aria-hidden="true">§</span>
+</header>
 
 <div class="rva-grid">
   <article class="rva-main" id="rva-main">
     <p class="rva-meta">
-      <span>{{ card.date }}</span>{% if card.minutes %}<span>{{ card.minutes }} min de lecture</span>{% endif %}
       {% if article['issue_label'] %}<a href="{{ url_for('revue_articles', numero=article['issue_label']) }}">{{ article['issue_label'] }}</a>{% endif %}
       {% if is_new %}<span class="rva-new">Nouveau</span>{% endif %}
     </p>
@@ -34,11 +46,6 @@
       <button type="button" class="rv-btn" data-rva="reset">Réinitialiser la lecture</button>
     </div>
 
-    {% if card.domain or card.type %}<div class="rv-tags">
-      {% if card.domain %}<a class="rv-tag" href="{{ url_for('revue_articles', domaine=card.domain_key) }}">{{ card.domain }}</a>{% endif %}
-      {% if card.type %}<a class="rv-tag rv-tag-type" href="{{ url_for('revue_articles', type=card.type_key) }}">{{ card.type }}</a>{% endif %}
-    </div>{% endif %}
-
     <div class="rva-text" id="rva-text">
       {% if article['abstract'] %}
       <section class="rva-abstract" aria-labelledby="rva-ab-h">
@@ -47,7 +54,7 @@
       </section>
       {% endif %}
       {% if has_access %}
-        <div class="rva-body prose" id="rva-body">{{ article['body_html']|safe }}</div>
+        <div class="rva-body prose" id="rva-body">{{ body_fn|safe }}{{ notes_fn|safe }}</div>
       {% else %}
         <div class="upsell-banner rv-noprint" style="margin-top:28px;">
           <p><b>Texte intégral réservé aux abonnés.</b> L'accès complet à Massey Law Review est inclus dans l'abonnement Premium Massey AI (avec les 5 piliers), ou disponible séparément via l'abonnement Lecteur/Institution de la revue.</p>
@@ -61,7 +68,7 @@
 
     <div class="callout rv-howto rva-howto">
       <b>Pour citer cet article</b>
-      <p style="margin:8px 0 0;">{{ card.cite_html.massey|safe }}</p>
+      <p style="margin:8px 0 0;">{{ card.cite_html.chicago|safe }}</p>
       <p class="rv-print-only">Adresse : {{ card.url }}</p>
     </div>
     <p class="rv-noprint" style="margin-top:28px;"><a href="{{ url_for('revue_articles') }}" class="btn btn-ghost">← Tous les articles</a></p>
@@ -86,7 +93,7 @@
       <div class="rva-ctabs" role="tablist" aria-label="Format de citation">
         {% for key, label in cite_styles %}<button type="button" role="tab" id="rva-t-{{ key }}" data-style="{{ key }}" aria-controls="rva-cpanel" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ 0 if loop.first else -1 }}" class="rva-ctab{{ ' on' if loop.first }}">{{ label.split(' ')[0] }}</button>{% endfor %}
       </div>
-      <div id="rva-cpanel" class="rva-cpanel" role="tabpanel" tabindex="0" aria-labelledby="rva-t-massey"></div>
+      <div id="rva-cpanel" class="rva-cpanel" role="tabpanel" tabindex="0" aria-labelledby="rva-t-chicago"></div>
       <div class="rva-cfoot">
         <button type="button" class="rv-btn" id="rva-copy">Copier la citation</button>
         <span class="rv-copied" id="rva-ok" role="status" aria-live="polite"></span>
@@ -143,9 +150,29 @@
     }
   }
 
+  /* Aperçu d'une note au survol / au focus de son numéro */
+  var pop=null;
+  function hidePop(){ if(pop){ pop.remove(); pop=null; } }
+  function showPop(a){
+    hidePop();
+    var txt=a.getAttribute('data-note'); if(!txt) return;
+    pop=document.createElement('div'); pop.className='rva-fn-pop'; pop.setAttribute('role','tooltip');
+    var b=document.createElement('b'); b.textContent=a.textContent; pop.appendChild(b); pop.appendChild(document.createTextNode(txt));
+    document.body.appendChild(pop);
+    var r=a.getBoundingClientRect(), x=r.left+window.scrollX-10, y=r.bottom+window.scrollY+8;
+    x=Math.max(8,Math.min(x,window.scrollX+document.documentElement.clientWidth-pop.offsetWidth-8));
+    pop.style.left=x+'px'; pop.style.top=y+'px';
+  }
+  document.querySelectorAll('.rva-fnref a').forEach(function(a){
+    a.addEventListener('mouseenter',function(){ showPop(a); }); a.addEventListener('mouseleave',hidePop);
+    a.addEventListener('focus',function(){ showPop(a); }); a.addEventListener('blur',hidePop);
+    a.addEventListener('click',hidePop);
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') hidePop(); });
+
   /* Citation en ligne (onglets, copie avec italiques) */
   var box=document.getElementById('rva-cite'); if(!box) return;
-  var data=JSON.parse(box.getAttribute('data-cite')), style='massey', RICH={massey:1,bluebook:1,apa:1};
+  var data=JSON.parse(box.getAttribute('data-cite')), style='chicago', RICH={chicago:1,bluebook:1,apa:1};
   var panel=document.getElementById('rva-cpanel'), ok=document.getElementById('rva-ok');
   var tabs=[].slice.call(box.querySelectorAll('.rva-ctab'));
   function say(m){ ok.textContent=m; setTimeout(function(){ ok.textContent=''; },2400); }

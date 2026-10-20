@@ -1120,6 +1120,19 @@ def _seed_revue_demo_article(conn):
     conn.commit()
 
 
+def _upgrade_revue_demo_footnotes(conn):
+    """L'article de démonstration reçoit ses notes de bas de page (une seule fois, tant qu'il n'en a pas)."""
+    notes_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "revue_demo_notes.txt")
+    body_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "revue_demo_article.html")
+    try:
+        notes, body = open(notes_path, encoding="utf-8").read(), open(body_path, encoding="utf-8").read()
+    except OSError:
+        return
+    conn.execute("UPDATE review_articles SET footnotes=?, body_html=? WHERE slug='article-de-demonstration-contrats-transfrontaliers' "
+                 "AND (footnotes IS NULL OR footnotes='')", (notes, body))
+    conn.commit()
+
+
 def init_db():
     conn = get_db()
     conn.executescript(SCHEMA)
@@ -1130,7 +1143,7 @@ def init_db():
         ("ci_tags", "TEXT NOT NULL DEFAULT ''"),
         ("language", "TEXT NOT NULL DEFAULT 'fr'"),
     ])
-    _ensure_columns(conn, "review_articles", [("domain", "TEXT"), ("article_type", "TEXT")])
+    _ensure_columns(conn, "review_articles", [("domain", "TEXT"), ("article_type", "TEXT"), ("footnotes", "TEXT")])
     for slug, dom, typ in (("clause-penale-contrats-commerciaux-droit-haitien", "contrats", "etude"),
                            ("structuration-fiscale-contrats-distribution-transfrontaliers", "fiscalite", "note")):
         conn.execute("UPDATE review_articles SET domain=COALESCE(domain, ?), article_type=COALESCE(article_type, ?) WHERE slug=?", (dom, typ, slug))
@@ -1175,6 +1188,7 @@ def init_db():
     import legal_corpus
     legal_corpus.ensure_schema(conn)
     _seed_revue_demo_article(conn)  # après les articles d'origine (leur semis dépend d'une table vide)
+    _upgrade_revue_demo_footnotes(conn)
     conn.close()
 
 
