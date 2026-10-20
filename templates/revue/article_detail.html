@@ -68,11 +68,6 @@
       {% endif %}
     </div>
 
-    <div class="callout rv-howto rva-howto">
-      <b>Pour citer cet article</b>
-      <p style="margin:8px 0 0;">{{ card.cite_html.chicago|safe }}</p>
-      <p class="rv-print-only">Adresse : {{ card.url }}</p>
-    </div>
     {% if related %}
     <section class="rva-related rv-noprint" aria-labelledby="rva-rel-h">
       <h2 id="rva-rel-h" class="rva-label rva-label-strong">{{ related_title }}</h2>
@@ -101,10 +96,13 @@
       </div>
       <div id="rva-cpanel" class="rva-cpanel" role="tabpanel" tabindex="0" aria-labelledby="rva-t-chicago"></div>
       <div class="rva-cfoot">
-        <button type="button" class="rv-btn" id="rva-copy">Copier la citation</button>
+        <button type="button" class="rv-btn rva-copy" id="rva-copy">Copier la citation</button>
         <span class="rv-copied" id="rva-ok" role="status" aria-live="polite"></span>
       </div>
-      <p class="rva-dl"><a href="{{ url_for('revue_article_citation', slug=article['slug'], fmt='ris') }}">Télécharger (.ris)</a> · <a href="{{ url_for('revue_article_citation', slug=article['slug'], fmt='bib') }}">(.bib)</a></p>
+      <div class="rva-dl">
+        <a class="rv-btn" href="{{ url_for('revue_article_citation', slug=article['slug'], fmt='ris') }}">Exporter .ris</a>
+        <a class="rv-btn" href="{{ url_for('revue_article_citation', slug=article['slug'], fmt='bib') }}">Exporter .bib</a>
+      </div>
     </div>
   </aside>
 </div>
@@ -139,13 +137,14 @@
   /* Sommaire à partir des intertitres du texte + surlignage de la section en cours */
   var body=document.getElementById('rva-body'), toc=document.getElementById('rva-toc'), list=document.getElementById('rva-toc-list');
   if(body&&toc){
-    var hs=[].slice.call(body.querySelectorAll('h2')); if(hs.length<2) hs=[].slice.call(body.querySelectorAll('h2,h3'));
+    var hs=[].slice.call(body.querySelectorAll('h2,[data-toc]')); if(hs.length<2) hs=[].slice.call(body.querySelectorAll('h2,h3,[data-toc]'));
     if(hs.length>=2){
       var links=[];
       hs.forEach(function(h,i){
         if(!h.id) h.id='rva-s'+(i+1);
         var li=document.createElement('li'), a=document.createElement('a');
-        a.href='#'+h.id; a.textContent=h.textContent.trim(); li.appendChild(a); list.appendChild(li); links.push(a);
+        a.href='#'+h.id; a.textContent=(h.getAttribute('data-toc')||h.textContent).trim();
+        a.addEventListener('click',function(){ var d=h.querySelector('details'); if(d) d.open=true; }); li.appendChild(a); list.appendChild(li); links.push(a);
       });
       toc.hidden=false;
       function spy(){
@@ -170,6 +169,12 @@
     cb.scrollIntoView({behavior:'smooth',block:'center'}); cb.classList.add('rva-flash'); setTimeout(function(){ cb.classList.remove('rva-flash'); },1600);
     var tb=cb.querySelector('.rva-ctab.on'); if(tb) setTimeout(function(){ tb.focus({preventScroll:true}); },500);
   });
+
+  /* Bibliographie : s'ouvre quand on y accède par le lien #bibliographie */
+  var bd=document.getElementById('rva-biblio-d');
+  function openBib(){ if(bd&&location.hash==='#bibliographie') bd.open=true; }
+  window.addEventListener('hashchange',openBib); openBib();
+  if(bd) window.addEventListener('beforeprint',function(){ bd.open=true; });
 
   /* Notes repliables : s'ouvrent à l'appel d'un numéro, à l'arrivée sur #fn-n ou à l'impression */
   var nd=document.getElementById('rva-notes-d');
@@ -207,7 +212,7 @@
   var tabs=[].slice.call(box.querySelectorAll('.rva-ctab'));
   function say(m){ ok.textContent=m; setTimeout(function(){ ok.textContent=''; },2400); }
   function paint(){
-    if(RICH[style]){ panel.innerHTML=data.html[style]; panel.classList.remove('rv-mono'); } else { panel.textContent=data.plain[style]||''; panel.classList.add('rv-mono'); }
+    if(RICH[style]){ panel.innerHTML=data.html[style].replace(/(https?:\/\/[^\s<]+?)(\.?)$/,'<span class="rva-url">$1$2</span>'); panel.classList.remove('rv-mono'); } else { panel.textContent=data.plain[style]||''; panel.classList.add('rv-mono'); }
     tabs.forEach(function(b){ var on=b.dataset.style===style; b.classList.toggle('on',on); b.setAttribute('aria-selected',on?'true':'false'); b.tabIndex=on?0:-1; });
     panel.setAttribute('aria-labelledby','rva-t-'+style);
   }

@@ -281,7 +281,10 @@ def render_bibliography(raw):
     refs = parse_footnotes(raw)
     if not refs:
         return ""
-    return ('<section class="rva-biblio"><h2 id="bibliographie">Bibliographie</h2><ul>%s</ul></section>'
+    return ('<section class="rva-notes rva-biblio" id="bibliographie" data-toc="Bibliographie" aria-label="Bibliographie">'
+            '<details id="rva-biblio-d"><summary><span class="rva-notes-t">Bibliographie</span>'
+            '<span class="rva-notes-s"><span class="rva-on-closed">Afficher</span><span class="rva-on-open">Masquer</span>'
+            '<i class="rva-pm" aria-hidden="true"></i></span></summary><ul>%s</ul></details></section>'
             % "".join("<li>%s</li>" % _note_html(r) for r in refs))
 
 

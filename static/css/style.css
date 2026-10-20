@@ -1128,3 +1128,26 @@ mark{background:rgba(214,170,50,.38);color:inherit;padding:0 2px;border-radius:2
 }
 @media print{.rva-progress,.rva-top,.rva-related{display:none !important;} .rva-head{box-shadow:none;border:0;background:none;} .rva-head::before{display:none;}}
 @media (max-width:700px){.rva-actions-row .rva-ghost[onclick]{display:none;}}
+
+/* Citation (colonne de droite) : lecture régulière et alignée */
+.rva-cpanel{max-height:none;overflow:visible;padding:12px 14px;background:#FBF7F4;border:1px solid #EADFD8;border-left:3px solid var(--gold);border-radius:3px;font-size:.84rem;line-height:1.65;text-align:left;hyphens:none;overflow-wrap:normal;word-break:normal;color:var(--ink);text-wrap:pretty;}
+.rva-cpanel i{font-style:italic;}
+.rva-cpanel .rva-url{display:block;margin-top:.55em;padding-top:.5em;border-top:1px dashed #DCCFC6;font-size:.76rem;line-height:1.5;color:var(--gold);overflow-wrap:anywhere;word-break:break-all;}
+.rva-cpanel.rv-mono{font-size:.74rem;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;}
+.rva-cfoot{display:grid;gap:6px;margin-top:12px;}
+.rva-cfoot .rva-copy{width:100%;min-height:40px;justify-content:center;background:var(--gold);border-color:var(--gold);color:#fff;font-weight:600;}
+.rva-cfoot .rva-copy:hover{background:var(--gold-2);color:#fff;}
+.rva-cfoot .rv-copied{min-height:1.1em;text-align:center;font-size:.78rem;}
+.rva-dl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 0;}
+.rva-dl .rv-btn{justify-content:center;font-size:.76rem;}
+/* Bibliographie repliable : même cadre que les notes */
+.rva-notes ul{list-style:none;margin:0;padding:18px 14px 8px;display:grid;gap:.8em;}
+.rva-notes ul li{display:block;font-family:var(--serif);font-size:calc(var(--rva-fs) * .92);line-height:1.6;padding:0 .5em 0 2.1em;text-indent:-1.6em;color:var(--ink-soft);scroll-margin-top:0;border-radius:0;}
+.rva-notes ul li a{color:var(--gold);overflow-wrap:anywhere;}
+.rva-body .rva-biblio{margin-top:2.6em;}
+.rva-body .rva-notes + .rva-notes{margin-top:1.2em;}
+/* Citation : lignes de même largeur (texte justifié) */
+.rva-cpanel{text-align:justify;text-justify:inter-word;text-align-last:left;hyphens:auto;-webkit-hyphens:auto;line-height:1.7;}
+.rva-cpanel .rva-url{text-align:left;hyphens:none;}
+.rva-cpanel.rv-mono{text-align:left;hyphens:none;}
+.rva-cpanel{font-size:.8rem;padding:11px 12px;word-spacing:-.02em;}
