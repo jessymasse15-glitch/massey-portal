@@ -15,11 +15,11 @@
 <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='img/favicon-192.png') }}">
 <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
 <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/favicon-180.png') }}">
-<meta property="og:type" content="website">
+<meta property="og:type" content="{% block og_type %}website{% endblock %}">
 <meta property="og:site_name" content="Massey Contracts & Tax">
 <meta property="og:title" content="{% block og_title %}Massey Contracts & Tax{% endblock %}">
 <meta property="og:description" content="{% block og_description %}{% if lang=='en' %}A LegalTech platform for contract, tax and transaction engineering in the Haitian market.{% else %}Une plateforme LegalTech d'ingénierie contractuelle, fiscale et transactionnelle pour le marché haïtien.{% endif %}{% endblock %}">
-<meta property="og:image" content="{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='img/og-image.png') }}">
+<meta property="og:image" content="{% block og_image %}{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='img/og-image.png') }}{% endblock %}">
 <meta property="og:url" content="{{ request.url_root.rstrip('/') }}{{ request.path }}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{% block twitter_title %}Massey Contracts & Tax{% endblock %}">

@@ -1,45 +1,183 @@
 {% extends "base.html" %}
 {% block title %}{{ article['title'] }} — Massey Law Review{% endblock %}
 {% block meta_description %}{{ article['abstract'] or article['title'] }}{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ article['title'] }} — Massey Law Review{% endblock %}
+{% block og_description %}{{ (article['abstract'] or article['title'])[:280] }}{% endblock %}
+{% block twitter_title %}{{ article['title'] }} — Massey Law Review{% endblock %}
+{% block twitter_description %}{{ (article['abstract'] or article['title'])[:200] }}{% endblock %}
 {% block content %}
-<section class="page-hero reveal">
-  <div class="eyebrow">{{ article['issue_label'] or 'Massey Law Review' }}</div>
-  <h1>{{ article['title'] }}</h1>
-  <p class="lede">{{ article['author_name'] }} — publié le {{ (article['published_at'] or article['created_at'])[:10] }}</p>
-</section>
-
+<div class="rv-page rva">
+<a class="rv-skip" href="#rva-main">Aller au texte de l'article</a>
 {% include "revue/_subnav.html" %}
 
-<section class="block" style="border-top:none;padding-top:0;">
-  <div class="prose">
-    {% if article['abstract'] %}
-      <div class="callout" style="max-width:74ch;">{{ article['abstract'] }}</div>
-    {% endif %}
-    {% if has_access %}
-      <div style="margin-top:28px;">
-        {{ article['body_html']|safe }}
-      </div>
-    {% else %}
-      <div class="upsell-banner reveal" style="margin-top:28px;max-width:74ch;">
-        <p><b>Texte intégral réservé aux abonnés.</b> L'accès complet à Massey Law Review est inclus dans l'abonnement Premium Massey AI (avec les 5 piliers), ou disponible séparément via l'abonnement Lecteur/Institution de la revue.</p>
-        <div class="ctas">
-          <a href="{{ url_for('membership') }}" class="btn btn-primary btn-sm">Voir Premium</a>
-          <a href="{{ url_for('revue_subscription') }}" class="btn btn-ghost btn-sm">Abonnement Revue seule</a>
+<div class="rva-banner" role="img" aria-label="{{ card.domain or article['issue_label'] or 'Massey Law Review' }}">
+  <span class="rva-banner-t">{{ card.domain or article['issue_label'] or 'Massey Law Review' }}</span>
+  <svg class="rva-banner-i" width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0L7 7zM17 7l-3 7a3 3 0 0 0 6 0l-3-7zM8 21h8"/></svg>
+</div>
+
+<div class="rva-grid">
+  <article class="rva-main" id="rva-main">
+    <p class="rva-meta">
+      <span>{{ card.date }}</span>{% if card.minutes %}<span>{{ card.minutes }} min de lecture</span>{% endif %}
+      {% if article['issue_label'] %}<a href="{{ url_for('revue_articles', numero=article['issue_label']) }}">{{ article['issue_label'] }}</a>{% endif %}
+      {% if is_new %}<span class="rva-new">Nouveau</span>{% endif %}
+    </p>
+    <h1 class="rva-title">{{ article['title'] }}</h1>
+    <p class="rva-author">{{ card.author }}</p>
+
+    <div class="rva-read rv-noprint" role="group" aria-label="Confort de lecture">
+      <span class="rva-read-l">Lecture</span>
+      <button type="button" class="rv-btn" data-rva="smaller" aria-label="Réduire la taille du texte">A−</button>
+      <button type="button" class="rv-btn" data-rva="bigger" aria-label="Agrandir la taille du texte">A+</button>
+      <button type="button" class="rv-btn" data-rva="wide" aria-pressed="false">Colonne large</button>
+      <button type="button" class="rv-btn" data-rva="reset">Réinitialiser la lecture</button>
+    </div>
+
+    {% if card.domain or card.type %}<div class="rv-tags">
+      {% if card.domain %}<a class="rv-tag" href="{{ url_for('revue_articles', domaine=card.domain_key) }}">{{ card.domain }}</a>{% endif %}
+      {% if card.type %}<a class="rv-tag rv-tag-type" href="{{ url_for('revue_articles', type=card.type_key) }}">{{ card.type }}</a>{% endif %}
+    </div>{% endif %}
+
+    <div class="rva-text" id="rva-text">
+      {% if article['abstract'] %}
+      <section class="rva-abstract" aria-labelledby="rva-ab-h">
+        <h2 id="rva-ab-h" class="rva-label">Résumé</h2>
+        <p>{{ article['abstract'] }}</p>
+      </section>
+      {% endif %}
+      {% if has_access %}
+        <div class="rva-body prose" id="rva-body">{{ article['body_html']|safe }}</div>
+      {% else %}
+        <div class="upsell-banner rv-noprint" style="margin-top:28px;">
+          <p><b>Texte intégral réservé aux abonnés.</b> L'accès complet à Massey Law Review est inclus dans l'abonnement Premium Massey AI (avec les 5 piliers), ou disponible séparément via l'abonnement Lecteur/Institution de la revue.</p>
+          <div class="ctas">
+            <a href="{{ url_for('membership') }}" class="btn btn-primary btn-sm">Voir Premium</a>
+            <a href="{{ url_for('revue_subscription') }}" class="btn btn-ghost btn-sm">Abonnement Revue seule</a>
+          </div>
         </div>
+      {% endif %}
+    </div>
+
+    <div class="callout rv-howto rva-howto">
+      <b>Pour citer cet article</b>
+      <p style="margin:8px 0 0;">{{ card.cite_html.massey|safe }}</p>
+      <p class="rv-print-only">Adresse : {{ card.url }}</p>
+    </div>
+    <p class="rv-noprint" style="margin-top:28px;"><a href="{{ url_for('revue_articles') }}" class="btn btn-ghost">← Tous les articles</a></p>
+  </article>
+
+  <aside class="rva-side rv-noprint" aria-label="Outils de l'article">
+    <nav class="rva-card rva-toc" id="rva-toc" aria-labelledby="rva-toc-h" hidden>
+      <h2 class="rva-label" id="rva-toc-h">Sommaire</h2>
+      <ol id="rva-toc-list"></ol>
+    </nav>
+
+    <div class="rva-card">
+      <h2 class="rva-label">Télécharger</h2>
+      <a class="rv-btn rv-btn-primary rva-wide" href="{{ url_for('revue_article_pdf', slug=article['slug']) }}"
+         title="{{ 'Télécharger le PDF' if has_access else 'PDF réservé aux abonnés' }}">PDF de l'article</a>
+    </div>
+
+    <div class="rva-card">
+      <h2 class="rva-label">Partager</h2>
+      <button type="button" class="rv-btn rva-wide" data-rv-share data-title="{{ article['title'] }}" data-url="{{ card.url }}" aria-haspopup="dialog">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
+        <span>Partager</span></button>
+    </div>
+
+    <div class="rva-card" id="rva-cite" data-cite='{{ {"plain": card.cite, "html": card.cite_html}|tojson }}'>
+      <h2 class="rva-label rva-label-strong">Citer cet article</h2>
+      <div class="rva-ctabs" role="tablist" aria-label="Format de citation">
+        {% for key, label in cite_styles %}<button type="button" role="tab" id="rva-t-{{ key }}" data-style="{{ key }}" aria-controls="rva-cpanel" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ 0 if loop.first else -1 }}" class="rva-ctab{{ ' on' if loop.first }}">{{ label.split(' ')[0] }}</button>{% endfor %}
       </div>
-    {% endif %}
-  </div>
-
-  <div style="margin-top:24px;">{% with card=card, read=False %}{% include "revue/_article_actions.html" %}{% endwith %}</div>
-
-  <div class="callout rv-howto" style="max-width:74ch;margin-top:28px;">
-    <b>Pour citer cet article</b>
-    <p style="margin:8px 0 0;">{{ card.cite.massey }}</p>
-  </div>
-
-  <div class="ctas" style="margin-top:36px;">
-    <a href="{{ url_for('revue_articles') }}" class="btn btn-ghost">← Tous les articles</a>
-  </div>
-</section>
+      <div id="rva-cpanel" class="rva-cpanel" role="tabpanel" tabindex="0" aria-labelledby="rva-t-massey"></div>
+      <div class="rva-cfoot">
+        <button type="button" class="rv-btn" id="rva-copy">Copier la citation</button>
+        <span class="rv-copied" id="rva-ok" role="status" aria-live="polite"></span>
+      </div>
+      <p class="rva-dl"><a href="{{ url_for('revue_article_citation', slug=article['slug'], fmt='ris') }}">Télécharger (.ris)</a> · <a href="{{ url_for('revue_article_citation', slug=article['slug'], fmt='bib') }}">(.bib)</a></p>
+    </div>
+  </aside>
+</div>
+</div>
 {% include "revue/_cite_share_dialogs.html" %}
+<script>
+(function(){
+  /* Confort de lecture (mémorisé si le navigateur le permet) */
+  var root=document.querySelector('.rva'); if(!root) return;
+  var KEY='mlr-read', st={size:0,wide:false};
+  try{ var v=JSON.parse(localStorage.getItem(KEY)||'null'); if(v&&typeof v.size==='number') st=v; }catch(e){}
+  function apply(){
+    root.style.setProperty('--rva-fs',(1.08+st.size*0.08)+'rem');
+    root.classList.toggle('rva-wide-col',!!st.wide);
+    var w=root.querySelector('[data-rva=wide]'); if(w) w.setAttribute('aria-pressed',st.wide?'true':'false');
+    try{ localStorage.setItem(KEY,JSON.stringify(st)); }catch(e){}
+  }
+  root.querySelectorAll('[data-rva]').forEach(function(b){ b.addEventListener('click',function(){
+    var a=b.dataset.rva;
+    if(a==='smaller') st.size=Math.max(-3,st.size-1);
+    else if(a==='bigger') st.size=Math.min(6,st.size+1);
+    else if(a==='wide') st.wide=!st.wide;
+    else { st={size:0,wide:false}; }
+    apply();
+  }); });
+  apply();
+
+  /* Sommaire à partir des intertitres du texte + surlignage de la section en cours */
+  var body=document.getElementById('rva-body'), toc=document.getElementById('rva-toc'), list=document.getElementById('rva-toc-list');
+  if(body&&toc){
+    var hs=[].slice.call(body.querySelectorAll('h2')); if(hs.length<2) hs=[].slice.call(body.querySelectorAll('h2,h3'));
+    if(hs.length>=2){
+      var links=[];
+      hs.forEach(function(h,i){
+        if(!h.id) h.id='rva-s'+(i+1);
+        var li=document.createElement('li'), a=document.createElement('a');
+        a.href='#'+h.id; a.textContent=h.textContent.trim(); li.appendChild(a); list.appendChild(li); links.push(a);
+      });
+      toc.hidden=false;
+      function spy(){
+        var cur=0, y=window.scrollY+140;
+        hs.forEach(function(h,i){ if(h.getBoundingClientRect().top+window.scrollY<=y) cur=i; });
+        links.forEach(function(a,i){ if(i===cur) a.setAttribute('aria-current','true'); else a.removeAttribute('aria-current'); });
+      }
+      window.addEventListener('scroll',spy,{passive:true}); spy();
+    }
+  }
+
+  /* Citation en ligne (onglets, copie avec italiques) */
+  var box=document.getElementById('rva-cite'); if(!box) return;
+  var data=JSON.parse(box.getAttribute('data-cite')), style='massey', RICH={massey:1,bluebook:1,apa:1};
+  var panel=document.getElementById('rva-cpanel'), ok=document.getElementById('rva-ok');
+  var tabs=[].slice.call(box.querySelectorAll('.rva-ctab'));
+  function say(m){ ok.textContent=m; setTimeout(function(){ ok.textContent=''; },2400); }
+  function paint(){
+    if(RICH[style]){ panel.innerHTML=data.html[style]; panel.classList.remove('rv-mono'); } else { panel.textContent=data.plain[style]||''; panel.classList.add('rv-mono'); }
+    tabs.forEach(function(b){ var on=b.dataset.style===style; b.classList.toggle('on',on); b.setAttribute('aria-selected',on?'true':'false'); b.tabIndex=on?0:-1; });
+    panel.setAttribute('aria-labelledby','rva-t-'+style);
+  }
+  tabs.forEach(function(b,i){
+    b.addEventListener('click',function(){ style=b.dataset.style; paint(); });
+    b.addEventListener('keydown',function(e){
+      var n=null; if(e.key==='ArrowRight') n=(i+1)%tabs.length; else if(e.key==='ArrowLeft') n=(i-1+tabs.length)%tabs.length;
+      else if(e.key==='Home') n=0; else if(e.key==='End') n=tabs.length-1;
+      if(n!==null){ e.preventDefault(); style=tabs[n].dataset.style; paint(); tabs[n].focus(); }
+    });
+  });
+  function viaSelection(){
+    try{ var r=document.createRange(); r.selectNodeContents(panel); var s=window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      var done=document.execCommand('copy'); s.removeAllRanges(); if(done){ say('Copié ✓'); return; } }catch(e){}
+    say('Sélectionnez le texte et copiez-le manuellement');
+  }
+  document.getElementById('rva-copy').addEventListener('click',function(){
+    var plain=data.plain[style]||'', html=RICH[style]?data.html[style]:null;
+    if(window.ClipboardItem&&navigator.clipboard&&window.isSecureContext&&html){
+      navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([plain],{type:'text/plain'})})]).then(function(){ say('Copié ✓'); },viaSelection);
+    } else if(navigator.clipboard&&window.isSecureContext&&!html){
+      navigator.clipboard.writeText(plain).then(function(){ say('Copié ✓'); },viaSelection);
+    } else viaSelection();
+  });
+  paint();
+})();
+</script>
 {% endblock %}

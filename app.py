@@ -1524,81 +1524,173 @@ def _revue_article_url(article):
     return url_for("revue_article_detail", slug=article["slug"], _external=True)
 
 
-def _revue_cards(rows, can_search_body=False):
-    """Articles + données de citation/partage prêtes pour le gabarit."""
-    cards = []
-    for a in rows:
-        url = _revue_article_url(a)
-        cite = revue_tools.citations(a, url)
-        cards.append({"a": a, "url": url, "cite": cite, "year": revue_tools.year_of(a),
-                      "author": revue_tools.clean_author(a["author_name"])})
-    return cards
+def _revue_card(a, terms=(), has_access=False, with_snippet=False):
+    """Un article + tout ce que les gabarits affichent (citation, dates, domaine, mots surlignés…)."""
+    url = _revue_article_url(a)
+    cite = revue_tools.citations(a, url)
+    keys = a.keys()
+    domain = a["domain"] if "domain" in keys else None
+    atype = a["article_type"] if "article_type" in keys else None
+    snippet = ""
+    if with_snippet and terms and has_access:
+        folded_head = revue_tools._fold(" ".join([a["title"], a["author_name"], a["abstract"] or ""]))
+        if not all(t in folded_head for t in terms):
+            snippet = revue_tools.body_snippet(a["body_html"], terms)
+    return {
+        "a": a, "url": url, "cite": cite, "cite_html": revue_tools.citations_html(a, url),
+        "year": revue_tools.year_of(a), "author": revue_tools.clean_author(a["author_name"]),
+        "date": revue_tools.fr_date(a["published_at"] or a["created_at"]),
+        "minutes": revue_tools.reading_minutes(a["body_html"]),
+        "domain": revue_tools.DOMAIN_LABELS.get(domain), "domain_key": domain,
+        "type": revue_tools.TYPE_LABELS.get(atype), "type_key": atype,
+        "snippet": snippet,
+    }
+
+
+def _revue_cards(rows, terms=(), has_access=False, with_snippet=False):
+    return [_revue_card(a, terms, has_access, with_snippet) for a in rows]
+
+
+@app.template_filter("rv_mark")
+def _rv_mark_filter(text, terms):
+    return revue_tools.mark(text, terms)
+
+
+@app.template_filter("fr_date")
+def _fr_date_filter(value):
+    return revue_tools.fr_date(value)
 
 
 REVUE_PAGE_SIZE = 10
 REVUE_SORTS = [("recent", "Plus récents"), ("ancien", "Plus anciens"), ("titre", "Titre (A–Z)"), ("auteur", "Auteur (A–Z)")]
+NO_ISSUE = "Hors numéro"
 
 
 @app.route("/revue/articles")
 def revue_articles():
+    fold = revue_tools._fold
     q = request.args.get("q", "").strip()[:120]
     issue = request.args.get("numero", "").strip()
+    domain = request.args.get("domaine", "").strip()
+    domain = domain if domain in revue_tools.DOMAIN_LABELS else ""
+    atype = request.args.get("type", "").strip()
+    atype = atype if atype in revue_tools.TYPE_LABELS else ""
     year = request.args.get("annee", "").strip()
-    sort = request.args.get("tri", "recent")
-    if sort not in dict(REVUE_SORTS):
-        sort = "recent"
-    page = max(1, int(request.args.get("page", "1")) if request.args.get("page", "1").isdigit() else 1)
+    sorts = ([("pertinence", "Pertinence")] if q else []) + REVUE_SORTS
+    default_sort = "pertinence" if q else "recent"
+    sort = request.args.get("tri", default_sort)
+    if sort not in dict(sorts):
+        sort = default_sort
+    page = int(request.args.get("page", "1")) if request.args.get("page", "1").isdigit() else 1
     has_access = _has_review_access(current_user())
+    terms = revue_tools.search_terms(q)
+
     conn = dbm.get_db()
     all_rows = conn.execute("SELECT * FROM review_articles WHERE published=1 ORDER BY COALESCE(published_at, created_at) DESC").fetchall()
     conn.close()
-    # Facettes : numéros et années sur l'ensemble des articles publiés
-    issues, years = {}, {}
+
+    # Facettes (sur tous les articles publiés)
+    issue_meta, years, domains, types = {}, {}, {}, {}
     for r in all_rows:
-        lab = r["issue_label"] or "Hors numéro"
-        issues[lab] = issues.get(lab, 0) + 1
+        lab = r["issue_label"] or NO_ISSUE
+        d = (r["published_at"] or r["created_at"] or "")[:10]
+        m_ = issue_meta.setdefault(lab, {"n": 0, "date": d, "slug": revue_tools.issue_slug(lab) if lab != NO_ISSUE else ""})
+        m_["n"] += 1
+        m_["date"] = max(m_["date"], d)
         y = revue_tools.year_of(r)
         if y:
             years[y] = years.get(y, 0) + 1
+        if r["domain"] in revue_tools.DOMAIN_LABELS:
+            domains[r["domain"]] = domains.get(r["domain"], 0) + 1
+        if r["article_type"] in revue_tools.TYPE_LABELS:
+            types[r["article_type"]] = types.get(r["article_type"], 0) + 1
 
-    def norm(t):
-        return unicodedata.normalize("NFKD", (t or "").lower()).encode("ascii", "ignore").decode()
+    def hay(r):
+        return fold(" ".join([r["title"], r["author_name"], r["abstract"] or "", r["issue_label"] or ""]
+                             + ([re.sub(r"<[^>]+>", " ", r["body_html"] or "")] if has_access else [])))
 
-    terms = [norm(t) for t in q.split() if t]
+    def facets_ok(r):
+        return ((not issue or (r["issue_label"] or NO_ISSUE) == issue)
+                and (not domain or r["domain"] == domain) and (not atype or r["article_type"] == atype)
+                and (not year or revue_tools.year_of(r) == year))
 
-    def matches(r):
-        hay = norm(" ".join([r["title"], r["author_name"], r["abstract"] or "", r["issue_label"] or ""]
-                            + ([re.sub(r"<[^>]+>", " ", r["body_html"] or "")] if has_access else [])))
-        return all(t in hay for t in terms)
+    def score(r):
+        t, au, ab, iss = fold(r["title"]), fold(revue_tools.clean_author(r["author_name"])), fold(r["abstract"] or ""), fold(r["issue_label"] or "")
+        body = fold(re.sub(r"<[^>]+>", " ", r["body_html"] or "")) if has_access else ""
+        return sum(5 * t.count(x) + 3 * au.count(x) + 2 * ab.count(x) + iss.count(x) + body.count(x) for x in terms)
 
-    rows = [r for r in all_rows
-            if (not terms or matches(r))
-            and (not issue or (r["issue_label"] or "Hors numéro") == issue)
-            and (not year or revue_tools.year_of(r) == year)]
-    if sort == "ancien":
+    rows = [r for r in all_rows if facets_ok(r) and (not terms or all(x in hay(r) for x in terms))]
+    if sort == "pertinence":
+        rows.sort(key=lambda r: -score(r))
+    elif sort == "ancien":
         rows = list(reversed(rows))
     elif sort == "titre":
-        rows.sort(key=lambda r: norm(r["title"]))
+        rows.sort(key=lambda r: fold(r["title"]))
     elif sort == "auteur":
-        rows.sort(key=lambda r: norm(revue_tools.clean_author(r["author_name"])))
+        rows.sort(key=lambda r: fold(revue_tools.clean_author(r["author_name"])))
     total = len(rows)
-    pages = max(1, -(-total // REVUE_PAGE_SIZE))
-    page = min(page, pages)
-    cards = _revue_cards(rows[(page - 1) * REVUE_PAGE_SIZE: page * REVUE_PAGE_SIZE])
+
+    filtered = bool(q or issue or domain or atype or year)
+    featured = None
+    rest = rows
+    if not filtered and sort == "recent" and rows:  # « À la une » : l'article le plus récent, hors de la liste
+        featured_row, rest = rows[0], rows[1:]
+        if page == 1:
+            featured = _revue_card(featured_row, terms, has_access)
+    pages = max(1, -(-len(rest) // REVUE_PAGE_SIZE))
+    page = max(1, min(page, pages))
+    cards = _revue_cards(rest[(page - 1) * REVUE_PAGE_SIZE: page * REVUE_PAGE_SIZE], terms, has_access, with_snippet=True)
+
     groups = []
-    if sort in ("recent", "ancien"):  # regroupement par numéro, comme un sommaire
+    if sort in ("recent", "ancien"):  # sommaire par numéro
         for c in cards:
-            lab = c["a"]["issue_label"] or "Hors numéro"
+            lab = c["a"]["issue_label"] or NO_ISSUE
             if not groups or groups[-1][0] != lab:
                 groups.append((lab, []))
             groups[-1][1].append(c)
     else:
         groups = [(None, cards)]
-    issue_list = sorted(issues.items(), key=lambda kv: kv[0], reverse=True)
+
+    suggestions = []
+    if total == 0 and terms:  # résultats approchants : au moins un des mots
+        near = [(sum(1 for x in terms if x in hay(r)), r) for r in all_rows]
+        near = [r for n, r in sorted(near, key=lambda p: -p[0]) if n > 0][:3]
+        suggestions = _revue_cards(near, terms, has_access)
+
+    base = dict(q=q, numero=issue, domaine=domain, type=atype, annee=year, tri=sort)
+
+    def L(**kw):
+        d = dict(base)
+        d.update(kw)
+        d = {k: v for k, v in d.items() if v not in (None, "")}
+        if d.get("tri") == default_sort or ("q" not in d and d.get("tri") == "pertinence"):
+            d.pop("tri", None)
+        if d.get("page") == 1:
+            d.pop("page")
+        return url_for("revue_articles", **d)
+
+    chips = []
+    if q:
+        chips.append(("Recherche : « %s »" % q, L(q=None)))
+    if issue:
+        chips.append(("Numéro : %s" % issue, L(numero=None)))
+    if domain:
+        chips.append(("Domaine : %s" % revue_tools.DOMAIN_LABELS[domain], L(domaine=None)))
+    if atype:
+        chips.append(("Type : %s" % revue_tools.TYPE_LABELS[atype], L(type=None)))
+    if year:
+        chips.append(("Année : %s" % year, L(annee=None)))
+
+    issue_list = sorted(issue_meta.items(), key=lambda kv: kv[1]["date"], reverse=True)
     return render_template(
-        "revue/articles.html", groups=groups, total=total, q=q, issue=issue, year=year, sort=sort, sorts=REVUE_SORTS,
-        issue_list=issue_list, year_list=sorted(years.items(), reverse=True), page=page, pages=pages,
-        has_access=has_access, n_all=len(all_rows), cite_styles=revue_tools.CITE_STYLES,
+        "revue/articles.html", groups=groups, total=total, q=q, terms=terms, issue=issue, domain=domain, atype=atype,
+        year=year, sort=sort, sorts=sorts, issue_list=issue_list, issue_meta=issue_meta, featured=featured,
+        year_list=sorted(years.items(), reverse=True),
+        domain_list=[(k, l, domains[k]) for k, l in revue_tools.DOMAINS if k in domains],
+        type_list=[(k, l, types[k]) for k, l in revue_tools.ARTICLE_TYPES if k in types],
+        page=page, pages=pages, has_access=has_access, n_all=len(all_rows), cite_styles=revue_tools.CITE_STYLES,
+        L=L, chips=chips, filtered=filtered, suggestions=suggestions, show_issue=sort not in ("recent", "ancien"),
+        n_rest=len(rest),
     )
 
 
@@ -1612,9 +1704,15 @@ def revue_article_detail(slug):
     if article is None:
         abort(404)
     has_access = _has_review_access(current_user())
-    card = _revue_cards([article])[0]
+    card = _revue_card(article, (), has_access)
+    is_new = False
+    try:
+        d = datetime.strptime((article["published_at"] or article["created_at"] or "")[:10], "%Y-%m-%d")
+        is_new = 0 <= (datetime.utcnow() - d).days <= 30
+    except Exception:
+        pass
     return render_template("revue/article_detail.html", article=article, has_access=has_access, card=card,
-                           cite_styles=revue_tools.CITE_STYLES)
+                           cite_styles=revue_tools.CITE_STYLES, terms=(), is_new=is_new)
 
 
 @app.route("/revue/articles/<slug>/pdf")
@@ -1638,6 +1736,25 @@ def revue_article_pdf(slug):
     data = revue_tools.article_pdf(article, url, revue_tools.citations(article, url)["massey"])
     return Response(data, mimetype="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="{slug}.pdf"'})
+
+
+@app.route("/revue/numeros/<issue_slug>/pdf")
+def revue_issue_pdf(issue_slug):
+    conn = dbm.get_db()
+    rows = conn.execute("SELECT * FROM review_articles WHERE published=1 AND issue_label IS NOT NULL AND issue_label!='' "
+                        "ORDER BY COALESCE(published_at, created_at) ASC, id ASC").fetchall()
+    conn.close()
+    arts = [r for r in rows if revue_tools.issue_slug(r["issue_label"]) == issue_slug]
+    if not arts:
+        abort(404)
+    label = arts[0]["issue_label"]
+    if not _has_review_access(current_user()):
+        flash("Le numéro complet en PDF est réservé aux abonnés Premium Massey AI ou à la Revue.", "error")
+        return redirect(url_for("revue_articles", numero=label))
+    data = revue_tools.issue_pdf(label, arts, _revue_article_url,
+                                 lambda a: revue_tools.citations(a, _revue_article_url(a))["massey"])
+    return Response(data, mimetype="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="massey-law-review-{issue_slug}.pdf"'})
 
 
 @app.route("/revue/articles/<slug>/citation.<fmt>")
@@ -3074,7 +3191,7 @@ def admin_revue_articles():
 def admin_revue_article_new():
     if request.method == "POST":
         return _save_revue_article(None)
-    return render_template("admin/revue_article_form.html", article=None)
+    return render_template("admin/revue_article_form.html", article=None, domains=revue_tools.DOMAINS, article_types=revue_tools.ARTICLE_TYPES)
 
 
 @app.route("/admin/revue/articles/<int:article_id>/modifier", methods=["GET", "POST"])
@@ -3087,7 +3204,7 @@ def admin_revue_article_edit(article_id):
         abort(404)
     if request.method == "POST":
         return _save_revue_article(article_id)
-    return render_template("admin/revue_article_form.html", article=article)
+    return render_template("admin/revue_article_form.html", article=article, domains=revue_tools.DOMAINS, article_types=revue_tools.ARTICLE_TYPES)
 
 
 def _save_revue_article(article_id):
@@ -3098,6 +3215,10 @@ def _save_revue_article(article_id):
     abstract = request.form.get("abstract", "").strip()
     body_html = request.form.get("body_html", "").strip()
     published = 1 if request.form.get("published") == "on" else 0
+    domain = request.form.get("domain", "")
+    domain = domain if domain in revue_tools.DOMAIN_LABELS else None
+    article_type = request.form.get("article_type", "")
+    article_type = article_type if article_type in revue_tools.TYPE_LABELS else None
     file = request.files.get("pdf")
 
     if not (title and author_name):
@@ -3126,10 +3247,10 @@ def _save_revue_article(article_id):
         published_at = dbm.now() if published else None
         conn.execute(
             "INSERT INTO review_articles (slug, title, author_name, issue_label, abstract, body_html, "
-            "pdf_stored_name, pdf_original_name, published, created_by, created_at, published_at) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            "pdf_stored_name, pdf_original_name, published, created_by, created_at, published_at, domain, article_type) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (slug, title, author_name, issue_label, abstract, body_html, pdf_stored_name, pdf_original_name,
-             published, u["id"], dbm.now(), published_at),
+             published, u["id"], dbm.now(), published_at, domain, article_type),
         )
         conn.commit()
         dbm.log_activity(u["id"], "revue_article_created", title)
@@ -3144,9 +3265,9 @@ def _save_revue_article(article_id):
             pdf_original_name = existing["pdf_original_name"]
         conn.execute(
             "UPDATE review_articles SET title=?, author_name=?, issue_label=?, abstract=?, body_html=?, "
-            "pdf_stored_name=?, pdf_original_name=?, published=?, published_at=? WHERE id=?",
+            "pdf_stored_name=?, pdf_original_name=?, published=?, published_at=?, domain=?, article_type=? WHERE id=?",
             (title, author_name, issue_label, abstract, body_html, pdf_stored_name, pdf_original_name,
-             published, new_published_at, article_id),
+             published, new_published_at, domain, article_type, article_id),
         )
         conn.commit()
         dbm.log_activity(u["id"], "revue_article_updated", title)

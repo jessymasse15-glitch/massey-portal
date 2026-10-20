@@ -1,21 +1,22 @@
 {# Fenêtres « Citer » et « Partager », partagées par la liste et la page d'un article. #}
 <dialog id="rv-cite-dialog" class="rv-dialog" aria-labelledby="rv-cite-title">
-  <form method="dialog" class="rv-dialog-head"><h3 id="rv-cite-title">Citer cet article</h3><button class="rv-x" aria-label="Fermer">×</button></form>
+  <div class="rv-dialog-head"><h3 id="rv-cite-title">Citer cet article</h3><button type="button" class="rv-x" data-rv-close aria-label="Fermer">×</button></div>
   <p class="rv-dialog-sub" id="rv-cite-article"></p>
-  <div class="rv-tabs" role="tablist">
-    {% for key, label in cite_styles %}<button type="button" role="tab" data-style="{{ key }}" class="rv-tab{{ ' on' if loop.first }}">{{ label }}</button>{% endfor %}
+  <div class="rv-tabs" role="tablist" aria-label="Format de citation">
+    {% for key, label in cite_styles %}<button type="button" role="tab" id="rv-tab-{{ key }}" data-style="{{ key }}" aria-controls="rv-cite-panel" aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ 0 if loop.first else -1 }}" class="rv-tab{{ ' on' if loop.first }}">{{ label }}</button>{% endfor %}
   </div>
-  <pre id="rv-cite-text" class="rv-cite-text" tabindex="0"></pre>
+  <div id="rv-cite-panel" class="rv-cite-text" role="tabpanel" tabindex="0" aria-labelledby="rv-tab-massey"></div>
+  <p class="rv-dialog-note" id="rv-cite-note">La citation se colle avec ses italiques dans Word ou Google Docs.</p>
   <div class="rv-dialog-foot">
     <button type="button" class="rv-btn rv-btn-primary" id="rv-cite-copy">Copier la citation</button>
-    <a class="rv-btn" id="rv-cite-ris" href="#">Exporter .ris</a>
-    <a class="rv-btn" id="rv-cite-bib" href="#">Exporter .bib</a>
+    <a class="rv-btn" id="rv-cite-ris" href="#" download>Exporter .ris</a>
+    <a class="rv-btn" id="rv-cite-bib" href="#" download>Exporter .bib</a>
     <span class="rv-copied" id="rv-cite-ok" role="status" aria-live="polite"></span>
   </div>
 </dialog>
 
 <dialog id="rv-share-dialog" class="rv-dialog" aria-labelledby="rv-share-title">
-  <form method="dialog" class="rv-dialog-head"><h3 id="rv-share-title">Partager cet article</h3><button class="rv-x" aria-label="Fermer">×</button></form>
+  <div class="rv-dialog-head"><h3 id="rv-share-title">Partager cet article</h3><button type="button" class="rv-x" data-rv-close aria-label="Fermer">×</button></div>
   <p class="rv-dialog-sub" id="rv-share-article"></p>
   <div class="rv-copyrow"><input type="text" id="rv-share-url" readonly aria-label="Adresse de l'article"><button type="button" class="rv-btn rv-btn-primary" id="rv-share-copy">Copier le lien</button></div>
   <div class="rv-share-grid">
@@ -33,28 +34,49 @@
 (function(){
   var cd=document.getElementById('rv-cite-dialog'), sd=document.getElementById('rv-share-dialog');
   if(!cd||!sd) return;
-  var cur=null, style='massey';
-  function copy(text, okEl){
-    function done(){ okEl.textContent='Copié ✓'; setTimeout(function(){okEl.textContent='';},2200); }
-    if(navigator.clipboard&&window.isSecureContext){ navigator.clipboard.writeText(text).then(done,fallback); } else fallback();
-    function fallback(){ var t=document.createElement('textarea'); t.value=text; t.style.position='fixed'; t.style.opacity='0'; document.body.appendChild(t); t.select(); try{document.execCommand('copy');done();}catch(e){okEl.textContent='Sélectionnez et copiez manuellement';} t.remove(); }
-  }
-  function show(d){ if(d.showModal){d.showModal();} else {d.setAttribute('open','');} }
+  var cur=null, style='massey', opener=null, RICH={massey:1,bluebook:1,apa:1};
+  var panel=document.getElementById('rv-cite-panel'), tabs=[].slice.call(cd.querySelectorAll('.rv-tab'));
+  function say(el,msg){ el.textContent=msg; setTimeout(function(){ el.textContent=''; },2400); }
+  function open(d){ if(d.showModal){ d.showModal(); } else { d.setAttribute('open',''); } }
   function paint(){
-    document.getElementById('rv-cite-text').textContent = cur.cite[style]||'';
-    cd.querySelectorAll('.rv-tab').forEach(function(b){ var on=b.dataset.style===style; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
+    var rich=!!RICH[style];
+    if(rich){ panel.innerHTML=cur.html[style]; panel.classList.remove('rv-mono'); } else { panel.textContent=cur.plain[style]||''; panel.classList.add('rv-mono'); }
+    document.getElementById('rv-cite-note').hidden=!rich;
+    tabs.forEach(function(b){ var on=b.dataset.style===style; b.classList.toggle('on',on); b.setAttribute('aria-selected',on?'true':'false'); b.tabIndex=on?0:-1; });
+    panel.setAttribute('aria-labelledby','rv-tab-'+style);
+  }
+  function copyRich(okEl){
+    var plain=cur.plain[style]||'', html=RICH[style]?cur.html[style]:null;
+    function viaSelection(){
+      try{
+        var r=document.createRange(); r.selectNodeContents(panel); var s=window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        var ok=document.execCommand('copy'); s.removeAllRanges(); if(ok){ say(okEl,'Copié ✓'); return; }
+      }catch(e){}
+      say(okEl,'Sélectionnez le texte et copiez-le manuellement');
+    }
+    if(window.ClipboardItem&&navigator.clipboard&&window.isSecureContext&&html){
+      var data={'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([plain],{type:'text/plain'})};
+      navigator.clipboard.write([new ClipboardItem(data)]).then(function(){ say(okEl,'Copié ✓'); },viaSelection);
+    } else if(navigator.clipboard&&window.isSecureContext&&!html){
+      navigator.clipboard.writeText(plain).then(function(){ say(okEl,'Copié ✓'); },viaSelection);
+    } else { viaSelection(); }
+  }
+  function copyText(text,okEl){
+    function fb(){ var t=document.createElement('textarea'); t.value=text; t.style.position='fixed'; t.style.opacity='0'; document.body.appendChild(t); t.select(); var ok=false; try{ok=document.execCommand('copy');}catch(e){} t.remove(); say(okEl, ok?'Copié ✓':'Sélectionnez et copiez manuellement'); }
+    if(navigator.clipboard&&window.isSecureContext){ navigator.clipboard.writeText(text).then(function(){ say(okEl,'Copié ✓'); },fb); } else { fb(); }
   }
   document.addEventListener('click',function(e){
-    var c=e.target.closest('[data-rv-cite]'), s=e.target.closest('[data-rv-share]');
+    var c=e.target.closest('[data-rv-cite]'), s=e.target.closest('[data-rv-share]'), x=e.target.closest('[data-rv-close]');
+    if(x){ x.closest('dialog').close(); return; }
     if(c){
-      cur={cite:JSON.parse(c.getAttribute('data-cite')), title:c.dataset.title, slug:c.dataset.slug};
-      document.getElementById('rv-cite-article').textContent=cur.title;
+      opener=c; cur=JSON.parse(c.getAttribute('data-cite')); cur.slug=c.dataset.slug;
+      document.getElementById('rv-cite-article').textContent=c.dataset.title;
       document.getElementById('rv-cite-ris').href='/revue/articles/'+cur.slug+'/citation.ris';
       document.getElementById('rv-cite-bib').href='/revue/articles/'+cur.slug+'/citation.bib';
-      document.getElementById('rv-cite-ok').textContent=''; style='massey'; paint(); show(cd);
+      document.getElementById('rv-cite-ok').textContent=''; style='massey'; paint(); open(cd);
     }
     if(s){
-      var url=s.dataset.url, title=s.dataset.title, u=encodeURIComponent(url), t=encodeURIComponent(title);
+      opener=s; var url=s.dataset.url, title=s.dataset.title, u=encodeURIComponent(url), t=encodeURIComponent(title);
       document.getElementById('rv-share-article').textContent=title;
       document.getElementById('rv-share-url').value=url;
       document.getElementById('rv-sh-mail').href='mailto:?subject='+t+'&body='+encodeURIComponent(title+'\n'+url);
@@ -64,12 +86,18 @@
       document.getElementById('rv-sh-fb').href='https://www.facebook.com/sharer/sharer.php?u='+u;
       var nb=document.getElementById('rv-sh-native'); nb.hidden=!navigator.share;
       nb.onclick=function(){ navigator.share({title:title,url:url}).catch(function(){}); };
-      document.getElementById('rv-share-ok').textContent=''; show(sd);
+      document.getElementById('rv-share-ok').textContent=''; open(sd);
     }
-    if(e.target===cd||e.target===sd){ e.target.close(); }  // clic sur le fond
+    if(e.target===cd||e.target===sd){ e.target.close(); }
   });
+  [cd,sd].forEach(function(d){ d.addEventListener('close',function(){ if(opener&&document.contains(opener)) opener.focus(); }); });
   cd.addEventListener('click',function(e){ var b=e.target.closest('.rv-tab'); if(b){ style=b.dataset.style; paint(); }});
-  document.getElementById('rv-cite-copy').addEventListener('click',function(){ copy(cur.cite[style]||'', document.getElementById('rv-cite-ok')); });
-  document.getElementById('rv-share-copy').addEventListener('click',function(){ copy(document.getElementById('rv-share-url').value, document.getElementById('rv-share-ok')); });
+  cd.addEventListener('keydown',function(e){   // onglets : flèches, début, fin
+    var i=tabs.indexOf(document.activeElement); if(i<0) return;
+    var n=null; if(e.key==='ArrowRight') n=(i+1)%tabs.length; else if(e.key==='ArrowLeft') n=(i-1+tabs.length)%tabs.length; else if(e.key==='Home') n=0; else if(e.key==='End') n=tabs.length-1;
+    if(n!==null){ e.preventDefault(); style=tabs[n].dataset.style; paint(); tabs[n].focus(); }
+  });
+  document.getElementById('rv-cite-copy').addEventListener('click',function(){ copyRich(document.getElementById('rv-cite-ok')); });
+  document.getElementById('rv-share-copy').addEventListener('click',function(){ copyText(document.getElementById('rv-share-url').value, document.getElementById('rv-share-ok')); });
 })();
 </script>

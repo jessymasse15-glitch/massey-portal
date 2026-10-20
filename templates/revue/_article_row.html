@@ -1,0 +1,21 @@
+{# Une ligne d'article. Attend : card, terms, has_access, show_issue ; optionnel : featured_row #}
+{% set a = card.a %}
+<article class="rv-article{{ ' rv-featured' if featured_row|default(False) }}">
+  <div class="rv-meta">
+    {% if featured_row|default(False) %}<span class="rv-flag">À la une</span>{% endif %}
+    {% if show_issue %}<span>{{ a['issue_label'] or 'Massey Law Review' }}</span>{% endif %}
+    <time datetime="{{ (a['published_at'] or a['created_at'])[:10] }}">{{ card.date }}</time>
+    {% if card.minutes %}<span>{{ card.minutes }} min de lecture</span>{% endif %}
+  </div>
+  {% if card.domain or card.type %}
+  <div class="rv-tags">
+    {% if card.domain %}<a class="rv-tag" href="{{ L(domaine=card.domain_key) }}">{{ card.domain }}</a>{% endif %}
+    {% if card.type %}<a class="rv-tag rv-tag-type" href="{{ L(type=card.type_key) }}">{{ card.type }}</a>{% endif %}
+  </div>
+  {% endif %}
+  <h3><a href="{{ url_for('revue_article_detail', slug=a['slug']) }}">{{ a['title']|rv_mark(terms) }}</a></h3>
+  <div class="rv-author">{{ card.author|rv_mark(terms) }}</div>
+  {% if a['abstract'] %}<p class="rv-abstract">{{ a['abstract']|rv_mark(terms) }}</p>{% endif %}
+  {% if card.snippet %}<p class="rv-snippet"><span>Dans le texte</span> {{ card.snippet|rv_mark(terms) }}</p>{% endif %}
+  {% include "revue/_article_actions.html" %}
+</article>

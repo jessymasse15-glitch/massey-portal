@@ -1,93 +1,137 @@
 {% extends "base.html" %}
 {% block title %}Articles — Massey Law Review{% endblock %}
-{% block meta_description %}Articles publiés par Massey Law Review : recherche, filtres par numéro et par année, téléchargement en PDF, citation et partage.{% endblock %}
+{% block meta_description %}Articles publiés par Massey Law Review : recherche, filtres par numéro, domaine, type et année, téléchargement en PDF, citation et partage.{% endblock %}
+{% block og_title %}Articles — Massey Law Review{% endblock %}
 {% block content %}
-<section class="page-hero reveal">
+<div class="rv-page">
+<a class="rv-skip" href="#rv-results">Aller aux résultats</a>
+<section class="page-hero rv-hero reveal">
   <div class="eyebrow">Massey Law Review</div>
   <h1>Articles</h1>
-  <p class="lede">Les textes publiés par la revue, classés par numéro. Recherchez, lisez en ligne, téléchargez le PDF, citez ou partagez chaque article.</p>
+  <p class="lede">Lisez, recherchez, téléchargez, citez et partagez les textes de la revue.</p>
 </section>
-
-{% if not has_access %}
-<section class="block" style="border-top:none;padding-top:0;">
-  <div class="upsell-banner reveal">
-    <p><b>Texte intégral et PDF réservés aux abonnés.</b> Les résumés, la citation et le partage restent ouverts à tous. Inclus dans l'abonnement Premium Massey AI, ou séparément via l'abonnement Massey Law Review.</p>
-    <div class="ctas"><a href="{{ url_for('membership') }}" class="btn btn-primary btn-sm">Voir Premium</a></div>
-  </div>
-</section>
-{% endif %}
 
 {% include "revue/_subnav.html" %}
 
-<section class="block" style="border-top:none;padding-top:0;">
-  <form method="get" class="rv-search" role="search" id="rv-filter-form">
+<div class="rv-bar-sentinel" id="rv-sentinel"></div>
+<div class="rv-bar" id="rv-bar">
+  <form method="get" role="search" id="rv-filter-form" action="{{ url_for('revue_articles') }}">
     <div class="rv-searchbar">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <input type="search" name="q" value="{{ q }}" placeholder="Rechercher un titre, un auteur, un sujet{% if has_access %} ou un mot du texte{% endif %}…" aria-label="Rechercher dans les articles">
+      <label for="rv-q" class="rv-sr">Rechercher dans les articles</label>
+      <input type="search" id="rv-q" name="q" value="{{ q }}" autocomplete="off" placeholder="Titre, auteur, sujet{% if has_access %}, texte{% endif %}…">
       <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
     </div>
-    <div class="rv-filters">
-      <label>Numéro
-        <select name="numero" data-autosubmit>
-          <option value="">Tous</option>
-          {% for lab, n in issue_list %}<option value="{{ lab }}" {{ 'selected' if issue==lab }}>{{ lab }} ({{ n }})</option>{% endfor %}
-        </select></label>
-      <label>Année
-        <select name="annee" data-autosubmit>
-          <option value="">Toutes</option>
-          {% for y, n in year_list %}<option value="{{ y }}" {{ 'selected' if year==y }}>{{ y }} ({{ n }})</option>{% endfor %}
-        </select></label>
-      <label>Trier par
-        <select name="tri" data-autosubmit>
-          {% for k, l in sorts %}<option value="{{ k }}" {{ 'selected' if sort==k }}>{{ l }}</option>{% endfor %}
-        </select></label>
-      {% if q or issue or year or sort!='recent' %}<a href="{{ url_for('revue_articles') }}" class="rv-clear">Réinitialiser</a>{% endif %}
-    </div>
+    {% if issue %}<input type="hidden" name="numero" value="{{ issue }}">{% endif %}
+    <details class="rv-fd" id="rv-fd" {{ 'open' if domain or atype or year or (sort not in ('recent','pertinence')) else '' }}>
+      <summary>Filtres et tri</summary>
+      <div class="rv-filters">
+        {% if domain_list %}<label>Domaine
+          <select name="domaine" data-autosubmit><option value="">Tous</option>
+            {% for k, l, n in domain_list %}<option value="{{ k }}" {{ 'selected' if domain==k }}>{{ l }} ({{ n }})</option>{% endfor %}</select></label>{% endif %}
+        {% if type_list %}<label>Type de texte
+          <select name="type" data-autosubmit><option value="">Tous</option>
+            {% for k, l, n in type_list %}<option value="{{ k }}" {{ 'selected' if atype==k }}>{{ l }} ({{ n }})</option>{% endfor %}</select></label>{% endif %}
+        <label>Année
+          <select name="annee" data-autosubmit><option value="">Toutes</option>
+            {% for y, n in year_list %}<option value="{{ y }}" {{ 'selected' if year==y }}>{{ y }} ({{ n }})</option>{% endfor %}</select></label>
+        <label>Trier par
+          <select name="tri" data-autosubmit>
+            {% for k, l in sorts %}<option value="{{ k }}" {{ 'selected' if sort==k }}>{{ l }}</option>{% endfor %}</select></label>
+      </div>
+    </details>
   </form>
+</div>
 
-  <p class="rv-count" role="status">{{ total }} article{{ 's' if total != 1 }}{% if total != n_all %} sur {{ n_all }}{% endif %}{% if q %} pour « {{ q }} »{% endif %}</p>
+{% if chips %}
+<ul class="rv-chips" aria-label="Filtres actifs">
+  {% for text, href in chips %}<li><a href="{{ href }}" aria-label="Retirer le filtre : {{ text }}">{{ text }} <span aria-hidden="true">×</span></a></li>{% endfor %}
+  <li><a class="rv-chip-clear" href="{{ url_for('revue_articles') }}">Tout réinitialiser</a></li>
+</ul>
+{% endif %}
 
-  <div class="rv-layout">
-    <aside class="rv-side" aria-label="Parcourir par numéro">
-      <h4>Numéros</h4>
-      <ul>
-        <li><a href="{{ url_for('revue_articles', q=q or None, annee=year or None, tri=(sort if sort!='recent' else None)) }}" class="{{ 'on' if not issue }}">Tous les numéros <span>{{ n_all }}</span></a></li>
-        {% for lab, n in issue_list %}
-        <li><a href="{{ url_for('revue_articles', numero=lab, q=q or None, annee=year or None, tri=(sort if sort!='recent' else None)) }}" class="{{ 'on' if issue==lab }}">{{ lab }} <span>{{ n }}</span></a></li>
-        {% endfor %}
-      </ul>
-    </aside>
+<p class="rv-count" role="status" aria-live="polite">{{ total }} article{{ 's' if total != 1 }}{% if total != n_all %} sur {{ n_all }}{% endif %}{% if q %} pour « {{ q }} »{% endif %}</p>
+{% if not has_access %}
+<p class="rv-note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+  <span>Le texte intégral et les PDF sont réservés aux abonnés ; résumés, citation et partage sont ouverts à tous. <a href="{{ url_for('membership') }}">Voir Premium</a></span></p>
+{% endif %}
 
-    <div class="rv-list">
-      {% for label, cards in groups %}
-        {% if label %}<h2 class="rv-issue">{{ label }}</h2>{% endif %}
-        {% for card in cards %}
-        {% set a = card.a %}
-        <article class="rv-article">
-          <div class="rv-meta">{{ a['issue_label'] or 'Massey Law Review' }} · {{ (a['published_at'] or a['created_at'])[:10] }}</div>
-          <h3><a href="{{ url_for('revue_article_detail', slug=a['slug']) }}">{{ a['title'] }}</a></h3>
-          <div class="rv-author">{{ card.author }}</div>
-          {% if a['abstract'] %}<p class="rv-abstract">{{ a['abstract'] }}</p>{% endif %}
-          {% include "revue/_article_actions.html" %}
-        </article>
-        {% endfor %}
-      {% else %}
-        <p class="helptext">Aucun article ne correspond à cette recherche.</p>
+<div class="rv-layout">
+  <aside class="rv-side" aria-label="Parcourir par numéro">
+    <h2 class="rv-side-h">Numéros</h2>
+    <ul>
+      <li><a href="{{ L(numero=None) }}" class="{{ 'on' if not issue }}" {% if not issue %}aria-current="page"{% endif %}>Tous les numéros <span>{{ n_all }}</span></a></li>
+      {% for lab, m in issue_list %}
+      <li><a href="{{ L(numero=lab) }}" class="{{ 'on' if issue==lab }}" {% if issue==lab %}aria-current="page"{% endif %}>{{ lab }} <span>{{ m.n }}</span></a></li>
       {% endfor %}
+    </ul>
+  </aside>
 
-      {% if pages > 1 %}
-      <nav class="rv-pager" aria-label="Pagination">
-        {% if page > 1 %}<a href="{{ url_for('revue_articles', q=q or None, numero=issue or None, annee=year or None, tri=(sort if sort!='recent' else None), page=page-1) }}">← Précédent</a>{% endif %}
-        <span>Page {{ page }} / {{ pages }}</span>
-        {% if page < pages %}<a href="{{ url_for('revue_articles', q=q or None, numero=issue or None, annee=year or None, tri=(sort if sort!='recent' else None), page=page+1) }}">Suivant →</a>{% endif %}
-      </nav>
+  <div class="rv-list" id="rv-results" tabindex="-1">
+    {% if featured %}
+      {% set card = featured %}{% set featured_row = True %}{% set show_issue = True %}
+      {% include "revue/_article_row.html" %}
+      {% set featured_row = False %}{% set show_issue = (sort not in ('recent','ancien')) %}
+    {% endif %}
+
+    {% for label, cards in groups %}
+      {% if label %}
+      {% set im = issue_meta.get(label) %}
+      <header class="rv-issue">
+        <div><h2>{{ label }}</h2>
+          <p>{% if im %}{{ im.n }} article{{ 's' if im.n != 1 }} · paru le {{ im.date|fr_date }}{% endif %}</p></div>
+        {% if im and im.slug %}<a class="rv-btn" href="{{ url_for('revue_issue_pdf', issue_slug=im.slug) }}" title="{{ 'Télécharger le numéro complet' if has_access else 'PDF réservé aux abonnés' }}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>
+          Numéro complet (PDF)</a>{% endif %}
+      </header>
       {% endif %}
-    </div>
+      {% for card in cards %}
+        {% include "revue/_article_row.html" %}
+      {% endfor %}
+    {% endfor %}
+
+    {% if total == 0 %}
+      <div class="rv-empty">
+        <h2>Aucun article ne correspond à cette recherche</h2>
+        <ul>
+          <li>Vérifiez l'orthographe ou utilisez moins de mots.</li>
+          {% if chips %}<li><a href="{{ url_for('revue_articles') }}">Retirer tous les filtres</a> pour voir les {{ n_all }} articles.</li>{% endif %}
+          {% if domain_list %}<li>Parcourez par domaine :
+            {% for k, l, n in domain_list %}<a class="rv-tag" href="{{ url_for('revue_articles', domaine=k) }}">{{ l }}</a> {% endfor %}</li>{% endif %}
+        </ul>
+        {% if suggestions %}
+        <h3>Résultats approchants</h3>
+        {% for card in suggestions %}{% include "revue/_article_row.html" %}{% endfor %}
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if pages > 1 %}
+    <nav class="rv-pager" aria-label="Pagination">
+      {% if page > 1 %}<a href="{{ L(page=page-1) }}" rel="prev">← Précédent</a>{% else %}<span></span>{% endif %}
+      <span aria-current="page">Page {{ page }} sur {{ pages }}</span>
+      {% if page < pages %}<a href="{{ L(page=page+1) }}" rel="next">Suivant →</a>{% else %}<span></span>{% endif %}
+    </nav>
+    {% endif %}
   </div>
-</section>
+</div>
+</div>
 
 {% include "revue/_cite_share_dialogs.html" %}
 <script>
-document.querySelectorAll('[data-autosubmit]').forEach(function(s){ s.addEventListener('change',function(){ document.getElementById('rv-filter-form').submit(); }); });
+(function(){
+  var form=document.getElementById('rv-filter-form');
+  document.querySelectorAll('[data-autosubmit]').forEach(function(s){ s.addEventListener('change',function(){ form.submit(); }); });
+  var hdr=document.querySelector('header.site'), bar=document.getElementById('rv-bar'), sen=document.getElementById('rv-sentinel'), fd=document.getElementById('rv-fd');
+  function setH(){ document.documentElement.style.setProperty('--hdr-h',(hdr?hdr.offsetHeight:0)+'px'); }
+  setH(); window.addEventListener('resize',setH);
+  // Mobile : filtres repliés par défaut ; ordinateur : toujours ouverts
+  function fdMode(){ if(!fd) return; var small=window.innerWidth<=800; if(!small) fd.open=true; else if(!fd.dataset.touched && !fd.hasAttribute('data-keep')) fd.open=false; }
+  if(fd){ if(fd.hasAttribute('open')) fd.setAttribute('data-keep',''); fd.querySelector('summary').addEventListener('click',function(){ fd.dataset.touched='1'; }); fdMode(); window.addEventListener('resize',fdMode); }
+  // Barre collante : compacte (sans filtres) une fois la page défilée
+  if('IntersectionObserver' in window && bar && sen){
+    new IntersectionObserver(function(es){ var stuck=!es[0].isIntersecting && es[0].boundingClientRect.top<0; bar.classList.toggle('is-stuck',stuck); },{rootMargin:'-'+((hdr?hdr.offsetHeight:0)+1)+'px 0px 0px 0px',threshold:0}).observe(sen);
+  }
+})();
 </script>
 {% endblock %}

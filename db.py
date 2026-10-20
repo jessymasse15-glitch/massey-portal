@@ -1099,6 +1099,27 @@ def _ensure_columns(conn, table, columns):
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}")
 
 
+def _seed_revue_demo_article(conn):
+    """Article fictif long (démonstration de la mise en page) ; inséré une seule fois, supprimable depuis l'administration."""
+    slug = "article-de-demonstration-contrats-transfrontaliers"
+    if conn.execute("SELECT 1 FROM site_settings WHERE key='revue_demo_seeded'").fetchone():
+        return  # déjà inséré une fois : une suppression depuis l'administration reste définitive
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "revue_demo_article.html")
+    try:
+        body = open(path, encoding="utf-8").read()
+    except OSError:
+        return
+    conn.execute(
+        "INSERT INTO review_articles (slug, title, author_name, issue_label, abstract, body_html, published, created_at, published_at, domain, article_type) "
+        "VALUES (?,?,?,?,?,?,1,?,?,?,?)",
+        (slug, "Sécuriser un contrat transfrontalier : méthode de rédaction et pièges à éviter (article de démonstration)",
+         "Rédaction — Massey Law Review", "Vol. 1, n° 2",
+         "Texte fictif servant à vérifier la mise en page : sommaire, lecture confortable, citation et partage. Il ne contient aucune analyse juridique réelle.",
+         body, now(), now(), "contrats", "etude"))
+    conn.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES ('revue_demo_seeded', '1')")
+    conn.commit()
+
+
 def init_db():
     conn = get_db()
     conn.executescript(SCHEMA)
@@ -1109,6 +1130,10 @@ def init_db():
         ("ci_tags", "TEXT NOT NULL DEFAULT ''"),
         ("language", "TEXT NOT NULL DEFAULT 'fr'"),
     ])
+    _ensure_columns(conn, "review_articles", [("domain", "TEXT"), ("article_type", "TEXT")])
+    for slug, dom, typ in (("clause-penale-contrats-commerciaux-droit-haitien", "contrats", "etude"),
+                           ("structuration-fiscale-contrats-distribution-transfrontaliers", "fiscalite", "note")):
+        conn.execute("UPDATE review_articles SET domain=COALESCE(domain, ?), article_type=COALESCE(article_type, ?) WHERE slug=?", (dom, typ, slug))
     _ensure_columns(conn, "contract_analyses", [
         ("ai_json", "TEXT"),
         ("ai_created_at", "TEXT"),
@@ -1149,6 +1174,7 @@ def init_db():
     seed_templates(conn, now())
     import legal_corpus
     legal_corpus.ensure_schema(conn)
+    _seed_revue_demo_article(conn)  # après les articles d'origine (leur semis dépend d'une table vide)
     conn.close()
 
 
