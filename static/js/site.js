@@ -12,6 +12,18 @@
     window.addEventListener("scroll", onScroll, { passive: true });
   }
 
+  // Marks the primary-nav link of the current section (aria-current) so it shows as active.
+  (function () {
+    var path = location.pathname.replace(/\/+$/, "") || "/";
+    var best = null, bestLen = -1;
+    document.querySelectorAll("nav.links > a[href]").forEach(function (a) {
+      var h; try { h = new URL(a.href, location.origin).pathname.replace(/\/+$/, "") || "/"; } catch (e) { return; }
+      var hit = h === "/" ? path === "/" : (path === h || path.indexOf(h + "/") === 0);
+      if (hit && h.length > bestLen) { best = a; bestLen = h.length; }
+    });
+    if (best) best.setAttribute("aria-current", "page");
+  })();
+
   // Nav dropdowns (Plateforme/Administration/Aide-style menus): click/tap toggles
   // the panel open, so they work on touch devices where :hover never fires. Also
   // closes on an outside click/tap and on Escape, and only ever keeps one open.

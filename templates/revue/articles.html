@@ -123,14 +123,17 @@
   var form=document.getElementById('rv-filter-form');
   document.querySelectorAll('[data-autosubmit]').forEach(function(s){ s.addEventListener('change',function(){ form.submit(); }); });
   var hdr=document.querySelector('header.site'), bar=document.getElementById('rv-bar'), sen=document.getElementById('rv-sentinel'), fd=document.getElementById('rv-fd');
-  function setH(){ document.documentElement.style.setProperty('--hdr-h',(hdr?hdr.offsetHeight:0)+'px'); }
+  function hdrH(){ return (hdr && getComputedStyle(hdr).position==='sticky') ? hdr.offsetHeight : 0; }
+  function setH(){ document.documentElement.style.setProperty('--hdr-h',hdrH()+'px'); }
   setH(); window.addEventListener('resize',setH);
+  if(window.ResizeObserver && hdr) new ResizeObserver(setH).observe(hdr);
   // Mobile : filtres repliés par défaut ; ordinateur : toujours ouverts
   function fdMode(){ if(!fd) return; var small=window.innerWidth<=800; if(!small) fd.open=true; else if(!fd.dataset.touched && !fd.hasAttribute('data-keep')) fd.open=false; }
   if(fd){ if(fd.hasAttribute('open')) fd.setAttribute('data-keep',''); fd.querySelector('summary').addEventListener('click',function(){ fd.dataset.touched='1'; }); fdMode(); window.addEventListener('resize',fdMode); }
   // Barre collante : compacte (sans filtres) une fois la page défilée
-  if('IntersectionObserver' in window && bar && sen){
-    new IntersectionObserver(function(es){ var stuck=!es[0].isIntersecting && es[0].boundingClientRect.top<0; bar.classList.toggle('is-stuck',stuck); },{rootMargin:'-'+((hdr?hdr.offsetHeight:0)+1)+'px 0px 0px 0px',threshold:0}).observe(sen);
+  if(bar && sen){
+    var chk=function(){ bar.classList.toggle('is-stuck', sen.getBoundingClientRect().top < hdrH()); };
+    window.addEventListener('scroll',chk,{passive:true}); window.addEventListener('resize',chk); chk();
   }
 })();
 </script>

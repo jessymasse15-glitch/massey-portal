@@ -114,8 +114,9 @@
   /* Confort de lecture (mémorisé si le navigateur le permet) */
   var root=document.querySelector('.rva'); if(!root) return;
   var hdr=document.querySelector('header.site');
-  function setH(){ document.documentElement.style.setProperty('--hdr-h',(hdr?hdr.offsetHeight:0)+'px'); }
+  function setH(){ document.documentElement.style.setProperty('--hdr-h',((hdr && getComputedStyle(hdr).position==='sticky')?hdr.offsetHeight:0)+'px'); }
   setH(); window.addEventListener('resize',setH);
+  if(window.ResizeObserver && hdr) new ResizeObserver(setH).observe(hdr);
   var KEY='mlr-read', st={size:0,wide:false};
   try{ var v=JSON.parse(localStorage.getItem(KEY)||'null'); if(v&&typeof v.size==='number') st=v; }catch(e){}
   function apply(){

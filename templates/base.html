@@ -30,6 +30,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+{% macro cur(ep) %}{% set _u = url_for(ep) %}{% if (_u == '/' and request.path == '/') or (_u != '/' and (request.path == _u or request.path.startswith(_u ~ '/'))) %} aria-current="page"{% endif %}{% endmacro %}
 <header class="site">
   <div class="wrap header-top">
     <a href="{{ url_for('home_en') if lang=='en' else url_for('home') }}" class="brand" style="text-decoration:none;">
@@ -58,17 +59,17 @@
     <div class="wrap">
       <nav class="links">
         {% if lang=='en' %}
-          <a href="{{ url_for('home_en') }}">Home</a>
-          <a href="{{ url_for('produits_en') }}">Products</a>
-          <a href="{{ url_for('services_en') }}">Services</a>
-          <a href="{{ url_for('revue_home') }}">Massey Law Review</a>
-          <a href="{{ url_for('about_en') }}">About</a>
+          <a href="{{ url_for('home_en') }}"{{ cur('home_en') }}>Home</a>
+          <a href="{{ url_for('produits_en') }}"{{ cur('produits_en') }}>Products</a>
+          <a href="{{ url_for('services_en') }}"{{ cur('services_en') }}>Services</a>
+          <a href="{{ url_for('revue_home') }}"{{ cur('revue_home') }}>Massey Law Review</a>
+          <a href="{{ url_for('about_en') }}"{{ cur('about_en') }}>About</a>
         {% else %}
-          <a href="{{ url_for('home') }}">Accueil</a>
-          <a href="{{ url_for('produits') }}">Produits</a>
-          <a href="{{ url_for('services') }}">Services</a>
-          <a href="{{ url_for('revue_home') }}">Massey Law Review</a>
-          <a href="{{ url_for('about') }}">À propos</a>
+          <a href="{{ url_for('home') }}"{{ cur('home') }}>Accueil</a>
+          <a href="{{ url_for('produits') }}"{{ cur('produits') }}>Produits</a>
+          <a href="{{ url_for('services') }}"{{ cur('services') }}>Services</a>
+          <a href="{{ url_for('revue_home') }}"{{ cur('revue_home') }}>Massey Law Review</a>
+          <a href="{{ url_for('about') }}"{{ cur('about') }}>À propos</a>
         {% endif %}
         <div class="nav-dropdown">
           <span>{% if lang=='en' %}Help{% else %}Aide{% endif %}</span>
