@@ -73,15 +73,10 @@
       <ol id="rva-toc-list"></ol>
     </nav>
 
-    <div class="rva-card">
-      <h2 class="rva-label">Télécharger</h2>
-      <a class="rv-btn rv-btn-primary rva-wide" href="{{ url_for('revue_article_pdf', slug=article['slug']) }}"
-         title="{{ 'Télécharger le PDF' if has_access else 'PDF réservé aux abonnés' }}">PDF de l'article</a>
-    </div>
-
-    <div class="rva-card">
-      <h2 class="rva-label">Partager</h2>
-      <button type="button" class="rv-btn rva-wide" data-rv-share data-title="{{ article['title'] }}" data-url="{{ card.url }}" aria-haspopup="dialog">
+    <div class="rva-card rva-tools">
+      <a class="rv-btn rv-btn-primary" href="{{ url_for('revue_article_pdf', slug=article['slug']) }}"
+         title="{{ 'Télécharger le PDF' if has_access else 'PDF réservé aux abonnés' }}">PDF</a>
+      <button type="button" class="rv-btn" data-rv-share data-title="{{ article['title'] }}" data-url="{{ card.url }}" aria-haspopup="dialog">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
         <span>Partager</span></button>
     </div>
@@ -106,6 +101,9 @@
 (function(){
   /* Confort de lecture (mémorisé si le navigateur le permet) */
   var root=document.querySelector('.rva'); if(!root) return;
+  var hdr=document.querySelector('header.site');
+  function setH(){ document.documentElement.style.setProperty('--hdr-h',(hdr?hdr.offsetHeight:0)+'px'); }
+  setH(); window.addEventListener('resize',setH);
   var KEY='mlr-read', st={size:0,wide:false};
   try{ var v=JSON.parse(localStorage.getItem(KEY)||'null'); if(v&&typeof v.size==='number') st=v; }catch(e){}
   function apply(){

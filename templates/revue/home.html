@@ -22,16 +22,16 @@
 
 <section class="block" style="border-top:none;padding-top:0;">
   <div class="two-col">
-    <aside>
-      <div class="newsletter-box" style="margin-top:28px;flex-direction:column;align-items:stretch;">
-        <div>
-          <h4 style="margin:0 0 4px;font-family:var(--serif);font-weight:500;">Recevoir les nouvelles publications</h4>
-          <p style="margin:0;color:var(--ink-faint);font-size:0.86rem;">Un courriel à chaque nouvelle parution — aucun spam.</p>
-        </div>
-        <form method="POST" action="{{ url_for('revue_newsletter_signup') }}" style="display:flex;gap:10px;margin-top:14px;">
-          <input type="email" name="email" placeholder="Votre courriel" required>
+    <aside class="rv-news-aside">
+      <div class="rv-news" style="margin-top:28px;">
+        <h4>Recevoir les nouvelles publications</h4>
+        <p>Un courriel à chaque nouvelle parution.</p>
+        <form method="POST" action="{{ url_for('revue_newsletter_signup') }}">
+          <label class="rv-sr" for="rv-news-email">Votre courriel</label>
+          <input type="email" id="rv-news-email" name="email" placeholder="Votre courriel" autocomplete="email" required>
           <button type="submit" class="btn btn-primary">S'inscrire</button>
         </form>
+        <p class="rv-news-fine">Aucun spam.</p>
       </div>
     </aside>
     {% include "revue/_about_text.html" %}

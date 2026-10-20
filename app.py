@@ -101,6 +101,8 @@ def _has_review_access(u):
     ou abonnement autonome à la revue (ancien système, conservé pour compatibilité)."""
     if u is None:
         return False
+    if u["role"] == "admin":  # l'équipe d'administration lit toute la revue
+        return True
     if _access_info(u)["is_premium"]:
         return True
     conn = dbm.get_db()
