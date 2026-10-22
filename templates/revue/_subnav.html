@@ -1,8 +1,30 @@
-<nav class="revue-subnav">
-  <a href="{{ url_for('revue_home') }}" class="{{ 'active' if request.endpoint in ['revue_home'] else '' }}">Accueil</a>
-  <a href="{{ url_for('revue_articles') }}" class="{{ 'active' if request.endpoint in ['revue_articles','revue_article_detail'] else '' }}">Articles</a>
-  <a href="{{ url_for('revue_forum') }}" class="{{ 'active' if request.endpoint=='revue_forum' else '' }}">Forum</a>
-  <a href="{{ url_for('revue_submissions') }}" class="{{ 'active' if request.endpoint=='revue_submissions' else '' }}">Soumissions</a>
-  <a href="{{ url_for('revue_subscription') }}" class="{{ 'active' if request.endpoint=='revue_subscription' else '' }}">Abonnement</a>
-  <a href="{{ url_for('revue_medias') }}" class="{{ 'active' if request.endpoint=='revue_medias' else '' }}">Médias</a>
-</nav>
+{% set _items = [
+  ('revue_home', 'Accueil', ['revue_home']),
+  ('revue_articles', 'Articles', ['revue_articles','revue_article_detail']),
+  ('revue_forum', 'Forum', ['revue_forum']),
+  ('revue_submissions', 'Soumissions', ['revue_submissions']),
+  ('revue_subscription', 'Abonnement', ['revue_subscription']),
+  ('revue_medias', 'Médias', ['revue_medias']) ] %}
+{% set _cur = namespace(label='Menu de la revue') %}
+{% for ep, label, eps in _items %}{% if request.endpoint in eps %}{% set _cur.label = label %}{% endif %}{% endfor %}
+<div class="rsn" data-rsn>
+  <button type="button" class="rsn-btn" aria-expanded="false" aria-controls="rsn-list">
+    <span class="rsn-k">Massey Law Review</span>
+    <span class="rsn-cur">{{ _cur.label }}</span>
+    <span class="rsn-ch" aria-hidden="true"></span>
+  </button>
+  <nav class="revue-subnav" id="rsn-list" aria-label="Navigation de la revue">
+    {% for ep, label, eps in _items %}<a href="{{ url_for(ep) }}" class="{{ 'active' if request.endpoint in eps else '' }}"{% if request.endpoint in eps %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+</div>
+<script>
+(function(){
+  var r=document.currentScript.previousElementSibling; if(!r||!r.hasAttribute('data-rsn')) return;
+  var b=r.querySelector('.rsn-btn');
+  function set(o){ r.classList.toggle('open',o); b.setAttribute('aria-expanded',o?'true':'false'); }
+  b.addEventListener('click',function(){ set(!r.classList.contains('open')); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&r.classList.contains('open')){ set(false); b.focus(); } });
+  document.addEventListener('click',function(e){ if(!r.contains(e.target)) set(false); });
+})();
+</script>

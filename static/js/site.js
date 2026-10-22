@@ -24,6 +24,77 @@
     if (best) best.setAttribute("aria-current", "page");
   })();
 
+
+  // Menu mobile : panneau construit à partir des liens existants (une seule source de vérité).
+  (function () {
+    var btn = document.getElementById("mburger"), panel = document.getElementById("mnav"), back = document.getElementById("mnav-backdrop");
+    var hdr = document.querySelector("header.site");
+    if (!btn || !panel || !hdr) return;
+    var mq = window.matchMedia("(max-width: 900px)");
+    function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html) e.innerHTML = html; return e; }
+    function linkFrom(a, cls) {
+      var l = el("a", cls); l.href = a.getAttribute("href"); l.textContent = a.textContent.trim();
+      if (a.getAttribute("aria-current")) l.setAttribute("aria-current", a.getAttribute("aria-current"));
+      var t = a.getAttribute("title"); if (t) l.title = t;
+      return l;
+    }
+    function build() {
+      panel.innerHTML = "";
+      var s = document.querySelector("form.hdr-search");
+      if (s) {
+        var f = el("form", "mn-search"); f.setAttribute("role", "search"); f.method = "GET"; f.action = s.getAttribute("action");
+        var i = el("input"); i.type = "search"; i.name = "q"; i.placeholder = (s.querySelector("input").placeholder || "Rechercher…"); i.setAttribute("aria-label", s.querySelector("input").getAttribute("aria-label") || "Rechercher"); i.autocomplete = "off";
+        var b = el("button", "", '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>'); b.type = "submit"; b.setAttribute("aria-label", "OK");
+        f.appendChild(i); f.appendChild(b); panel.appendChild(f);
+      }
+      var nav = el("nav", "mn-links"); nav.setAttribute("aria-label", "Navigation");
+      var src = document.querySelector("nav.links");
+      if (src) Array.prototype.forEach.call(src.children, function (c) {
+        if (c.tagName === "A") nav.appendChild(linkFrom(c, "mn-link"));
+        else if (c.classList.contains("nav-dropdown")) {
+          var d = el("details", "mn-group"), sm = el("summary", "", c.querySelector(":scope > span").textContent.trim());
+          d.appendChild(sm);
+          Array.prototype.forEach.call(c.querySelectorAll(".dropdown-panel a"), function (a) { d.appendChild(linkFrom(a, "mn-sub")); });
+          nav.appendChild(d);
+        }
+      });
+      panel.appendChild(nav);
+      var acts = el("div", "mn-actions");
+      Array.prototype.forEach.call(document.querySelectorAll(".header-actions > a"), function (a) {
+        var c = a.classList.contains("lang-switch") ? "mn-lang" : (/contract-intelligence/.test(a.getAttribute("href")) ? "mn-cta" : "mn-act");
+        acts.appendChild(linkFrom(a, c));
+      });
+      panel.appendChild(acts);
+    }
+    var lastFocus = null;
+    function setOpen(open) {
+      if (open && !panel.firstChild) build();
+      if (open) document.documentElement.style.setProperty("--mn-top", Math.round(hdr.getBoundingClientRect().bottom) + "px");
+      panel.hidden = back.hidden = !open;
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      btn.setAttribute("aria-label", btn.getAttribute(open ? "data-close" : "data-open"));
+      document.documentElement.classList.toggle("mn-lock", open);
+      hdr.classList.toggle("mn-open", open);
+      if (open) { lastFocus = document.activeElement; panel.scrollTop = 0; panel.focus({ preventScroll: true }); }
+      else if (lastFocus && document.contains(lastFocus)) { btn.focus({ preventScroll: true }); }
+    }
+    btn.addEventListener("click", function () { setOpen(panel.hidden); });
+    back.addEventListener("click", function () { setOpen(false); });
+    panel.addEventListener("click", function (e) { if (e.target.closest("a")) setOpen(false); });
+    document.addEventListener("keydown", function (e) {
+      if (panel.hidden) return;
+      if (e.key === "Escape") { setOpen(false); return; }
+      if (e.key === "Tab") {   // le focus reste dans le menu tant qu'il est ouvert
+        var f = [btn].concat(Array.prototype.slice.call(panel.querySelectorAll("a[href],button,input,summary"))).filter(function (x) { return x.offsetParent !== null; });
+        if (!f.length) return;
+        var first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && (document.activeElement === first || document.activeElement === panel)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    });
+    (mq.addEventListener ? mq.addEventListener.bind(mq, "change") : mq.addListener.bind(mq))(function () { if (!mq.matches && !panel.hidden) setOpen(false); });
+  })();
+
   // Nav dropdowns (Plateforme/Administration/Aide-style menus): click/tap toggles
   // the panel open, so they work on touch devices where :hover never fires. Also
   // closes on an outside click/tap and on Escape, and only ever keeps one open.
