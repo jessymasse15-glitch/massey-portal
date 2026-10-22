@@ -1569,6 +1569,26 @@ def _revue_article_url(article):
     return url_for("revue_article_detail", slug=article["slug"], _external=True)
 
 
+def _revue_page_window(page, pages):
+    """Numéros de pages à afficher : 1 … p-1 p p+1 … n (None = points de suspension)."""
+    keep = sorted({1, pages, page - 1, page, page + 1} & set(range(1, pages + 1)))
+    out, prev = [], 0
+    for n in keep:
+        if n - prev > 1:
+            out.append(None)
+        out.append(n)
+        prev = n
+    return out
+
+
+def _revue_is_new(a):
+    try:
+        d = datetime.strptime((a["published_at"] or a["created_at"] or "")[:10], "%Y-%m-%d")
+        return 0 <= (datetime.utcnow() - d).days <= 30
+    except Exception:
+        return False
+
+
 def _revue_card(a, terms=(), has_access=False, with_snippet=False):
     """Un article + tout ce que les gabarits affichent (citation, dates, domaine, mots surlignés…)."""
     url = _revue_article_url(a)
@@ -1589,6 +1609,7 @@ def _revue_card(a, terms=(), has_access=False, with_snippet=False):
         "domain": revue_tools.DOMAIN_LABELS.get(domain), "domain_key": domain,
         "type": revue_tools.TYPE_LABELS.get(atype), "type_key": atype,
         "snippet": snippet,
+        "is_new": _revue_is_new(a),
     }
 
 
@@ -1735,7 +1756,8 @@ def revue_articles():
         type_list=[(k, l, types[k]) for k, l in revue_tools.ARTICLE_TYPES if k in types],
         page=page, pages=pages, has_access=has_access, n_all=len(all_rows), cite_styles=revue_tools.CITE_STYLES,
         L=L, chips=chips, filtered=filtered, suggestions=suggestions, show_issue=sort not in ("recent", "ancien"),
-        n_rest=len(rest),
+        n_rest=len(rest), sort_label=dict(sorts).get(sort, ""),
+        page_nums=_revue_page_window(page, pages),
     )
 
 

@@ -5,10 +5,16 @@
 {% block content %}
 <div class="rv-page">
 <a class="rv-skip" href="#rv-results">Aller aux résultats</a>
-<section class="page-hero rv-hero reveal">
-  <div class="eyebrow">Massey Law Review</div>
-  <h1>Articles</h1>
-  <p class="lede">Lisez, recherchez, téléchargez, citez et partagez les textes de la revue.</p>
+<section class="rvl-hero" aria-labelledby="rvl-h1">
+  <div>
+    <p class="rvl-eyebrow">Massey Law Review</p>
+    <h1 id="rvl-h1">Articles</h1>
+    <p class="rvl-lede">Lisez, recherchez, téléchargez, citez et partagez les textes de la revue.</p>
+  </div>
+  <div class="rvl-hero-r">
+    <b>{{ n_all }}</b><span>article{{ 's' if n_all != 1 }} publié{{ 's' if n_all != 1 }}</span>
+    <a href="{{ url_for('revue_rss') }}" class="rvl-rss" title="S'abonner aux nouveautés (flux RSS)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 11a8 8 0 0 1 8 8M5 5a14 14 0 0 1 14 14"/><circle cx="6" cy="18" r="1.4" fill="currentColor"/></svg>Flux RSS</a>
+  </div>
 </section>
 
 {% include "revue/_subnav.html" %}
@@ -24,7 +30,7 @@
     </div>
     {% if issue %}<input type="hidden" name="numero" value="{{ issue }}">{% endif %}
     <details class="rv-fd" id="rv-fd" {{ 'open' if domain or atype or year or (sort not in ('recent','pertinence')) else '' }}>
-      <summary>Filtres et tri</summary>
+      <summary>Filtres et tri{% if chips %} · {{ chips|length }} actif{{ 's' if chips|length > 1 }}{% endif %}</summary>
       <div class="rv-filters">
         {% if domain_list %}<label>Domaine
           <select name="domaine" data-autosubmit><option value="">Tous</option>
@@ -38,6 +44,7 @@
         <label>Trier par
           <select name="tri" data-autosubmit>
             {% for k, l in sorts %}<option value="{{ k }}" {{ 'selected' if sort==k }}>{{ l }}</option>{% endfor %}</select></label>
+        {% if chips %}<a class="rvl-clear" href="{{ url_for('revue_articles') }}">Effacer les filtres</a>{% endif %}
       </div>
     </details>
   </form>
@@ -50,21 +57,28 @@
 </ul>
 {% endif %}
 
-<p class="rv-count" role="status" aria-live="polite">{{ total }} article{{ 's' if total != 1 }}{% if total != n_all %} sur {{ n_all }}{% endif %}{% if q %} pour « {{ q }} »{% endif %}</p>
+<p class="rv-count" role="status" aria-live="polite">{{ total }} article{{ 's' if total != 1 }}{% if total != n_all %} sur {{ n_all }}{% endif %}{% if q %} pour « {{ q }} »{% endif %} · triés par {{ sort_label|lower }}</p>
 {% if not has_access %}
 <p class="rv-note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
   <span>Le texte intégral et les PDF sont réservés aux abonnés ; résumés, citation et partage sont ouverts à tous. <a href="{{ url_for('membership') }}">Voir Premium</a></span></p>
 {% endif %}
 
 <div class="rv-layout">
-  <aside class="rv-side" aria-label="Parcourir par numéro">
-    <h2 class="rv-side-h">Numéros</h2>
-    <ul>
-      <li><a href="{{ L(numero=None) }}" class="{{ 'on' if not issue }}" {% if not issue %}aria-current="page"{% endif %}>Tous les numéros <span>{{ n_all }}</span></a></li>
-      {% for lab, m in issue_list %}
-      <li><a href="{{ L(numero=lab) }}" class="{{ 'on' if issue==lab }}" {% if issue==lab %}aria-current="page"{% endif %}>{{ lab }} <span>{{ m.n }}</span></a></li>
-      {% endfor %}
-    </ul>
+  <aside class="rv-side" aria-label="Parcourir la revue">
+    <details class="rv-side-d" id="rv-side-d" open>
+      <summary>Parcourir</summary>
+      <h2 class="rv-side-h">Numéros</h2>
+      <ul>
+        <li><a href="{{ L(numero=None) }}" class="{{ 'on' if not issue }}" {% if not issue %}aria-current="page"{% endif %}>Tous les numéros <span>{{ n_all }}</span></a></li>
+        {% for lab, m in issue_list %}
+        <li><a href="{{ L(numero=lab) }}" class="{{ 'on' if issue==lab }}" {% if issue==lab %}aria-current="page"{% endif %}>{{ lab }} <span>{{ m.n }}</span></a></li>
+        {% endfor %}
+      </ul>
+      {% if domain_list %}<h2 class="rv-side-h">Domaines</h2>
+      <ul>{% for k, l, n in domain_list %}<li><a href="{{ L(domaine=(None if domain==k else k)) }}" class="{{ 'on' if domain==k }}">{{ l }} <span>{{ n }}</span></a></li>{% endfor %}</ul>{% endif %}
+      {% if type_list %}<h2 class="rv-side-h">Types de texte</h2>
+      <ul>{% for k, l, n in type_list %}<li><a href="{{ L(type=(None if atype==k else k)) }}" class="{{ 'on' if atype==k }}">{{ l }} <span>{{ n }}</span></a></li>{% endfor %}</ul>{% endif %}
+    </details>
   </aside>
 
   <div class="rv-list" id="rv-results" tabindex="-1">
@@ -98,6 +112,8 @@
           {% if chips %}<li><a href="{{ url_for('revue_articles') }}">Retirer tous les filtres</a> pour voir les {{ n_all }} articles.</li>{% endif %}
           {% if domain_list %}<li>Parcourez par domaine :
             {% for k, l, n in domain_list %}<a class="rv-tag" href="{{ url_for('revue_articles', domaine=k) }}">{{ l }}</a> {% endfor %}</li>{% endif %}
+          {% if issue_list %}<li>Ou ouvrez un numéro :
+            {% for lab, m in issue_list %}<a class="rv-tag" href="{{ url_for('revue_articles', numero=lab) }}">{{ lab }}</a> {% endfor %}</li>{% endif %}
         </ul>
         {% if suggestions %}
         <h3>Résultats approchants</h3>
@@ -109,7 +125,7 @@
     {% if pages > 1 %}
     <nav class="rv-pager" aria-label="Pagination">
       {% if page > 1 %}<a href="{{ L(page=page-1) }}" rel="prev">← Précédent</a>{% else %}<span></span>{% endif %}
-      <span aria-current="page">Page {{ page }} sur {{ pages }}</span>
+      <ol class="rv-pages">{% for n in page_nums %}{% if n is none %}<li aria-hidden="true">…</li>{% else %}<li><a href="{{ L(page=n) }}" {% if n==page %}aria-current="page" class="on"{% endif %} aria-label="Page {{ n }}">{{ n }}</a></li>{% endif %}{% endfor %}</ol>
       {% if page < pages %}<a href="{{ L(page=page+1) }}" rel="next">Suivant →</a>{% else %}<span></span>{% endif %}
     </nav>
     {% endif %}
@@ -117,6 +133,7 @@
 </div>
 </div>
 
+<button type="button" class="rvl-top rv-noprint" id="rvl-top" aria-label="Retour en haut de la page" hidden>↑</button>
 {% include "revue/_cite_share_dialogs.html" %}
 <script>
 (function(){
@@ -130,6 +147,18 @@
   // Mobile : filtres repliés par défaut ; ordinateur : toujours ouverts
   function fdMode(){ if(!fd) return; var small=window.innerWidth<=800; if(!small) fd.open=true; else if(!fd.dataset.touched && !fd.hasAttribute('data-keep')) fd.open=false; }
   if(fd){ if(fd.hasAttribute('open')) fd.setAttribute('data-keep',''); fd.querySelector('summary').addEventListener('click',function(){ fd.dataset.touched='1'; }); fdMode(); window.addEventListener('resize',fdMode); }
+  // Panneau « Parcourir » : replié par défaut sur mobile
+  var sd=document.getElementById('rv-side-d');
+  function sdMode(){ if(!sd) return; if(window.innerWidth>800) sd.open=true; else if(!sd.dataset.touched) sd.open=false; }
+  if(sd){ sd.querySelector('summary').addEventListener('click',function(){ sd.dataset.touched='1'; }); sdMode(); window.addEventListener('resize',sdMode); }
+  // Menu « Plus » : un seul ouvert, fermé au clic extérieur / Échap / après action
+  var menus=[].slice.call(document.querySelectorAll('.rv-more'));
+  menus.forEach(function(m){ m.addEventListener('toggle',function(){ if(m.open) menus.forEach(function(o){ if(o!==m) o.open=false; }); }); m.addEventListener('click',function(e){ if(e.target.closest('.rv-more-menu button')) setTimeout(function(){ m.open=false; },0); }); });
+  document.addEventListener('click',function(e){ if(!e.target.closest('.rv-more')) menus.forEach(function(m){ m.open=false; }); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') menus.forEach(function(m){ if(m.open){ m.open=false; m.querySelector('summary').focus(); } }); });
+  // Retour en haut
+  var top=document.getElementById('rvl-top');
+  if(top){ var tchk=function(){ top.hidden=window.scrollY<700; }; window.addEventListener('scroll',tchk,{passive:true}); tchk(); top.addEventListener('click',function(){ window.scrollTo({top:0,behavior:'smooth'}); }); }
   // Barre collante : compacte (sans filtres) une fois la page défilée
   if(bar && sen){
     var chk=function(){ bar.classList.toggle('is-stuck', sen.getBoundingClientRect().top < hdrH()); };

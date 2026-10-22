@@ -6,6 +6,8 @@
     {% if show_issue %}<span>{{ a['issue_label'] or 'Massey Law Review' }}</span>{% endif %}
     <time datetime="{{ (a['published_at'] or a['created_at'])[:10] }}">{{ card.date }}</time>
     {% if card.minutes %}<span>{{ card.minutes }} min de lecture</span>{% endif %}
+    {% if card.is_new %}<span class="rv-new">Nouveau</span>{% endif %}
+    <span class="rv-acc{{ '' if has_access else ' rv-acc-lock' }}">{% if not has_access %}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Résumé libre{% else %}Texte intégral{% endif %}</span>
   </div>
   {% if card.domain or card.type %}
   <div class="rv-tags">
@@ -14,7 +16,7 @@
   </div>
   {% endif %}
   <h3><a href="{{ url_for('revue_article_detail', slug=a['slug']) }}">{{ a['title']|rv_mark(terms) }}</a></h3>
-  <div class="rv-author">{{ card.author|rv_mark(terms) }}</div>
+  {% if card.author|lower not in ('rédaction','redaction') %}<div class="rv-author">{{ card.author|rv_mark(terms) }}</div>{% endif %}
   {% if a['abstract'] %}<p class="rv-abstract">{{ a['abstract']|rv_mark(terms) }}</p>{% endif %}
   {% if card.snippet %}<p class="rv-snippet"><span>Dans le texte</span> {{ card.snippet|rv_mark(terms) }}</p>{% endif %}
   {% include "revue/_article_actions.html" %}
