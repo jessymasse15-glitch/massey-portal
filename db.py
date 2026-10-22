@@ -785,6 +785,7 @@ DEFAULT_SITE_SETTINGS = {
     "contact_email": "",
     "linkedin_url": "",
     "support_hours": "",
+    "revue_issn": "",
 }
 
 SITE_SETTINGS_LABELS = [
@@ -795,6 +796,7 @@ SITE_SETTINGS_LABELS = [
     ("contact_email", "Courriel de contact public"),
     ("linkedin_url", "URL LinkedIn"),
     ("support_hours", "Horaires de disponibilité"),
+    ("revue_issn", "ISSN de Massey Law Review (laisser vide tant qu'il n'est pas attribué)"),
 ]
 
 

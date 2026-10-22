@@ -1491,15 +1491,56 @@ def _slugify(text):
 @app.route("/revue")
 def revue_home():
     conn = dbm.get_db()
-    articles = conn.execute(
-        "SELECT * FROM review_articles WHERE published=1 ORDER BY published_at DESC LIMIT 3"
+    rows = conn.execute(
+        "SELECT * FROM review_articles WHERE published=1 ORDER BY COALESCE(published_at, created_at) DESC, id DESC"
     ).fetchall()
     posts = conn.execute(
         "SELECT p.*, u.full_name FROM review_forum_posts p JOIN users u ON u.id=p.user_id "
         "WHERE p.hidden=0 ORDER BY p.created_at DESC LIMIT 3"
     ).fetchall()
     conn.close()
-    return render_template("revue/home.html", articles=articles, posts=posts)
+    has_access = _has_review_access(current_user())
+    cards = _revue_cards(rows, has_access=has_access) if rows else []
+    featured = cards[0] if cards else None
+    recents = cards[1:4]
+
+    # Dernier numéro : celui de l'article le plus récent qui porte une mention de numéro.
+    issue = None
+    labelled = [c for c in cards if (c["a"]["issue_label"] or "").strip()]
+    if labelled:
+        label = labelled[0]["a"]["issue_label"]
+        items = [c for c in labelled if c["a"]["issue_label"] == label]
+        issue = {
+            "label": label, "slug": revue_tools.issue_slug(label), "items": items, "n": len(items),
+            "date": revue_tools.fr_date(items[0]["a"]["published_at"] or items[0]["a"]["created_at"]),
+            "domains": [d for d in dict.fromkeys(c["domain"] for c in items) if d][:4],
+        }
+
+    # Domaines et chiffres : uniquement des valeurs réelles, calculées sur les articles publiés.
+    counts = {}
+    for r in rows:
+        if r["domain"] in revue_tools.DOMAIN_LABELS:
+            counts[r["domain"]] = counts.get(r["domain"], 0) + 1
+    domains = [(k, lab, counts[k]) for k, lab in revue_tools.DOMAINS if counts.get(k)]
+    authors = {revue_tools.clean_author(r["author_name"]) for r in rows}
+    authors = {x for x in authors if x and not revue_tools._is_org(x)}
+    stats = {
+        "articles": len(rows),
+        "issues": len({(r["issue_label"] or "").strip() for r in rows if (r["issue_label"] or "").strip()}),
+        "authors": len(authors),
+        "domains": len(domains),
+    }
+    ld = {"@context": "https://schema.org", "@type": "Periodical", "name": "Massey Law Review", "inLanguage": "fr",
+          "url": url_for("revue_home", _external=True), "publisher": {"@type": "Organization", "name": "Massey Contracts & Tax"},
+          "about": ["Droit des contrats", "Fiscalité des affaires", "Transactions transfrontalières"]}
+    issn = (dbm.get_setting("revue_issn") or "").strip()
+    if issn:
+        ld["issn"] = issn
+    return render_template(
+        "revue/home.html", ld=ld, featured=featured, recents=recents, issue=issue, domains=domains, stats=stats,
+        posts=posts, has_access=has_access, plans=dbm.REVIEW_PLANS,
+        issn=issn,
+    )
 
 
 @app.route("/revue/infolettre", methods=["POST"])
@@ -1519,6 +1560,8 @@ def revue_newsletter_signup():
         conn.close()
     else:
         flash("Adresse courriel invalide.", "error")
+    if request.form.get("from") == "home":
+        return redirect(url_for("revue_home") + "#infolettre")
     return redirect(request.referrer or url_for("revue_home"))
 
 

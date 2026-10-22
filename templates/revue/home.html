@@ -1,81 +1,211 @@
 {% extends "base.html" %}
-{% block title %}Massey Law Review — La revue juridique de Massey Contracts & Tax{% endblock %}
-{% block meta_description %}Massey Law Review : revue juridique en ligne consacrée à l'ingénierie contractuelle, à la fiscalité des affaires et aux transactions transfrontalières sur le marché haïtien.{% endblock %}
+{% block title %}Massey Law Review — Revue de droit des contrats, de fiscalité et des affaires{% endblock %}
+{% block meta_description %}Massey Law Review : revue juridique en ligne consacrée au droit des contrats, à la fiscalité des affaires et aux transactions transfrontalières, avec un ancrage sur le marché haïtien.{% endblock %}
+{% block og_title %}Massey Law Review — Revue de droit des contrats, de fiscalité et des affaires{% endblock %}
+{% block og_description %}Analyses, notes pratiques et études de cas en droit des contrats, fiscalité des affaires et transactions transfrontalières.{% endblock %}
 {% block content %}
-<section class="page-hero reveal">
-  <div class="eyebrow">Massey Law Review</div>
-  <h1>Une revue au service de la pratique et de la réflexion juridique</h1>
+{% set lock = not has_access %}
+<div class="rv-page rvh">
+{% include "revue/_subnav.html" %}
+
+{# ───────── 1. Bandeau d'ouverture ───────── #}
+<section class="rvh-hero" aria-labelledby="rvh-h1">
+  <div class="rvh-hero-txt">
+    <p class="rvh-eyebrow">Massey Law Review</p>
+    <h1 id="rvh-h1">Revue de droit des contrats, de fiscalité et des affaires</h1>
+    <p class="rvh-lede">Des analyses, notes pratiques et études de cas au service des praticiens, avec un ancrage sur le marché haïtien et les transactions transfrontalières.</p>
+    <div class="rvh-cta">
+      {% if issue %}<a class="rvh-btn rvh-btn-gold" href="{{ url_for('revue_articles', numero=issue.label) }}">Lire le dernier numéro</a>
+      {% else %}<a class="rvh-btn rvh-btn-gold" href="{{ url_for('revue_articles') }}">Parcourir les articles</a>{% endif %}
+      <a class="rvh-btn rvh-btn-line" href="{{ url_for('revue_submissions') }}">Soumettre un article</a>
+    </div>
+    <form class="rvh-search" role="search" method="get" action="{{ url_for('revue_articles') }}">
+      <label class="rv-sr" for="rvh-q">Rechercher dans la revue</label>
+      <input id="rvh-q" type="search" name="q" placeholder="Rechercher un article, un auteur, un sujet…" autocomplete="off" maxlength="120">
+      <button type="submit" aria-label="Lancer la recherche"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button>
+    </form>
+  </div>
+  <aside class="rvh-cover" aria-label="Couverture du dernier numéro">
+    <div class="rvh-cover-in">
+      <img src="{{ url_for('static', filename='img/mark-header.png') }}" alt="" width="64" height="64" loading="eager">
+      <div class="rvh-cover-t">Massey<br>Law Review</div>
+      <div class="rvh-cover-s">Revue juridique · Massey Contracts &amp; Tax</div>
+      <div class="rvh-cover-b">
+        <b>{{ issue.label if issue else 'Premier numéro en préparation' }}</b>
+        {% if issue %}<span>{{ issue.n }} article{{ 's' if issue.n > 1 }} · {{ issue.date }}</span>{% endif %}
+      </div>
+    </div>
+  </aside>
 </section>
 
-{% if not is_premium %}
-<section class="block" style="border-top:none;padding-top:0;">
-  <div class="upsell-banner reveal">
-    <p><b>Massey Law Review est incluse dans l'abonnement Premium Massey AI.</b> Les visiteurs et comptes gratuits peuvent lire les résumés ; le texte intégral et le PDF de chaque article sont réservés aux abonnés.</p>
-    <div class="ctas">
-      <a href="{{ url_for('membership') }}" class="btn btn-primary btn-sm">Découvrir Premium</a>
+{# ───────── 2. Dernier numéro + article à la une ───────── #}
+{% if issue %}
+<section class="rvh-sec" aria-labelledby="rvh-issue-h">
+  <div class="rvh-head">
+    <div><p class="rvh-k">À la une</p><h2 id="rvh-issue-h">Le dernier numéro</h2></div>
+    <a class="rvh-more" href="{{ url_for('revue_articles') }}">Tous les articles →</a>
+  </div>
+  <div class="rvh-issue">
+    <div class="rvh-toc">
+      <div class="rvh-toc-h">
+        <div><b>{{ issue.label }}</b><span>{{ issue.date }}{% if issue.domains %} · {{ issue.domains|join(' · ') }}{% endif %}</span></div>
+        <a class="rvh-btn rvh-btn-navy" href="{{ url_for('revue_issue_pdf', issue_slug=issue.slug) }}" title="{{ 'Télécharger le numéro en PDF' if not lock else 'PDF du numéro réservé aux abonnés' }}">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg><span>Télécharger le numéro</span></a>
+      </div>
+      <h3 class="rv-sr">Sommaire</h3>
+      <ol>
+        {% for c in issue['items'] %}<li>
+          <a href="{{ url_for('revue_article_detail', slug=c.a['slug']) }}"><span class="rvh-n">{{ loop.index }}</span>
+            <span class="rvh-tt"><strong>{{ c.a['title'] }}</strong><em>{% if c.author != 'Rédaction' %}{{ c.author }}{% else %}{{ c.type or 'Article' }}{% endif %}{% if c.domain %} · {{ c.domain }}{% endif %}</em></span></a>
+        </li>{% endfor %}
+      </ol>
+      <a class="rvh-more rvh-more-b" href="{{ url_for('revue_articles', numero=issue.label) }}">Voir le numéro complet →</a>
     </div>
+    {% if featured %}
+    <article class="rvh-feat">
+      <p class="rvh-flag">Article à la une</p>
+      <div class="rvh-meta">{{ featured.date }}{% if featured.minutes %} · {{ featured.minutes }} min de lecture{% endif %}</div>
+      {% if featured.domain or featured.type %}<div class="rvh-tags">{% if featured.domain %}<a href="{{ url_for('revue_articles', domaine=featured.domain_key) }}">{{ featured.domain }}</a>{% endif %}{% if featured.type %}<a href="{{ url_for('revue_articles', type=featured.type_key) }}">{{ featured.type }}</a>{% endif %}</div>{% endif %}
+      <h3><a href="{{ url_for('revue_article_detail', slug=featured.a['slug']) }}">{{ featured.a['title'] }}</a></h3>
+      {% if featured.author != 'Rédaction' %}<div class="rvh-au">{{ featured.author }}</div>{% endif %}
+      {% if featured.a['abstract'] %}<p class="rvh-abs">{{ featured.a['abstract'][:300] }}{% if featured.a['abstract']|length > 300 %}…{% endif %}</p>{% endif %}
+      <a class="rvh-btn rvh-btn-gold rvh-btn-sm" href="{{ url_for('revue_article_detail', slug=featured.a['slug']) }}">Lire l'article →</a>
+    </article>
+    {% endif %}
   </div>
 </section>
 {% endif %}
 
-{% include "revue/_subnav.html" %}
-
-<section class="block" style="border-top:none;padding-top:0;">
-  <div class="two-col">
-    <aside class="rv-news-aside">
-      <div class="rv-news" style="margin-top:28px;">
-        <h4>Recevoir les nouvelles publications</h4>
-        <p>Un courriel à chaque nouvelle parution.</p>
-        <form method="POST" action="{{ url_for('revue_newsletter_signup') }}">
-          <label class="rv-sr" for="rv-news-email">Votre courriel</label>
-          <input type="email" id="rv-news-email" name="email" placeholder="Votre courriel" autocomplete="email" required>
-          <button type="submit" class="btn btn-primary">S'inscrire</button>
-        </form>
-        <p class="rv-news-fine">Aucun spam.</p>
-      </div>
-    </aside>
-    {% include "revue/_about_text.html" %}
+{# ───────── 3. Publications récentes ───────── #}
+<section class="rvh-sec" aria-labelledby="rvh-rec-h">
+  <div class="rvh-head">
+    <div><p class="rvh-k">Publications</p><h2 id="rvh-rec-h">Articles récents</h2></div>
+    <a class="rvh-more" href="{{ url_for('revue_articles') }}">Tous les articles →</a>
   </div>
-</section>
-<section class="block">
-  <div class="block-head">
-    <div>
-      <div class="eyebrow">Publications</div>
-      <h2>Articles récents</h2>
-    </div>
-    <a href="{{ url_for('revue_articles') }}" class="btn btn-ghost btn-sm">Tous les articles</a>
+  {% if featured and not issue %}{% set grid = [featured] + recents %}{% else %}{% set grid = recents %}{% endif %}
+  {% if grid %}
+  <div class="rvh-grid">
+    {% for c in grid %}<article class="rvh-card">
+      <div class="rvh-meta">{{ c.domain or c.type or 'Article' }} · {{ c.date }}</div>
+      <h3><a href="{{ url_for('revue_article_detail', slug=c.a['slug']) }}">{{ c.a['title'] }}</a></h3>
+      {% if c.author != 'Rédaction' %}<div class="rvh-au">{{ c.author }}</div>{% endif %}
+      {% if c.a['abstract'] %}<p>{{ c.a['abstract'][:150] }}{% if c.a['abstract']|length > 150 %}…{% endif %}</p>{% endif %}
+      <a class="rvh-link" href="{{ url_for('revue_article_detail', slug=c.a['slug']) }}" aria-label="Lire l'article « {{ c.a['title'] }} »">Lire l'article →</a>
+    </article>{% endfor %}
   </div>
-  {% if articles %}
-    {% for a in articles %}
-      <div class="article-row">
-        <div class="meta">{{ a['issue_label'] or 'Massey Law Review' }} — {{ (a['published_at'] or a['created_at'])[:10] }}</div>
-        <h3><a href="{{ url_for('revue_article_detail', slug=a['slug']) }}">{{ a['title'] }}</a></h3>
-        <p>{{ a['author_name'] }}{% if a['abstract'] %} — {{ a['abstract'][:160] }}{% if a['abstract']|length > 160 %}…{% endif %}{% endif %}</p>
-      </div>
-    {% endfor %}
+  {% elif not featured %}
+  <p class="helptext">Aucun article publié pour l'instant — le premier numéro est en préparation.</p>
   {% else %}
-    <p class="helptext">Aucun article publié pour l'instant — le premier numéro est en préparation.</p>
+  <p class="helptext">Les autres publications du numéro sont dans le sommaire ci-dessus.</p>
   {% endif %}
 </section>
 
-<section class="block">
-  <div class="block-head">
-    <div>
-      <div class="eyebrow">Communauté</div>
-      <h2>Du forum</h2>
+{# ───────── 4. Domaines ───────── #}
+{% if domains %}
+<section class="rvh-sec" aria-labelledby="rvh-dom-h">
+  <div class="rvh-head"><div><p class="rvh-k">Explorer</p><h2 id="rvh-dom-h">Parcourir par domaine</h2></div></div>
+  <ul class="rvh-doms">
+    {% for key, label, n in domains %}<li><a href="{{ url_for('revue_articles', domaine=key) }}"><span>{{ label }}</span><b>{{ n }} article{{ 's' if n > 1 }}</b></a></li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{# ───────── 5. Chiffres réels + à propos ───────── #}
+<section class="rvh-sec rvh-about" aria-labelledby="rvh-ab-h">
+  <div class="rvh-head"><div><p class="rvh-k">À propos</p><h2 id="rvh-ab-h">Une revue qui relie la doctrine à la pratique</h2></div></div>
+  {% if stats.articles %}
+  <dl class="rvh-stats">
+    <div><dt>Articles publiés</dt><dd>{{ stats.articles }}</dd></div>
+    {% if stats.issues %}<div><dt>{{ 'Numéros' if stats.issues > 1 else 'Numéro' }}</dt><dd>{{ stats.issues }}</dd></div>{% endif %}
+    {% if stats.authors %}<div><dt>{{ 'Auteurs' if stats.authors > 1 else 'Auteur' }}</dt><dd>{{ stats.authors }}</dd></div>{% endif %}
+    {% if stats.domains %}<div><dt>{{ 'Domaines' if stats.domains > 1 else 'Domaine' }}</dt><dd>{{ stats.domains }}</dd></div>{% endif %}
+  </dl>
+  {% endif %}
+  <div class="rvh-pillars">
+    <div><h3>Mission éditoriale</h3><p>Chaque texte publié éclaire une question concrète rencontrée par les entreprises, les investisseurs ou les praticiens, sans sacrifier la rigueur de l'analyse.</p></div>
+    <div><h3>Comité éditorial</h3><p>Les textes sont évalués par un comité de juristes et de praticiens en droit des affaires, en fiscalité et en droit international. <a href="{{ url_for('revue_submissions') }}">Voir le processus</a>.</p></div>
+    <div><h3>Indépendance</h3><p>Les analyses engagent leurs auteurs et ne constituent pas un avis juridique ou fiscal. Le contenu éditorial reste séparé de l'activité de conseil de Massey Contracts &amp; Tax.</p></div>
+  </div>
+  <p class="rvh-id">Revue en ligne · éditeur : Massey Contracts &amp; Tax · {% if issn %}ISSN {{ issn }}{% else %}ISSN en cours d'attribution{% endif %}</p>
+</section>
+
+{# ───────── 6. Appel à contributions ───────── #}
+<section class="rvh-call" aria-labelledby="rvh-call-h">
+  <div>
+    <p class="rvh-k rvh-k-on">Appel à contributions</p>
+    <h2 id="rvh-call-h">Publier dans Massey Law Review</h2>
+    <p>La revue accueille les contributions de juristes, praticiens et chercheurs sur le droit des contrats, la fiscalité des affaires, le commerce international et la legal technology, avec un lien explicite avec la pratique.</p>
+    <a class="rvh-btn rvh-btn-gold" href="{{ url_for('revue_submissions') }}">Soumettre un article</a>
+  </div>
+  <ul class="rvh-rules">
+    <li><b>Formats acceptés</b><span>PDF, DOC ou DOCX</span></li>
+    <li><b>Résumé</b><span>150 à 250 mots</span></li>
+    <li><b>Longueur indicative</b><span>3 000 à 8 000 mots (article) · 800 à 1 500 mots (note pratique)</span></li>
+    <li><b>Références</b><span>Notes de bas de page, bibliographie finale</span></li>
+    <li><b>Suivi</b><span>Accusé de réception, puis information par courriel à chaque changement de statut</span></li>
+  </ul>
+</section>
+
+{# ───────── 7. Accès et abonnement ───────── #}
+<section class="rvh-sec" aria-labelledby="rvh-acc-h">
+  <div class="rvh-head"><div><p class="rvh-k">Accès</p><h2 id="rvh-acc-h">Ce qui est libre, ce qui est réservé</h2></div></div>
+  <div class="rvh-access">
+    <div class="rvh-acc-col">
+      <h3>En accès libre</h3>
+      <ul><li>Titres, auteurs et résumés de tous les articles</li><li>Sommaire de chaque numéro</li><li>Citation (Chicago, Bluebook, APA, BibTeX, RIS)</li><li>Forum et lettre d'information</li></ul>
     </div>
-    <a href="{{ url_for('revue_forum') }}" class="btn btn-ghost btn-sm">Voir le forum</a>
+    <div class="rvh-acc-col rvh-acc-pro">
+      <h3>Réservé aux abonnés</h3>
+      <ul><li>Texte intégral, notes de bas de page et bibliographie</li><li>PDF de chaque article et du numéro complet</li></ul>
+      {% if has_access %}
+        <p class="rvh-ok">Votre compte donne accès au texte intégral.</p>
+      {% else %}
+        <div class="rvh-plans">
+          {% for key, label, cents, desc in plans %}<div><b>{{ label.replace('Massey Law Review — ', '') }}</b><span>{{ "%.2f"|format(cents/100) }} $ / mois CAD</span></div>{% endfor %}
+        </div>
+        <div class="rvh-cta">
+          <a class="rvh-btn rvh-btn-gold" href="{{ url_for('revue_subscription') }}">Voir les abonnements</a>
+          <a class="rvh-link rvh-link-dark" href="{{ url_for('membership') }}">Inclus dans Premium Massey AI →</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{# ───────── 8. Lettre d'information ───────── #}
+<section class="rvh-news" id="infolettre" aria-labelledby="rvh-news-h">
+  <div>
+    <h2 id="rvh-news-h">Recevoir les nouvelles publications</h2>
+    <p>Un courriel à chaque nouvelle parution, avec le sommaire du numéro. Désinscription possible à tout moment.</p>
+  </div>
+  <form method="POST" action="{{ url_for('revue_newsletter_signup') }}">
+    <input type="hidden" name="from" value="home">
+    <label class="rv-sr" for="rvh-news-email">Votre courriel</label>
+    <input type="email" id="rvh-news-email" name="email" placeholder="Votre courriel" autocomplete="email" required>
+    <button type="submit" class="rvh-btn rvh-btn-gold">S'inscrire</button>
+    <small>Votre adresse sert uniquement à vous informer des publications de la revue. Aucun spam.</small>
+  </form>
+</section>
+
+{# ───────── 9. Forum ───────── #}
+<section class="rvh-sec" aria-labelledby="rvh-forum-h">
+  <div class="rvh-head">
+    <div><p class="rvh-k">Communauté</p><h2 id="rvh-forum-h">Du forum</h2></div>
+    <a class="rvh-more" href="{{ url_for('revue_forum') }}">Voir le forum →</a>
   </div>
   {% if posts %}
-    {% for p in posts %}
-      <div class="forum-post">
-        <div class="meta">{{ p['full_name'] }} — {{ p['created_at'][:10] }}</div>
-        <h4>{{ p['title'] }}</h4>
-        <p>{{ p['body'][:220] }}{% if p['body']|length > 220 %}…{% endif %}</p>
-      </div>
-    {% endfor %}
+    <div class="rvh-grid">
+    {% for p in posts %}<article class="rvh-card">
+      <div class="rvh-meta">{{ p['full_name'] }} · {{ p['created_at'][:10] }}</div>
+      <h3>{{ p['title'] }}</h3>
+      <p>{{ p['body'][:180] }}{% if p['body']|length > 180 %}…{% endif %}</p>
+    </article>{% endfor %}
+    </div>
   {% else %}
     <p class="helptext">Aucune discussion pour l'instant — soyez le premier à lancer un sujet.</p>
   {% endif %}
 </section>
+</div>
+
+<script type="application/ld+json">{{ ld|tojson }}</script>
 {% endblock %}
