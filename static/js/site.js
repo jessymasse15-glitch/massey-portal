@@ -27,7 +27,7 @@
 
   // Menu mobile : panneau construit à partir des liens existants (une seule source de vérité).
   (function () {
-    var btn = document.getElementById("mburger"), panel = document.getElementById("mnav"), back = document.getElementById("mnav-backdrop");
+    var btn = document.getElementById("mburger"), more = document.getElementById("mtab-more"), panel = document.getElementById("mnav"), back = document.getElementById("mnav-backdrop");
     var hdr = document.querySelector("header.site");
     if (!btn || !panel || !hdr) return;
     var mq = window.matchMedia("(max-width: 900px)");
@@ -66,26 +66,34 @@
       });
       panel.appendChild(acts);
     }
-    var lastFocus = null;
+    var lastFocus = null, opener = btn;
     function setOpen(open) {
       if (open && !panel.firstChild) build();
       if (open) document.documentElement.style.setProperty("--mn-top", Math.round(hdr.getBoundingClientRect().bottom) + "px");
       panel.hidden = back.hidden = !open;
-      btn.setAttribute("aria-expanded", open ? "true" : "false");
-      btn.setAttribute("aria-label", btn.getAttribute(open ? "data-close" : "data-open"));
+      [btn, more].forEach(function (x) {
+        if (!x) return;
+        x.setAttribute("aria-expanded", open ? "true" : "false");
+        x.setAttribute("aria-label", x.getAttribute(open ? "data-close" : "data-open"));
+      });
+      if (more) more.classList.toggle("on", open);
       document.documentElement.classList.toggle("mn-lock", open);
       hdr.classList.toggle("mn-open", open);
-      if (open) { lastFocus = document.activeElement; panel.scrollTop = 0; panel.focus({ preventScroll: true }); }
-      else if (lastFocus && document.contains(lastFocus)) { btn.focus({ preventScroll: true }); }
+      if (open) {
+        lastFocus = document.activeElement; panel.scrollTop = 0;
+        var si = (opener === btn) ? panel.querySelector(".mn-search input") : null;
+        (si || panel).focus({ preventScroll: true });
+      } else if (lastFocus && document.contains(lastFocus)) { lastFocus.focus({ preventScroll: true }); }
     }
-    btn.addEventListener("click", function () { setOpen(panel.hidden); });
+    btn.addEventListener("click", function () { opener = btn; setOpen(panel.hidden); });
+    if (more) more.addEventListener("click", function () { opener = more; setOpen(panel.hidden); });
     back.addEventListener("click", function () { setOpen(false); });
     panel.addEventListener("click", function (e) { if (e.target.closest("a")) setOpen(false); });
     document.addEventListener("keydown", function (e) {
       if (panel.hidden) return;
       if (e.key === "Escape") { setOpen(false); return; }
       if (e.key === "Tab") {   // le focus reste dans le menu tant qu'il est ouvert
-        var f = [btn].concat(Array.prototype.slice.call(panel.querySelectorAll("a[href],button,input,summary"))).filter(function (x) { return x.offsetParent !== null; });
+        var f = [btn, more].filter(Boolean).concat(Array.prototype.slice.call(panel.querySelectorAll("a[href],button,input,summary"))).filter(function (x) { return x.offsetParent !== null; });
         if (!f.length) return;
         var first = f[0], last = f[f.length - 1];
         if (e.shiftKey && (document.activeElement === first || document.activeElement === panel)) { e.preventDefault(); last.focus(); }
@@ -94,6 +102,16 @@
     });
     (mq.addEventListener ? mq.addEventListener.bind(mq, "change") : mq.addListener.bind(mq))(function () { if (!mq.matches && !panel.hidden) setOpen(false); });
   })();
+
+  // Retour visuel à l'envoi d'un formulaire : le bouton passe en « occupé » (sans le désactiver, pour garder sa valeur).
+  document.addEventListener("submit", function (e) {
+    var f = e.target; if (!f || f.hasAttribute("data-no-busy") || e.defaultPrevented) return;
+    var b = e.submitter || f.querySelector("button[type=submit],input[type=submit]");
+    if (b && b.tagName === "BUTTON") { b.classList.add("is-busy"); b.setAttribute("aria-busy", "true"); }
+  });
+  window.addEventListener("pageshow", function () {
+    document.querySelectorAll("button.is-busy").forEach(function (b) { b.classList.remove("is-busy"); b.removeAttribute("aria-busy"); });
+  });
 
   // Nav dropdowns (Plateforme/Administration/Aide-style menus): click/tap toggles
   // the panel open, so they work on touch devices where :hover never fires. Also

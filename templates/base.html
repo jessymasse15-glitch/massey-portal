@@ -55,8 +55,9 @@
       {% endif %}
       {% if lang_switch_url %}<a href="{{ lang_switch_url }}" class="lang-switch">{% if lang=='en' %}FR{% else %}EN{% endif %}</a>{% endif %}
     </div>
-    <button type="button" class="mburger" id="mburger" aria-expanded="false" aria-controls="mnav" aria-label="{% if lang=='en' %}Open menu{% else %}Ouvrir le menu{% endif %}" data-open="{% if lang=='en' %}Open menu{% else %}Ouvrir le menu{% endif %}" data-close="{% if lang=='en' %}Close menu{% else %}Fermer le menu{% endif %}">
-      <span class="mb-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+    <button type="button" class="mburger" id="mburger" aria-expanded="false" aria-controls="mnav" aria-label="{% if lang=='en' %}Search{% else %}Rechercher{% endif %}" data-open="{% if lang=='en' %}Search{% else %}Rechercher{% endif %}" data-close="{% if lang=='en' %}Close{% else %}Fermer{% endif %}">
+      <svg class="mb-s" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+      <svg class="mb-x" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
     </button>
   </div>
   <div class="site-nav">
@@ -110,6 +111,20 @@
 <div class="mnav" id="mnav" role="dialog" aria-modal="true" aria-label="{% if lang=='en' %}Main menu{% else %}Menu principal{% endif %}" hidden tabindex="-1"></div>
 </header>
 <div class="mnav-backdrop" id="mnav-backdrop" hidden></div>
+<nav class="tabbar" id="tabbar" aria-label="{% if lang=='en' %}Main navigation{% else %}Navigation principale{% endif %}">
+  {% set _en = (lang=='en') %}
+  {% set _p = request.path %}
+  <a href="{{ url_for('home_en') if _en else url_for('home') }}"{% if _p in ('/', '/en', '/en/') %} aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7M6 9.5V20h12V9.5M10 20v-5.5h4V20"/></svg><span>{{ 'Home' if _en else 'Accueil' }}</span></a>
+  <a href="{{ url_for('produits_en') if _en else url_for('produits') }}"{% if _p.startswith('/produits') or _p.startswith('/en/products') %} aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span>{{ 'Products' if _en else 'Produits' }}</span></a>
+  <a href="{{ url_for('services_en') if _en else url_for('services') }}"{% if _p.startswith('/services') or _p.startswith('/en/services') %} aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M9 7.5V6a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 6v1.5M3.5 12.5h17"/></svg><span>Services</span></a>
+  <a href="{{ url_for('revue_home') }}"{% if _p.startswith('/revue') %} aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C9.8 5 7 4.6 4.5 5.2v13c2.5-.6 5.3-.2 7.5 1.3 2.2-1.5 5-1.9 7.5-1.3v-13C17 4.6 14.2 5 12 6.5zM12 6.5v13"/></svg><span>{{ 'Review' if _en else 'Revue' }}</span></a>
+  <button type="button" id="mtab-more" aria-expanded="false" aria-controls="mnav" aria-label="{{ 'More' if _en else 'Plus' }}" data-open="{{ 'More' if _en else 'Plus' }}" data-close="{{ 'Close' if _en else 'Fermer' }}">
+    <svg viewBox="0 0 24 24" aria-hidden="true" class="tb-dots"><circle cx="5.5" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="18.5" cy="12" r="1.7" fill="currentColor"/></svg><span>{{ 'More' if _en else 'Plus' }}</span></button>
+</nav>
 <main>
   <div class="wrap">
     {% with messages = get_flashed_messages(with_categories=true) %}
