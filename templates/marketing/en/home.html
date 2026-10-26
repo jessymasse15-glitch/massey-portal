@@ -9,12 +9,7 @@
       <h1>Haitian business law, secured and equipped.</h1>
       <p class="lede">Massey Contracts &amp; Tax combines business lawyers with a legal intelligence platform, Massey AI, to secure your contracts, transactions and tax position — whether you'd rather hand us the file or keep the tools in your own hands.</p>
       <div class="ctas">
-        <a href="{{ url_for('intake') }}" class="btn btn-primary">Open a file</a>
-        {% if current_user %}
-          <a href="{{ url_for('produits_en') }}" class="btn btn-ghost">Explore the products</a>
-        {% else %}
-          <a href="{{ url_for('register', next=url_for('membership_en')) }}" class="btn btn-ghost">Try it for free</a>
-        {% endif %}
+        <a href="#deux-voies" class="btn btn-primary btn-arrow">Choose my path <span aria-hidden="true">↓</span></a>
       </div>
       <p class="hero-trust"><span class="ht-dot" aria-hidden="true"></span>Jessy J. Massé · Lawyer, Port-au-Prince Bar</p>
     </div>
@@ -99,7 +94,6 @@
       </ul>
       <div class="ctas">
         <a href="{{ url_for('intake') }}" class="btn btn-primary">Open a file</a>
-        <a href="{{ url_for('services_en') }}" class="btn btn-ghost">See services &amp; pricing</a>
       </div>
     </div>
     <div class="path-card featured">
@@ -118,7 +112,6 @@
         {% else %}
           <a href="{{ url_for('register', next=url_for('membership_en')) }}" class="btn btn-primary">Create an account</a>
         {% endif %}
-        <a href="{{ url_for('produits_en') }}" class="btn btn-ghost">Discover the products</a>
       </div>
     </div>
   </div>
@@ -144,21 +137,6 @@
     <div class="pillar-card">
       <h3>You choose your level of involvement</h3>
       <p>Unlike a firm that requires full delegation, or software that leaves you on your own, you choose file by file.</p>
-    </div>
-  </div>
-</section>
-
-<section class="block">
-  <div class="ai-band reveal">
-    <div class="eyebrow">Massey AI</div>
-    <h2>Legal AI in service of better decisions</h2>
-    <p class="lede">Research, drafting, risk analysis: AI with guardrails, always under human validation — whether used by our lawyers or directly by you.</p>
-    <div class="capability-row">
-      <div class="cap">Intelligent research</div>
-      <div class="cap">Assisted drafting</div>
-      <div class="cap">Risk analysis</div>
-      <div class="cap">AI agents (workflows)</div>
-      <div class="cap">Verifiable sources &amp; citations</div>
     </div>
   </div>
 </section>
@@ -260,21 +238,14 @@
   <div class="callout reveal" style="max-width:74ch;">
     Artificial intelligence reduces repetitive work but remains a supervised assistant: no final legal or tax opinion is delivered without human validation, no automatic choice of governing law, no definitive tax analysis based on a bare form.
   </div>
-  <div class="trust-row reveal" style="margin-top:24px;">
-    <span>Systematic human validation</span>
-    <span>Time-stamped, sealed documents</span>
-    <span>Role-based access control</span>
-  </div>
 
   <div class="cta-banner reveal">
     <div>
       <h2>Law, technology, and your success.</h2>
-      <p>Hand us your file, create a free account, or let's talk about your situation first.</p>
+      <p>Before choosing a path, let's talk about your situation.</p>
     </div>
     <div class="ctas">
-      <a href="{{ url_for('intake') }}" class="btn btn-primary">Open a file</a>
-      <a href="{{ url_for('services_en') }}" class="btn btn-ghost">See services</a>
-      <a href="{{ url_for('contact_en') }}" class="btn btn-ghost">Discuss your project</a>
+      <a href="{{ url_for('contact_en') }}" class="btn btn-primary">Discuss your project</a>
     </div>
   </div>
 </section>

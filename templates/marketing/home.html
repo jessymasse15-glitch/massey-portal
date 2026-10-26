@@ -9,12 +9,7 @@
       <h1>Le droit des affaires haïtien, sécurisé et outillé.</h1>
       <p class="lede">Massey Contracts &amp; Tax combine des avocats d'affaires et une plateforme d'intelligence juridique, Massey AI, pour sécuriser vos contrats, vos transactions et votre fiscalité — que vous préfériez nous confier le dossier ou garder la main sur les outils.</p>
       <div class="ctas">
-        <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
-        {% if current_user %}
-          <a href="{{ url_for('produits') }}" class="btn btn-ghost">Explorer les produits</a>
-        {% else %}
-          <a href="{{ url_for('register', next=url_for('membership')) }}" class="btn btn-ghost">Essayer gratuitement</a>
-        {% endif %}
+        <a href="#deux-voies" class="btn btn-primary btn-arrow">Choisir ma voie <span aria-hidden="true">↓</span></a>
       </div>
       <p class="hero-trust"><span class="ht-dot" aria-hidden="true"></span>Me Jessy J. Massé · Avocat au Barreau de Port-au-Prince</p>
     </div>
@@ -99,7 +94,6 @@
       </ul>
       <div class="ctas">
         <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
-        <a href="{{ url_for('services') }}" class="btn btn-ghost">Voir les services &amp; tarifs</a>
       </div>
     </div>
     <div class="path-card featured">
@@ -118,7 +112,6 @@
         {% else %}
           <a href="{{ url_for('register', next=url_for('membership')) }}" class="btn btn-primary">Créer un compte</a>
         {% endif %}
-        <a href="{{ url_for('produits') }}" class="btn btn-ghost">Découvrir les produits</a>
       </div>
     </div>
   </div>
@@ -144,21 +137,6 @@
     <div class="pillar-card">
       <h3>Vous arbitrez votre niveau d'implication</h3>
       <p>Contrairement à un cabinet qui exige de tout déléguer, ou un logiciel qui vous laisse seul, vous choisissez dossier par dossier.</p>
-    </div>
-  </div>
-</section>
-
-<section class="block">
-  <div class="ai-band reveal">
-    <div class="eyebrow">Massey AI</div>
-    <h2>L'IA juridique au service des décisions</h2>
-    <p class="lede">Recherche, rédaction, analyse de risques : une intelligence artificielle encadrée, toujours sous validation humaine — qu'elle soit utilisée par nos avocats ou directement par vous.</p>
-    <div class="capability-row">
-      <div class="cap">Recherche intelligente</div>
-      <div class="cap">Rédaction assistée</div>
-      <div class="cap">Analyse &amp; risques</div>
-      <div class="cap">Agents IA (workflows)</div>
-      <div class="cap">Sources vérifiables &amp; citations</div>
     </div>
   </div>
 </section>
@@ -260,21 +238,14 @@
   <div class="callout reveal" style="max-width:74ch;">
     L'intelligence artificielle réduit les tâches répétitives mais reste un assistant contrôlé : aucun avis juridique ou fiscal définitif n'est transmis sans validation humaine, aucun choix automatique de droit applicable, aucune analyse fiscale définitive fondée sur un simple formulaire.
   </div>
-  <div class="trust-row reveal" style="margin-top:24px;">
-    <span>Validation humaine systématique</span>
-    <span>Documents horodatés et scellés</span>
-    <span>Accès cloisonné par rôle</span>
-  </div>
 
   <div class="cta-banner reveal">
     <div>
       <h2>Le droit, la technologie et votre succès.</h2>
-      <p>Confiez-nous votre dossier, créez un compte gratuit, ou discutons d'abord de votre situation.</p>
+      <p>Avant de choisir une voie, parlons de votre situation.</p>
     </div>
     <div class="ctas">
-      <a href="{{ url_for('intake') }}" class="btn btn-primary">Ouvrir un dossier</a>
-      <a href="{{ url_for('services') }}" class="btn btn-ghost">Voir les services</a>
-      <a href="{{ url_for('contact') }}" class="btn btn-ghost">Discuter de votre projet</a>
+      <a href="{{ url_for('contact') }}" class="btn btn-primary">Discuter de votre projet</a>
     </div>
   </div>
 </section>

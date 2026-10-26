@@ -1941,3 +1941,14 @@ html[lang="en"] .path-grid::after{content:"OR";}
 @media (max-width:760px){
   .path-grid .path-card .ctas .btn{min-height:46px;padding:0 8px !important;font-size:.8rem !important;}
 }
+
+/* Accueil : un seul appel à l'action par zone */
+.hero .btn-arrow{gap:10px;padding-left:28px;padding-right:28px;}
+html{scroll-behavior:smooth;} @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;}}
+#deux-voies{scroll-margin-top:90px;}
+/* Pastille « OU » : posée sur la ligne de jonction, hors du texte (mobile) */
+@media (max-width:760px){
+  .path-grid::after{top:0 !important;transform:translate(-50%,-50%) !important;width:34px !important;height:34px !important;}
+  .path-grid .path-card{padding-top:26px !important;}
+  .hero .ctas .btn-primary{max-width:340px;}
+}
