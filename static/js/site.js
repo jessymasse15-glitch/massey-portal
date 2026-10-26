@@ -40,7 +40,7 @@
     }
     function build() {
       panel.innerHTML = "";
-      var s = document.querySelector("form.hdr-search");
+      var s = null; // la recherche a sa propre barre (#msearch), distincte du menu
       if (s) {
         var f = el("form", "mn-search"); f.setAttribute("role", "search"); f.method = "GET"; f.action = s.getAttribute("action");
         var i = el("input"); i.type = "search"; i.name = "q"; i.placeholder = (s.querySelector("input").placeholder || "Rechercher…"); i.setAttribute("aria-label", s.querySelector("input").getAttribute("aria-label") || "Rechercher"); i.autocomplete = "off";
@@ -71,7 +71,7 @@
       if (open && !panel.firstChild) build();
       if (open) document.documentElement.style.setProperty("--mn-top", Math.round(hdr.getBoundingClientRect().bottom) + "px");
       panel.hidden = back.hidden = !open;
-      [btn, more].forEach(function (x) {
+      [more].forEach(function (x) {
         if (!x) return;
         x.setAttribute("aria-expanded", open ? "true" : "false");
         x.setAttribute("aria-label", x.getAttribute(open ? "data-close" : "data-open"));
@@ -81,11 +81,9 @@
       hdr.classList.toggle("mn-open", open);
       if (open) {
         lastFocus = document.activeElement; panel.scrollTop = 0;
-        var si = (opener === btn) ? panel.querySelector(".mn-search input") : null;
-        (si || panel).focus({ preventScroll: true });
+        panel.focus({ preventScroll: true });
       } else if (lastFocus && document.contains(lastFocus)) { lastFocus.focus({ preventScroll: true }); }
     }
-    btn.addEventListener("click", function () { opener = btn; setOpen(panel.hidden); });
     if (more) more.addEventListener("click", function () { opener = more; setOpen(panel.hidden); });
     back.addEventListener("click", function () { setOpen(false); });
     panel.addEventListener("click", function (e) { if (e.target.closest("a")) setOpen(false); });
@@ -93,7 +91,7 @@
       if (panel.hidden) return;
       if (e.key === "Escape") { setOpen(false); return; }
       if (e.key === "Tab") {   // le focus reste dans le menu tant qu'il est ouvert
-        var f = [btn, more].filter(Boolean).concat(Array.prototype.slice.call(panel.querySelectorAll("a[href],button,input,summary"))).filter(function (x) { return x.offsetParent !== null; });
+        var f = [more].filter(Boolean).concat(Array.prototype.slice.call(panel.querySelectorAll("a[href],button,input,summary"))).filter(function (x) { return x.offsetParent !== null; });
         if (!f.length) return;
         var first = f[0], last = f[f.length - 1];
         if (e.shiftKey && (document.activeElement === first || document.activeElement === panel)) { e.preventDefault(); last.focus(); }
@@ -101,6 +99,32 @@
       }
     });
     (mq.addEventListener ? mq.addEventListener.bind(mq, "change") : mq.addListener.bind(mq))(function () { if (!mq.matches && !panel.hidden) setOpen(false); });
+  })();
+
+  // Recherche mobile : une vraie barre de recherche dédiée (et non le menu déroulant).
+  (function () {
+    var btn = document.getElementById("mburger"), hdr = document.querySelector("header.site"), src = document.querySelector("form.hdr-search");
+    if (!btn || !hdr || !src) return;
+    var bar = document.createElement("div"); bar.className = "msearch"; bar.id = "msearch"; bar.hidden = true;
+    var inp0 = src.querySelector("input");
+    var ph = inp0.placeholder || "Rechercher…";
+    bar.innerHTML = '<form class="ms-form" role="search" method="GET"><svg class="ms-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input type="search" name="q" autocomplete="off" enterkeyhint="search"><button type="submit"></button></form>';
+    var f = bar.firstChild; f.action = src.getAttribute("action");
+    var i = f.querySelector("input"); i.placeholder = ph; i.setAttribute("aria-label", inp0.getAttribute("aria-label") || ph);
+    f.querySelector("button").textContent = (document.documentElement.lang === "en") ? "Search" : "Rechercher";
+    hdr.appendChild(bar); btn.setAttribute("aria-controls", "msearch");
+    function setOpen(o) {
+      if (o) { var bk = document.getElementById("mnav-backdrop"); var pn = document.getElementById("mnav"); if (pn && !pn.hidden && bk) bk.click(); }
+      bar.hidden = !o; btn.setAttribute("aria-expanded", o ? "true" : "false");
+      btn.setAttribute("aria-label", btn.getAttribute(o ? "data-close" : "data-open"));
+      if (o) i.focus(); else btn.focus({ preventScroll: true });
+    }
+    btn.addEventListener("click", function (e) { e.stopPropagation(); setOpen(bar.hidden); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !bar.hidden) setOpen(false); });
+    document.addEventListener("click", function (e) { if (!bar.hidden && !bar.contains(e.target) && !btn.contains(e.target)) { bar.hidden = true; btn.setAttribute("aria-expanded", "false"); btn.setAttribute("aria-label", btn.getAttribute("data-open")); } });
+    var more = document.getElementById("mtab-more"); if (more) more.addEventListener("click", function () { if (!bar.hidden) { bar.hidden = true; btn.setAttribute("aria-expanded", "false"); } });
+    var mq = window.matchMedia("(max-width: 900px)");
+    (mq.addEventListener ? mq.addEventListener.bind(mq, "change") : mq.addListener.bind(mq))(function () { if (!mq.matches) bar.hidden = true; });
   })();
 
   // Retour visuel à l'envoi d'un formulaire : le bouton passe en « occupé » (sans le désactiver, pour garder sa valeur).

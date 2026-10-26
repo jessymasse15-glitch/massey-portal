@@ -116,7 +116,7 @@
         {% if current_user %}
           <a href="{{ url_for('membership_en') }}" class="btn btn-primary">See plans</a>
         {% else %}
-          <a href="{{ url_for('register', next=url_for('membership_en')) }}" class="btn btn-primary">Create a free account</a>
+          <a href="{{ url_for('register', next=url_for('membership_en')) }}" class="btn btn-primary">Create an account</a>
         {% endif %}
         <a href="{{ url_for('produits_en') }}" class="btn btn-ghost">Discover the products</a>
       </div>
